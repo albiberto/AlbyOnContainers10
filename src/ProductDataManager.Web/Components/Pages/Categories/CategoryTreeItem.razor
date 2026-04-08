@@ -1,0 +1,76 @@
+@using ProductDataManager.Infrastructure.Messages.Categories
+
+<FluentTreeItem Text="@Category.Category.Name"
+                Expanded="@Category.IsExpanded"
+                OnExpandedChanged="HandleExpandedChanged">
+
+    @* Context menu actions *@
+    <FluentStack Slot="end" Orientation="Orientation.Horizontal" Style="gap: 4px;">
+        <FluentButton Appearance="Appearance.Stealth"
+                      IconStart="@(new Icons.Regular.Size16.Add())"
+                      Title="Add child"
+                      OnClick="@(() => OnAddChild.InvokeAsync(Category.Category.Id))"
+                      OnClick:stopPropagation="true" />
+        <FluentButton Appearance="Appearance.Stealth"
+                      IconStart="@(new Icons.Regular.Size16.Edit())"
+                      Title="Edit"
+                      OnClick="@(() => OnEdit.InvokeAsync(Category.Category))"
+                      OnClick:stopPropagation="true" />
+        <FluentButton Appearance="Appearance.Stealth"
+                      IconStart="@(new Icons.Regular.Size16.Delete())"
+                      Title="Delete"
+                      OnClick="@(() => OnDelete.InvokeAsync(Category.Category))"
+                      OnClick:stopPropagation="true" />
+    </FluentStack>
+
+    @if (Category.IsLoading)
+    {
+        <FluentTreeItem>
+            <FluentProgressRing Style="width: 16px; height: 16px;" />
+            <span style="color: var(--neutral-foreground-hint); margin-left: 8px;">Loading...</span>
+        </FluentTreeItem>
+    }
+    else if (Category.ChildrenLoaded)
+    {
+        @foreach (var child in Category.Children)
+        {
+            <CategoryTreeItem Category="child"
+                              OnExpand="OnExpand"
+                              OnEdit="OnEdit"
+                              OnDelete="OnDelete"
+                              OnAddChild="OnAddChild" />
+        }
+    }
+    else if (Category.Category.HasChildren)
+    {
+        @* Placeholder so the expand icon shows *@
+        <FluentTreeItem Text="..." />
+    }
+</FluentTreeItem>
+
+@code {
+    [Parameter, EditorRequired]
+    public required CategoriesPage.CategoryTreeNode Category { get; set; }
+
+    [Parameter]
+    public EventCallback<CategoriesPage.CategoryTreeNode> OnExpand { get; set; }
+
+    [Parameter]
+    public EventCallback<CategoryDto> OnEdit { get; set; }
+
+    [Parameter]
+    public EventCallback<CategoryDto> OnDelete { get; set; }
+
+    [Parameter]
+    public EventCallback<Guid?> OnAddChild { get; set; }
+
+    private async Task HandleExpandedChanged(bool expanded)
+    {
+        Category.IsExpanded = expanded;
+
+        if (expanded && !Category.ChildrenLoaded && Category.Category.HasChildren)
+        {
+            await OnExpand.InvokeAsync(Category);
+        }
+    }
+}

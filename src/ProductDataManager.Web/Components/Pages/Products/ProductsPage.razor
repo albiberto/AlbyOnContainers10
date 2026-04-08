@@ -1,0 +1,186 @@
+@page "/products"
+@using MassTransit
+@using ProductDataManager.Infrastructure.Messages.Products
+@using ProductDataManager.Infrastructure.Messages.Categories
+
+@inject IRequestClient<GetProducts> ProductsClient
+@inject IRequestClient<CreateProduct> CreateProductClient
+@inject IRequestClient<UpdateProduct> UpdateProductClient
+@inject IRequestClient<DeleteProduct> DeleteProductClient
+@inject IRequestClient<GetRootCategories> CategoriesClient
+@inject IToastService ToastService
+
+<PageTitle>Products — Product Data Manager</PageTitle>
+
+<FluentStack Orientation="Orientation.Vertical" Style="gap: 16px;">
+    <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center">
+        <h1>Products</h1>
+        <FluentSpacer />
+        <FluentButton Appearance="Appearance.Accent"
+                      IconStart="@(new Icons.Regular.Size20.Add())"
+                      OnClick="OpenCreateDialog">
+            Add Product
+        </FluentButton>
+    </FluentStack>
+
+    <FluentCard Style="padding: 16px;">
+        @if (_loading)
+        {
+            <FluentProgressRing />
+        }
+        else
+        {
+            <FluentDataGrid Items="@_products.AsQueryable()" Pagination="@_pagination" TGridItem="ProductDto"
+                            Style="width: 100%;" GridTemplateColumns="1fr 0.6fr 0.5fr 0.5fr 0.4fr 0.5fr">
+                <PropertyColumn Property="@(p => p.Name)" Title="Name" Sortable="true" />
+                <PropertyColumn Property="@(p => p.Sku)" Title="SKU" Sortable="true" />
+                <PropertyColumn Property="@(p => p.CategoryName)" Title="Category" />
+                <TemplateColumn Title="Price">
+                    <FluentLabel>@context.Price.ToString("C")</FluentLabel>
+                </TemplateColumn>
+                <TemplateColumn Title="Active">
+                    <FluentBadge Appearance="@(context.IsActive ? Appearance.Accent : Appearance.Neutral)">
+                        @(context.IsActive ? "Active" : "Inactive")
+                    </FluentBadge>
+                </TemplateColumn>
+                <TemplateColumn Title="Actions">
+                    <FluentStack Orientation="Orientation.Horizontal" Style="gap: 4px;">
+                        <FluentButton Appearance="Appearance.Stealth"
+                                      IconStart="@(new Icons.Regular.Size16.Edit())"
+                                      Title="Edit"
+                                      OnClick="@(() => OpenEditDialog(context))" />
+                        <FluentButton Appearance="Appearance.Stealth"
+                                      IconStart="@(new Icons.Regular.Size16.Delete())"
+                                      Title="Delete"
+                                      OnClick="@(() => HandleDelete(context))" />
+                    </FluentStack>
+                </TemplateColumn>
+            </FluentDataGrid>
+
+            <FluentPaginator State="@_pagination" />
+        }
+    </FluentCard>
+</FluentStack>
+
+@* Create/Edit Dialog *@
+<FluentDialog @bind-Hidden="@_dialogHidden" Modal="true" TrapFocus="true" PreventScroll="true">
+    <FluentDialogHeader>
+        <h3>@(_editingProduct is not null ? "Edit Product" : "New Product")</h3>
+    </FluentDialogHeader>
+    <FluentDialogBody>
+        <FluentStack Orientation="Orientation.Vertical" Style="gap: 12px; min-width: 450px;">
+            <FluentTextField @bind-Value="_formName" Label="Name" Required="true" Style="width: 100%;" />
+            <FluentTextField @bind-Value="_formSku" Label="SKU" Required="true" Style="width: 100%;" />
+            <FluentTextArea @bind-Value="_formDescription" Label="Description" Rows="3" Style="width: 100%;" />
+            <FluentNumberField @bind-Value="_formPrice" Label="Price" Min="0" Step="0.01m" Style="width: 100%;" />
+            @if (_editingProduct is not null)
+            {
+                <FluentCheckbox @bind-Value="_formIsActive" Label="Active" />
+            }
+        </FluentStack>
+    </FluentDialogBody>
+    <FluentDialogFooter>
+        <FluentButton Appearance="Appearance.Accent" OnClick="HandleSave" Loading="_saving">Save</FluentButton>
+        <FluentButton Appearance="Appearance.Neutral" OnClick="@(() => _dialogHidden = true)">Cancel</FluentButton>
+    </FluentDialogFooter>
+</FluentDialog>
+
+@code {
+    private List<ProductDto> _products = [];
+    private PaginationState _pagination = new() { ItemsPerPage = 20 };
+    private bool _loading = true;
+    private bool _dialogHidden = true;
+    private bool _saving;
+
+    private string _formName = string.Empty;
+    private string _formSku = string.Empty;
+    private string? _formDescription;
+    private decimal _formPrice;
+    private bool _formIsActive = true;
+    private Guid _formCategoryId;
+    private ProductDto? _editingProduct;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadProducts();
+    }
+
+    private async Task LoadProducts()
+    {
+        _loading = true;
+        var response = await ProductsClient.GetResponse<GetProductsResult>(new GetProducts());
+        _products = response.Message.Products;
+        _loading = false;
+    }
+
+    private void OpenCreateDialog()
+    {
+        _editingProduct = null;
+        _formName = string.Empty;
+        _formSku = string.Empty;
+        _formDescription = null;
+        _formPrice = 0;
+        _formIsActive = true;
+        _dialogHidden = false;
+    }
+
+    private void OpenEditDialog(ProductDto product)
+    {
+        _editingProduct = product;
+        _formName = product.Name;
+        _formSku = product.Sku;
+        _formDescription = product.Description;
+        _formPrice = product.Price;
+        _formIsActive = product.IsActive;
+        _formCategoryId = product.CategoryId;
+        _dialogHidden = false;
+    }
+
+    private async Task HandleSave()
+    {
+        if (string.IsNullOrWhiteSpace(_formName) || string.IsNullOrWhiteSpace(_formSku)) return;
+
+        _saving = true;
+
+        if (_editingProduct is not null)
+        {
+            var response = await UpdateProductClient.GetResponse<UpdateProductResult>(
+                new UpdateProduct(_editingProduct.Id, _formName, _formSku, _formDescription, _formPrice, _formCategoryId, _formIsActive));
+
+            if (response.Message.Success)
+                ToastService.ShowSuccess("Product updated successfully.");
+            else
+                ToastService.ShowError("Failed to update product.");
+        }
+        else
+        {
+            var response = await CreateProductClient.GetResponse<CreateProductResult>(
+                new CreateProduct(_formName, _formSku, _formDescription, _formPrice, _formCategoryId));
+
+            if (response.Message.Id != Guid.Empty)
+                ToastService.ShowSuccess("Product created successfully.");
+            else
+                ToastService.ShowError("Failed to create product.");
+        }
+
+        _saving = false;
+        _dialogHidden = true;
+        await LoadProducts();
+    }
+
+    private async Task HandleDelete(ProductDto product)
+    {
+        var response = await DeleteProductClient.GetResponse<DeleteProductResult>(
+            new DeleteProduct(product.Id));
+
+        if (response.Message.Success)
+        {
+            ToastService.ShowSuccess($"Product '{product.Name}' deleted.");
+            await LoadProducts();
+        }
+        else
+        {
+            ToastService.ShowError("Failed to delete product.");
+        }
+    }
+}

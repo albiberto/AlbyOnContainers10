@@ -1,0 +1,186 @@
+@page "/categories"
+@using MassTransit
+@using ProductDataManager.Infrastructure.Messages.Categories
+
+@inject IRequestClient<GetRootCategories> RootCategoriesClient
+@inject IRequestClient<GetChildCategories> ChildCategoriesClient
+@inject IRequestClient<CreateCategory> CreateCategoryClient
+@inject IRequestClient<UpdateCategory> UpdateCategoryClient
+@inject IRequestClient<DeleteCategory> DeleteCategoryClient
+@inject IToastService ToastService
+
+<PageTitle>Categories — Product Data Manager</PageTitle>
+
+<FluentStack Orientation="Orientation.Vertical" Style="gap: 16px;">
+    <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center">
+        <h1>Categories</h1>
+        <FluentSpacer />
+        <FluentButton Appearance="Appearance.Accent"
+                      IconStart="@(new Icons.Regular.Size20.Add())"
+                      OnClick="@(() => OpenCreateDialog(null))">
+            Add Root Category
+        </FluentButton>
+    </FluentStack>
+
+    @if (_loading)
+    {
+        <FluentProgressRing />
+    }
+    else
+    {
+        <FluentCard Style="padding: 16px;">
+            <FluentTreeView>
+                @foreach (var category in _rootCategories)
+                {
+                    <CategoryTreeItem Category="category"
+                                      OnExpand="LoadChildren"
+                                      OnEdit="OpenEditDialog"
+                                      OnDelete="HandleDelete"
+                                      OnAddChild="OpenCreateDialog" />
+                }
+            </FluentTreeView>
+
+            @if (!_rootCategories.Any())
+            {
+                <FluentLabel Style="padding: 24px; color: var(--neutral-foreground-hint);">
+                    No categories yet. Click "Add Root Category" to create the first one.
+                </FluentLabel>
+            }
+        </FluentCard>
+    }
+</FluentStack>
+
+@* Create/Edit Dialog *@
+<FluentDialog @bind-Hidden="@_dialogHidden" Modal="true" TrapFocus="true" PreventScroll="true">
+    <FluentDialogHeader>
+        <h3>@(_editingCategory is not null ? "Edit Category" : "New Category")</h3>
+    </FluentDialogHeader>
+    <FluentDialogBody>
+        <FluentStack Orientation="Orientation.Vertical" Style="gap: 12px; min-width: 400px;">
+            <FluentTextField @bind-Value="_formName" Label="Name" Required="true" Style="width: 100%;" />
+            <FluentTextArea @bind-Value="_formDescription" Label="Description" Rows="3" Style="width: 100%;" />
+        </FluentStack>
+    </FluentDialogBody>
+    <FluentDialogFooter>
+        <FluentButton Appearance="Appearance.Accent" OnClick="HandleSave" Loading="_saving">Save</FluentButton>
+        <FluentButton Appearance="Appearance.Neutral" OnClick="@(() => _dialogHidden = true)">Cancel</FluentButton>
+    </FluentDialogFooter>
+</FluentDialog>
+
+@code {
+    private List<CategoryTreeNode> _rootCategories = [];
+    private bool _loading = true;
+    private bool _dialogHidden = true;
+    private bool _saving;
+    private string _formName = string.Empty;
+    private string? _formDescription;
+    private Guid? _parentIdForCreate;
+    private CategoryDto? _editingCategory;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadRootCategories();
+    }
+
+    private async Task LoadRootCategories()
+    {
+        _loading = true;
+        var response = await RootCategoriesClient.GetResponse<GetRootCategoriesResult>(new GetRootCategories());
+        _rootCategories = response.Message.Categories.Select(c => new CategoryTreeNode(c)).ToList();
+        _loading = false;
+    }
+
+    private async Task LoadChildren(CategoryTreeNode node)
+    {
+        if (node.ChildrenLoaded) return;
+
+        node.IsLoading = true;
+        StateHasChanged();
+
+        var response = await ChildCategoriesClient.GetResponse<GetChildCategoriesResult>(
+            new GetChildCategories(node.Category.Id));
+
+        node.Children = response.Message.Children.Select(c => new CategoryTreeNode(c)).ToList();
+        node.ChildrenLoaded = true;
+        node.IsLoading = false;
+
+        StateHasChanged();
+    }
+
+    private void OpenCreateDialog(Guid? parentId)
+    {
+        _parentIdForCreate = parentId;
+        _editingCategory = null;
+        _formName = string.Empty;
+        _formDescription = null;
+        _dialogHidden = false;
+    }
+
+    private void OpenEditDialog(CategoryDto category)
+    {
+        _editingCategory = category;
+        _parentIdForCreate = null;
+        _formName = category.Name;
+        _formDescription = category.Description;
+        _dialogHidden = false;
+    }
+
+    private async Task HandleSave()
+    {
+        if (string.IsNullOrWhiteSpace(_formName)) return;
+
+        _saving = true;
+
+        if (_editingCategory is not null)
+        {
+            var response = await UpdateCategoryClient.GetResponse<UpdateCategoryResult>(
+                new UpdateCategory(_editingCategory.Id, _formName, _formDescription));
+
+            if (response.Message.Success)
+                ToastService.ShowSuccess("Category updated successfully.");
+            else
+                ToastService.ShowError("Failed to update category.");
+        }
+        else
+        {
+            var response = await CreateCategoryClient.GetResponse<CreateCategoryResult>(
+                new CreateCategory(_formName, _formDescription, _parentIdForCreate));
+
+            if (response.Message.Id != Guid.Empty)
+                ToastService.ShowSuccess("Category created successfully.");
+            else
+                ToastService.ShowError("Failed to create category.");
+        }
+
+        _saving = false;
+        _dialogHidden = true;
+
+        // Reload tree
+        await LoadRootCategories();
+    }
+
+    private async Task HandleDelete(CategoryDto category)
+    {
+        var response = await DeleteCategoryClient.GetResponse<DeleteCategoryResult>(
+            new DeleteCategory(category.Id));
+
+        if (response.Message.Success)
+        {
+            ToastService.ShowSuccess($"Category '{category.Name}' deleted.");
+            await LoadRootCategories();
+        }
+        else
+        {
+            ToastService.ShowError("Cannot delete category (it may have children or products).");
+        }
+    }
+
+    public class CategoryTreeNode(CategoryDto category)
+    {
+        public CategoryDto Category { get; set; } = category;
+        public List<CategoryTreeNode> Children { get; set; } = [];
+        public bool ChildrenLoaded { get; set; }
+        public bool IsLoading { get; set; }
+        public bool IsExpanded { get; set; }
+    }
+}

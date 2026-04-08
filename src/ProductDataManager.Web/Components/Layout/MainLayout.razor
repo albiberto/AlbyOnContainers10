@@ -1,0 +1,56 @@
+@inherits LayoutComponentBase
+
+<FluentLayout>
+    <FluentHeader>
+        <h3 style="margin: 0; color: white;">Product Data Manager</h3>
+        <FluentSpacer />
+        <AuthorizeView>
+            <Authorized>
+                <FluentPersona Name="@context.User.Identity?.Name"
+                               ImageSize="32px" />
+            </Authorized>
+            <NotAuthorized>
+                <FluentAnchor Href="/login" Appearance="Appearance.Stealth">Login</FluentAnchor>
+            </NotAuthorized>
+        </AuthorizeView>
+    </FluentHeader>
+
+    <FluentStack Orientation="Orientation.Horizontal" Style="height: calc(100vh - 50px);">
+        <FluentNavMenu Width="250" Title="Navigation" Collapsible="true">
+            <FluentNavLink Href="/categories"
+                           Icon="@(new Icons.Regular.Size20.FolderMultiple())"
+                           IconColor="Color.Accent">
+                Categories
+            </FluentNavLink>
+            <FluentNavLink Href="/products"
+                           Icon="@(new Icons.Regular.Size20.Box())"
+                           IconColor="Color.Accent">
+                Products
+            </FluentNavLink>
+            <FluentNavLink Href="/description-types"
+                           Icon="@(new Icons.Regular.Size20.TextDescription())"
+                           IconColor="Color.Accent">
+                Description Types
+            </FluentNavLink>
+            <FluentNavLink Href="/attribute-types"
+                           Icon="@(new Icons.Regular.Size20.Tag())"
+                           IconColor="Color.Accent">
+                Attribute Types
+            </FluentNavLink>
+        </FluentNavMenu>
+
+        <FluentBodyContent Style="padding: 24px; overflow-y: auto; flex: 1;">
+            @Body
+        </FluentBodyContent>
+    </FluentStack>
+
+    <FluentFooter>
+        <span style="font-size: 0.8rem; color: var(--neutral-foreground-hint);">
+            © @DateTime.Now.Year — Product Data Manager — E-commerce Enterprise
+        </span>
+    </FluentFooter>
+</FluentLayout>
+
+<FluentToastProvider />
+<FluentDialogProvider />
+<FluentMessageBarProvider />

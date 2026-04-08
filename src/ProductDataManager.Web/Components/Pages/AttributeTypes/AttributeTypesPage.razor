@@ -1,0 +1,194 @@
+@page "/attribute-types"
+@using MassTransit
+
+@inject IRequestClient<GetAttributeTypes> AttributeTypesClient
+@inject IRequestClient<CreateAttributeType> CreateTypeClient
+@inject IRequestClient<UpdateAttributeType> UpdateTypeClient
+@inject IRequestClient<DeleteAttributeType> DeleteTypeClient
+@inject IRequestClient<CreateAttribute> CreateAttributeClient
+@inject IRequestClient<DeleteAttribute> DeleteAttributeClient
+@inject IToastService ToastService
+
+<PageTitle>Attribute Types — Product Data Manager</PageTitle>
+
+<FluentStack Orientation="Orientation.Vertical" Style="gap: 16px;">
+    <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center">
+        <h1>Attribute Types</h1>
+        <FluentSpacer />
+        <FluentButton Appearance="Appearance.Accent"
+                      IconStart="@(new Icons.Regular.Size20.Add())"
+                      OnClick="OpenCreateDialog">
+            Add Attribute Type
+        </FluentButton>
+    </FluentStack>
+
+    @if (_loading)
+    {
+        <FluentProgressRing />
+    }
+    else
+    {
+        @foreach (var at in _attributeTypes)
+        {
+            <FluentCard Style="padding: 16px;">
+                <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center">
+                    <FluentStack Orientation="Orientation.Vertical" Style="flex: 1;">
+                        <h3 style="margin: 0;">@at.Name</h3>
+                        @if (!string.IsNullOrEmpty(at.Description))
+                        {
+                            <FluentLabel Style="color: var(--neutral-foreground-hint);">@at.Description</FluentLabel>
+                        }
+                    </FluentStack>
+                    <FluentButton Appearance="Appearance.Stealth"
+                                  IconStart="@(new Icons.Regular.Size16.Edit())"
+                                  OnClick="@(() => OpenEditDialog(at))" />
+                    <FluentButton Appearance="Appearance.Stealth"
+                                  IconStart="@(new Icons.Regular.Size16.Delete())"
+                                  OnClick="@(() => HandleDeleteType(at))" />
+                </FluentStack>
+
+                @* Attributes list *@
+                <FluentDivider Style="margin: 12px 0;" />
+                <FluentDataGrid Items="@at.Attributes.AsQueryable()" TGridItem="AttributeDto"
+                                Style="width: 100%;" GridTemplateColumns="1fr 1fr 0.3fr">
+                    <PropertyColumn Property="@(a => a.Name)" Title="Name" />
+                    <PropertyColumn Property="@(a => a.Value)" Title="Value" />
+                    <TemplateColumn Title="">
+                        <FluentButton Appearance="Appearance.Stealth"
+                                      IconStart="@(new Icons.Regular.Size16.Delete())"
+                                      OnClick="@(() => HandleDeleteAttribute(context.Id))" />
+                    </TemplateColumn>
+                </FluentDataGrid>
+
+                @* Add new attribute *@
+                <FluentStack Orientation="Orientation.Horizontal" Style="gap: 8px; margin-top: 12px;">
+                    <FluentTextField @bind-Value="_newAttrName" Placeholder="Attribute name" Style="flex: 1;" />
+                    <FluentTextField @bind-Value="_newAttrValue" Placeholder="Value" Style="flex: 1;" />
+                    <FluentButton Appearance="Appearance.Outline"
+                                  IconStart="@(new Icons.Regular.Size16.Add())"
+                                  OnClick="@(() => HandleAddAttribute(at.Id))">
+                        Add
+                    </FluentButton>
+                </FluentStack>
+            </FluentCard>
+        }
+
+        @if (!_attributeTypes.Any())
+        {
+            <FluentCard Style="padding: 24px; text-align: center;">
+                <FluentLabel>No attribute types yet.</FluentLabel>
+            </FluentCard>
+        }
+    }
+</FluentStack>
+
+@* Create/Edit Dialog *@
+<FluentDialog @bind-Hidden="@_dialogHidden" Modal="true" TrapFocus="true" PreventScroll="true">
+    <FluentDialogHeader>
+        <h3>@(_editing is not null ? "Edit Attribute Type" : "New Attribute Type")</h3>
+    </FluentDialogHeader>
+    <FluentDialogBody>
+        <FluentStack Orientation="Orientation.Vertical" Style="gap: 12px; min-width: 400px;">
+            <FluentTextField @bind-Value="_formName" Label="Name" Required="true" Style="width: 100%;" />
+            <FluentTextArea @bind-Value="_formDescription" Label="Description" Rows="2" Style="width: 100%;" />
+        </FluentStack>
+    </FluentDialogBody>
+    <FluentDialogFooter>
+        <FluentButton Appearance="Appearance.Accent" OnClick="HandleSave" Loading="_saving">Save</FluentButton>
+        <FluentButton Appearance="Appearance.Neutral" OnClick="@(() => _dialogHidden = true)">Cancel</FluentButton>
+    </FluentDialogFooter>
+</FluentDialog>
+
+@code {
+    private List<AttributeTypeDto> _attributeTypes = [];
+    private bool _loading = true;
+    private bool _dialogHidden = true;
+    private bool _saving;
+    private string _formName = string.Empty;
+    private string? _formDescription;
+    private string _newAttrName = string.Empty;
+    private string _newAttrValue = string.Empty;
+    private AttributeTypeDto? _editing;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        _loading = true;
+        var response = await AttributeTypesClient.GetResponse<GetAttributeTypesResult>(new GetAttributeTypes());
+        _attributeTypes = response.Message.AttributeTypes;
+        _loading = false;
+    }
+
+    private void OpenCreateDialog()
+    {
+        _editing = null;
+        _formName = string.Empty;
+        _formDescription = null;
+        _dialogHidden = false;
+    }
+
+    private void OpenEditDialog(AttributeTypeDto at)
+    {
+        _editing = at;
+        _formName = at.Name;
+        _formDescription = at.Description;
+        _dialogHidden = false;
+    }
+
+    private async Task HandleSave()
+    {
+        if (string.IsNullOrWhiteSpace(_formName)) return;
+        _saving = true;
+
+        if (_editing is not null)
+        {
+            await UpdateTypeClient.GetResponse<UpdateAttributeTypeResult>(
+                new UpdateAttributeType(_editing.Id, _formName, _formDescription));
+            ToastService.ShowSuccess("Attribute type updated.");
+        }
+        else
+        {
+            await CreateTypeClient.GetResponse<CreateAttributeTypeResult>(
+                new CreateAttributeType(_formName, _formDescription));
+            ToastService.ShowSuccess("Attribute type created.");
+        }
+
+        _saving = false;
+        _dialogHidden = true;
+        await LoadData();
+    }
+
+    private async Task HandleDeleteType(AttributeTypeDto at)
+    {
+        var response = await DeleteTypeClient.GetResponse<DeleteAttributeTypeResult>(
+            new DeleteAttributeType(at.Id));
+        if (response.Message.Success)
+        {
+            ToastService.ShowSuccess($"'{at.Name}' deleted.");
+            await LoadData();
+        }
+        else
+            ToastService.ShowError("Failed to delete.");
+    }
+
+    private async Task HandleAddAttribute(Guid typeId)
+    {
+        if (string.IsNullOrWhiteSpace(_newAttrName) || string.IsNullOrWhiteSpace(_newAttrValue)) return;
+        await CreateAttributeClient.GetResponse<CreateAttributeResult>(
+            new CreateAttribute(_newAttrName, _newAttrValue, typeId));
+        _newAttrName = string.Empty;
+        _newAttrValue = string.Empty;
+        await LoadData();
+    }
+
+    private async Task HandleDeleteAttribute(Guid attributeId)
+    {
+        await DeleteAttributeClient.GetResponse<DeleteAttributeResult>(
+            new DeleteAttribute(attributeId));
+        await LoadData();
+    }
+}

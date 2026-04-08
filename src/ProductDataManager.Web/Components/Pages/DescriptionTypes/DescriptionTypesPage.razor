@@ -1,0 +1,190 @@
+@page "/description-types"
+@using MassTransit
+@using ProductDataManager.Infrastructure.Messages.DescriptionTypes
+
+@inject IRequestClient<GetDescriptionTypes> DescriptionTypesClient
+@inject IRequestClient<CreateDescriptionType> CreateClient
+@inject IRequestClient<UpdateDescriptionType> UpdateClient
+@inject IRequestClient<DeleteDescriptionType> DeleteClient
+@inject IRequestClient<AddDescriptionValue> AddValueClient
+@inject IRequestClient<DeleteDescriptionValue> DeleteValueClient
+@inject IToastService ToastService
+
+<PageTitle>Description Types — Product Data Manager</PageTitle>
+
+<FluentStack Orientation="Orientation.Vertical" Style="gap: 16px;">
+    <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center">
+        <h1>Description Types</h1>
+        <FluentSpacer />
+        <FluentButton Appearance="Appearance.Accent"
+                      IconStart="@(new Icons.Regular.Size20.Add())"
+                      OnClick="OpenCreateDialog">
+            Add Description Type
+        </FluentButton>
+    </FluentStack>
+
+    @if (_loading)
+    {
+        <FluentProgressRing />
+    }
+    else
+    {
+        @foreach (var dt in _descriptionTypes)
+        {
+            <FluentCard Style="padding: 16px;">
+                <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center">
+                    <FluentStack Orientation="Orientation.Vertical" Style="flex: 1;">
+                        <h3 style="margin: 0;">@dt.Name</h3>
+                        @if (!string.IsNullOrEmpty(dt.Description))
+                        {
+                            <FluentLabel Style="color: var(--neutral-foreground-hint);">@dt.Description</FluentLabel>
+                        }
+                    </FluentStack>
+                    <FluentButton Appearance="Appearance.Stealth"
+                                  IconStart="@(new Icons.Regular.Size16.Edit())"
+                                  OnClick="@(() => OpenEditDialog(dt))" />
+                    <FluentButton Appearance="Appearance.Stealth"
+                                  IconStart="@(new Icons.Regular.Size16.Delete())"
+                                  OnClick="@(() => HandleDelete(dt))" />
+                </FluentStack>
+
+                @* Values *@
+                <FluentDivider Style="margin: 12px 0;" />
+                <FluentStack Orientation="Orientation.Horizontal" Style="gap: 8px; flex-wrap: wrap;">
+                    @foreach (var value in dt.Values)
+                    {
+                        <FluentBadge Appearance="Appearance.Accent">
+                            @value.Value
+                            <FluentButton Appearance="Appearance.Stealth"
+                                          IconStart="@(new Icons.Regular.Size12.Dismiss())"
+                                          Style="margin-left: 4px;"
+                                          OnClick="@(() => HandleDeleteValue(value.Id))" />
+                        </FluentBadge>
+                    }
+                    <FluentStack Orientation="Orientation.Horizontal" Style="gap: 4px;">
+                        <FluentTextField @bind-Value="_newValueText" Placeholder="New value..." Style="width: 150px;" />
+                        <FluentButton Appearance="Appearance.Outline"
+                                      IconStart="@(new Icons.Regular.Size16.Add())"
+                                      OnClick="@(() => HandleAddValue(dt.Id))" />
+                    </FluentStack>
+                </FluentStack>
+            </FluentCard>
+        }
+
+        @if (!_descriptionTypes.Any())
+        {
+            <FluentCard Style="padding: 24px; text-align: center;">
+                <FluentLabel>No description types yet.</FluentLabel>
+            </FluentCard>
+        }
+    }
+</FluentStack>
+
+@* Create/Edit Dialog *@
+<FluentDialog @bind-Hidden="@_dialogHidden" Modal="true" TrapFocus="true" PreventScroll="true">
+    <FluentDialogHeader>
+        <h3>@(_editing is not null ? "Edit Description Type" : "New Description Type")</h3>
+    </FluentDialogHeader>
+    <FluentDialogBody>
+        <FluentStack Orientation="Orientation.Vertical" Style="gap: 12px; min-width: 400px;">
+            <FluentTextField @bind-Value="_formName" Label="Name" Required="true" Style="width: 100%;" />
+            <FluentTextArea @bind-Value="_formDescription" Label="Description" Rows="2" Style="width: 100%;" />
+        </FluentStack>
+    </FluentDialogBody>
+    <FluentDialogFooter>
+        <FluentButton Appearance="Appearance.Accent" OnClick="HandleSave" Loading="_saving">Save</FluentButton>
+        <FluentButton Appearance="Appearance.Neutral" OnClick="@(() => _dialogHidden = true)">Cancel</FluentButton>
+    </FluentDialogFooter>
+</FluentDialog>
+
+@code {
+    private List<DescriptionTypeDto> _descriptionTypes = [];
+    private bool _loading = true;
+    private bool _dialogHidden = true;
+    private bool _saving;
+    private string _formName = string.Empty;
+    private string? _formDescription;
+    private string _newValueText = string.Empty;
+    private DescriptionTypeDto? _editing;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        _loading = true;
+        var response = await DescriptionTypesClient.GetResponse<GetDescriptionTypesResult>(new GetDescriptionTypes());
+        _descriptionTypes = response.Message.DescriptionTypes;
+        _loading = false;
+    }
+
+    private void OpenCreateDialog()
+    {
+        _editing = null;
+        _formName = string.Empty;
+        _formDescription = null;
+        _dialogHidden = false;
+    }
+
+    private void OpenEditDialog(DescriptionTypeDto dt)
+    {
+        _editing = dt;
+        _formName = dt.Name;
+        _formDescription = dt.Description;
+        _dialogHidden = false;
+    }
+
+    private async Task HandleSave()
+    {
+        if (string.IsNullOrWhiteSpace(_formName)) return;
+        _saving = true;
+
+        if (_editing is not null)
+        {
+            await UpdateClient.GetResponse<UpdateDescriptionTypeResult>(
+                new UpdateDescriptionType(_editing.Id, _formName, _formDescription));
+            ToastService.ShowSuccess("Description type updated.");
+        }
+        else
+        {
+            await CreateClient.GetResponse<CreateDescriptionTypeResult>(
+                new CreateDescriptionType(_formName, _formDescription));
+            ToastService.ShowSuccess("Description type created.");
+        }
+
+        _saving = false;
+        _dialogHidden = true;
+        await LoadData();
+    }
+
+    private async Task HandleDelete(DescriptionTypeDto dt)
+    {
+        var response = await DeleteClient.GetResponse<DeleteDescriptionTypeResult>(
+            new DeleteDescriptionType(dt.Id));
+        if (response.Message.Success)
+        {
+            ToastService.ShowSuccess($"'{dt.Name}' deleted.");
+            await LoadData();
+        }
+        else
+            ToastService.ShowError("Failed to delete.");
+    }
+
+    private async Task HandleAddValue(Guid descriptionTypeId)
+    {
+        if (string.IsNullOrWhiteSpace(_newValueText)) return;
+        await AddValueClient.GetResponse<AddDescriptionValueResult>(
+            new AddDescriptionValue(descriptionTypeId, _newValueText));
+        _newValueText = string.Empty;
+        await LoadData();
+    }
+
+    private async Task HandleDeleteValue(Guid valueId)
+    {
+        await DeleteValueClient.GetResponse<DeleteDescriptionValueResult>(
+            new DeleteDescriptionValue(valueId));
+        await LoadData();
+    }
+}

@@ -1,0 +1,33 @@
+@page "/"
+
+<PageTitle>Product Data Manager</PageTitle>
+
+<FluentStack Orientation="Orientation.Vertical" HorizontalAlignment="HorizontalAlignment.Center" Style="margin-top: 80px;">
+    <FluentIcon Value="@(new Icons.Regular.Size48.Box())" Color="Color.Accent" />
+    <h1>Product Data Manager</h1>
+    <p style="color: var(--neutral-foreground-hint); font-size: 1.1rem;">
+        Back-office tool for managing the e-commerce product catalog.
+    </p>
+    <FluentStack Orientation="Orientation.Horizontal" Style="margin-top: 32px; gap: 16px;">
+        <FluentCard Style="width: 200px; text-align: center; padding: 24px;">
+            <FluentIcon Value="@(new Icons.Regular.Size24.FolderMultiple())" Color="Color.Accent" />
+            <h4>Categories</h4>
+            <FluentAnchor Href="/categories" Appearance="Appearance.Accent">Manage</FluentAnchor>
+        </FluentCard>
+        <FluentCard Style="width: 200px; text-align: center; padding: 24px;">
+            <FluentIcon Value="@(new Icons.Regular.Size24.Box())" Color="Color.Accent" />
+            <h4>Products</h4>
+            <FluentAnchor Href="/products" Appearance="Appearance.Accent">Manage</FluentAnchor>
+        </FluentCard>
+        <FluentCard Style="width: 200px; text-align: center; padding: 24px;">
+            <FluentIcon Value="@(new Icons.Regular.Size24.TextDescription())" Color="Color.Accent" />
+            <h4>Descriptions</h4>
+            <FluentAnchor Href="/description-types" Appearance="Appearance.Accent">Manage</FluentAnchor>
+        </FluentCard>
+        <FluentCard Style="width: 200px; text-align: center; padding: 24px;">
+            <FluentIcon Value="@(new Icons.Regular.Size24.Tag())" Color="Color.Accent" />
+            <h4>Attributes</h4>
+            <FluentAnchor Href="/attribute-types" Appearance="Appearance.Accent">Manage</FluentAnchor>
+        </FluentCard>
+    </FluentStack>
+</FluentStack>
