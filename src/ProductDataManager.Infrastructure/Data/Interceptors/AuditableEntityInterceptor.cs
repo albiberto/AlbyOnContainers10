@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using ProductDataManager.Models;
+using ProductDataManager.Models.Abstract;
 
 namespace ProductDataManager.Infrastructure.Data.Interceptors;
 

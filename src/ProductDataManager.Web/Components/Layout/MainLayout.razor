@@ -6,14 +6,14 @@
             <FluentIcon Value="@(new Icons.Regular.Size20.Box())" Color="Color.Custom" CustomColor="#fff" />
         </div>
         <div>
-            <div class="pdm-header-title">Product Data Manager</div>
-            <div class="pdm-header-subtitle">E-Commerce Catalog</div>
+            <div style="font-size: 1rem; font-weight: 600; letter-spacing: -0.01em;">Product Data Manager</div>
+            <div style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--pdm-text-muted);">E-Commerce Catalog</div>
         </div>
     </a>
     <FluentSpacer />
     <AuthorizeView>
         <Authorized>
-            <div class="pdm-header-user">
+            <div style="display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: var(--pdm-radius-md);">
                 <FluentPersona Name="@context.User.Identity?.Name"
                                ImageSize="28px" />
             </div>

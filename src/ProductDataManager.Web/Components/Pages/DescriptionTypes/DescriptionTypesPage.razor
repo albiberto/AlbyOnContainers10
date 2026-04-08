@@ -21,7 +21,7 @@
                 </span>
                 Description Types
             </h1>
-            <div class="pdm-page-subtitle">Define structured description schemas with configurable value sets</div>
+            <div style="font-size: 0.85rem; color: var(--pdm-text-muted); margin-top: 2px;">Define structured description schemas with configurable value sets</div>
         </div>
         <FluentButton Appearance="Appearance.Accent"
                       IconStart="@(new Icons.Regular.Size16.Add())"
@@ -32,18 +32,18 @@
 
     @if (_loading)
     {
-        <div class="pdm-loading">
+        <div style="display: flex; flex-direction: column; align-items: center; padding: 48px; gap: 16px; color: var(--pdm-text-muted);">
             <FluentProgressRing />
             <span>Loading description types…</span>
         </div>
     }
     else if (!_descriptionTypes.Any())
     {
-        <div class="pdm-empty-state">
-            <div class="pdm-empty-state-icon">
+        <div style="text-align: center; padding: 48px; color: var(--pdm-text-muted);">
+            <div style="width: 56px; height: 56px; margin: 0 auto 16px; background: var(--pdm-bg-subtle); border-radius: var(--pdm-radius-lg); display: flex; align-items: center; justify-content: center; opacity: 0.5;">
                 <FluentIcon Value="@(new Icons.Regular.Size24.TextDescription())" Color="Color.Custom" CustomColor="#64748b" />
             </div>
-            <p>No description types yet.</p>
+            <p style="margin: 0;">No description types yet.</p>
             <p style="font-size: 0.8rem; margin-top: 4px;">Click "Add Description Type" to start defining product descriptions.</p>
         </div>
     }
@@ -52,72 +52,57 @@
         <FluentStack Orientation="Orientation.Vertical" Style="gap: 16px;">
             @foreach (var dt in _descriptionTypes)
             {
-                <div class="pdm-item-card pdm-animate-slide">
-                    <div class="pdm-item-card-header">
-                        <div class="pdm-item-card-info">
-                            <h3 class="pdm-item-card-name">@dt.Name</h3>
+                <FluentCard Style="padding: 24px;">
+                    <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;">
+                        <div style="flex: 1; min-width: 0;">
+                            <h3 style="margin: 0; font-size: 1.05rem;">@dt.Name</h3>
                             @if (!string.IsNullOrEmpty(dt.Description))
                             {
-                                <div class="pdm-item-card-desc">@dt.Description</div>
+                                <div style="font-size: 0.825rem; color: var(--pdm-text-secondary); margin-top: 4px;">@dt.Description</div>
                             }
                         </div>
-                        <div class="pdm-item-card-actions">
-                            <FluentButton Appearance="Appearance.Stealth"
-                                          IconStart="@(new Icons.Regular.Size16.Edit())"
-                                          Title="Edit"
-                                          OnClick="@(() => OpenEditDialog(dt))" />
-                            <FluentButton Appearance="Appearance.Stealth"
-                                          IconStart="@(new Icons.Regular.Size16.Delete())"
-                                          Title="Delete"
-                                          OnClick="@(() => HandleDelete(dt))" />
+                        <div style="display: flex; gap: 2px; flex-shrink: 0;">
+                            <FluentButton Appearance="Appearance.Stealth" IconStart="@(new Icons.Regular.Size16.Edit())" Title="Edit" OnClick="@(() => OpenEditDialog(dt))" />
+                            <FluentButton Appearance="Appearance.Stealth" IconStart="@(new Icons.Regular.Size16.Delete())" Title="Delete" OnClick="@(() => HandleDelete(dt))" />
                         </div>
                     </div>
 
-                    <div class="pdm-item-card-body">
+                    <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--pdm-border);">
                         <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
                             @foreach (var value in dt.Values)
                             {
-                                <span class="pdm-tag pdm-tag-accent">
+                                <span class="pdm-tag">
                                     @value.Value
-                                    <button class="pdm-tag-remove" title="Remove value"
-                                            @onclick="@(() => HandleDeleteValue(value.Id))">
+                                    <button class="pdm-tag-remove" title="Remove value" @onclick="@(() => HandleDeleteValue(value.Id))">
                                         <FluentIcon Value="@(new Icons.Regular.Size12.Dismiss())" Color="Color.Custom" CustomColor="currentColor" />
                                     </button>
                                 </span>
                             }
-
                             @if (!dt.Values.Any())
                             {
-                                <span class="pdm-text-muted" style="font-size: 0.825rem;">
-                                    No values defined yet.
-                                </span>
+                                <span style="font-size: 0.825rem; color: var(--pdm-text-muted);">No values defined yet.</span>
                             }
                         </div>
 
                         <div class="pdm-inline-form">
                             <FluentTextField @bind-Value="_newValueText" Placeholder="New value..." Style="flex: 1;" />
-                            <FluentButton Appearance="Appearance.Outline"
-                                          IconStart="@(new Icons.Regular.Size16.Add())"
-                                          OnClick="@(() => HandleAddValue(dt.Id))">
-                                Add
-                            </FluentButton>
+                            <FluentButton Appearance="Appearance.Outline" IconStart="@(new Icons.Regular.Size16.Add())" OnClick="@(() => HandleAddValue(dt.Id))">Add</FluentButton>
                         </div>
                     </div>
-                </div>
+                </FluentCard>
             }
         </FluentStack>
     }
 </div>
 
-@* Create/Edit Dialog *@
 <FluentDialog @bind-Hidden="@_dialogHidden" Modal="true" TrapFocus="true" PreventScroll="true">
     <FluentDialogHeader>
-        <div class="pdm-dialog-header">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
             <FluentIcon Value="@(_editing is not null ? new Icons.Regular.Size20.Edit() : (Icon)new Icons.Regular.Size20.Add())"
                         Color="Color.Custom" CustomColor="#10b981" />
-            <h3>@(_editing is not null ? "Edit Description Type" : "New Description Type")</h3>
+            <h3 style="margin: 0;">@(_editing is not null ? "Edit Description Type" : "New Description Type")</h3>
         </div>
-        <div class="pdm-dialog-subtitle">
+        <div style="font-size: 0.825rem; color: var(--pdm-text-muted); margin-bottom: 16px;">
             @(_editing is not null ? "Update the description type details" : "Define a new description type for products")
         </div>
     </FluentDialogHeader>
@@ -129,8 +114,7 @@
     </FluentDialogBody>
     <FluentDialogFooter>
         <FluentButton Appearance="Appearance.Neutral" OnClick="@(() => _dialogHidden = true)">Cancel</FluentButton>
-        <FluentButton Appearance="Appearance.Accent" OnClick="HandleSave" Loading="_saving"
-                      IconStart="@(new Icons.Regular.Size16.Checkmark())">
+        <FluentButton Appearance="Appearance.Accent" OnClick="HandleSave" Loading="_saving" IconStart="@(new Icons.Regular.Size16.Checkmark())">
             @(_editing is not null ? "Update" : "Create")
         </FluentButton>
     </FluentDialogFooter>
@@ -146,10 +130,7 @@
     private string _newValueText = string.Empty;
     private DescriptionTypeDto? _editing;
 
-    protected override async Task OnInitializedAsync()
-    {
-        await LoadData();
-    }
+    protected override async Task OnInitializedAsync() => await LoadData();
 
     private async Task LoadData()
     {
@@ -159,71 +140,44 @@
         _loading = false;
     }
 
-    private void OpenCreateDialog()
-    {
-        _editing = null;
-        _formName = string.Empty;
-        _formDescription = null;
-        _dialogHidden = false;
-    }
+    private void OpenCreateDialog() { _editing = null; _formName = string.Empty; _formDescription = null; _dialogHidden = false; }
 
-    private void OpenEditDialog(DescriptionTypeDto dt)
-    {
-        _editing = dt;
-        _formName = dt.Name;
-        _formDescription = dt.Description;
-        _dialogHidden = false;
-    }
+    private void OpenEditDialog(DescriptionTypeDto dt) { _editing = dt; _formName = dt.Name; _formDescription = dt.Description; _dialogHidden = false; }
 
     private async Task HandleSave()
     {
         if (string.IsNullOrWhiteSpace(_formName)) return;
         _saving = true;
-
         if (_editing is not null)
         {
-            await UpdateClient.GetResponse<UpdateDescriptionTypeResult>(
-                new UpdateDescriptionType(_editing.Id, _formName, _formDescription));
+            await UpdateClient.GetResponse<UpdateDescriptionTypeResult>(new UpdateDescriptionType(_editing.Id, _formName, _formDescription));
             ToastService.ShowSuccess("Description type updated.");
         }
         else
         {
-            await CreateClient.GetResponse<CreateDescriptionTypeResult>(
-                new CreateDescriptionType(_formName, _formDescription));
+            await CreateClient.GetResponse<CreateDescriptionTypeResult>(new CreateDescriptionType(_formName, _formDescription));
             ToastService.ShowSuccess("Description type created.");
         }
-
-        _saving = false;
-        _dialogHidden = true;
-        await LoadData();
+        _saving = false; _dialogHidden = true; await LoadData();
     }
 
     private async Task HandleDelete(DescriptionTypeDto dt)
     {
-        var response = await DeleteClient.GetResponse<DeleteDescriptionTypeResult>(
-            new DeleteDescriptionType(dt.Id));
-        if (response.Message.Success)
-        {
-            ToastService.ShowSuccess($"'{dt.Name}' deleted.");
-            await LoadData();
-        }
-        else
-            ToastService.ShowError("Failed to delete.");
+        var response = await DeleteClient.GetResponse<DeleteDescriptionTypeResult>(new DeleteDescriptionType(dt.Id));
+        if (response.Message.Success) { ToastService.ShowSuccess($"'{dt.Name}' deleted."); await LoadData(); }
+        else ToastService.ShowError("Failed to delete.");
     }
 
     private async Task HandleAddValue(Guid descriptionTypeId)
     {
         if (string.IsNullOrWhiteSpace(_newValueText)) return;
-        await AddValueClient.GetResponse<AddDescriptionValueResult>(
-            new AddDescriptionValue(descriptionTypeId, _newValueText));
-        _newValueText = string.Empty;
-        await LoadData();
+        await AddValueClient.GetResponse<AddDescriptionValueResult>(new AddDescriptionValue(descriptionTypeId, _newValueText));
+        _newValueText = string.Empty; await LoadData();
     }
 
     private async Task HandleDeleteValue(Guid valueId)
     {
-        await DeleteValueClient.GetResponse<DeleteDescriptionValueResult>(
-            new DeleteDescriptionValue(valueId));
+        await DeleteValueClient.GetResponse<DeleteDescriptionValueResult>(new DeleteDescriptionValue(valueId));
         await LoadData();
     }
 }

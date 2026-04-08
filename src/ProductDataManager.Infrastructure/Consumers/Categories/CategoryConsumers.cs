@@ -91,10 +91,7 @@ public partial class CreateCategoryConsumer(ProductContext db) : IConsumer<Creat
             path = NormalizePath(command.Name);
         }
 
-        var category = new ProductDataManager.Models.Category(command.Name, command.Description, command.ParentId)
-        {
-            Path = path
-        };
+        var category = new ProductDataManager.Models.Category(command.Name, path, command.Description, command.ParentId);
 
         db.Categories.Add(category);
         await db.SaveChangesAsync(context.CancellationToken);
@@ -122,8 +119,7 @@ public class UpdateCategoryConsumer(ProductContext db) : IConsumer<UpdateCategor
             return;
         }
 
-        category.Name = command.Name;
-        category.Description = command.Description;
+        category.Update(command.Name, command.Description);
 
         await db.SaveChangesAsync(context.CancellationToken);
 

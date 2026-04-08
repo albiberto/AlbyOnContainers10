@@ -79,12 +79,7 @@ public class UpdateProductConsumer(ProductContext db) : IConsumer<UpdateProduct>
             return;
         }
 
-        product.Name = command.Name;
-        product.Sku = command.Sku;
-        product.Description = command.Description;
-        product.Price = command.Price;
-        product.CategoryId = command.CategoryId;
-        product.IsActive = command.IsActive;
+        product.Update(command.Name, command.Sku, command.Description, command.Price, command.CategoryId, command.IsActive);
 
         await db.SaveChangesAsync(context.CancellationToken);
         await context.RespondAsync(new UpdateProductResult(true));

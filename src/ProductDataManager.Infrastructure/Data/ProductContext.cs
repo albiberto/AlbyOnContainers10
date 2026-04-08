@@ -36,6 +36,10 @@ public class ProductContext(DbContextOptions<ProductContext> options, IEnumerabl
             entity.Property(c => c.Name).HasMaxLength(100);
             entity.Property(c => c.Description).HasMaxLength(500);
 
+            entity.Navigation(c => c.Children).UsePropertyAccessMode(PropertyAccessMode.Field);
+            entity.Navigation(c => c.DescriptionTypeCategories).UsePropertyAccessMode(PropertyAccessMode.Field);
+            entity.Navigation(c => c.Products).UsePropertyAccessMode(PropertyAccessMode.Field);
+
             entity.HasOne(c => c.Parent)
                 .WithMany(c => c.Children)
                 .HasForeignKey(c => c.ParentId)
@@ -49,6 +53,9 @@ public class ProductContext(DbContextOptions<ProductContext> options, IEnumerabl
             entity.HasIndex(d => d.Name).IsUnique();
             entity.Property(d => d.Name).HasMaxLength(30);
             entity.Property(d => d.Description).HasMaxLength(100);
+
+            entity.Navigation(d => d.Values).UsePropertyAccessMode(PropertyAccessMode.Field);
+            entity.Navigation(d => d.DescriptionTypeCategories).UsePropertyAccessMode(PropertyAccessMode.Field);
         });
 
         // === DescriptionValue ===
@@ -86,6 +93,8 @@ public class ProductContext(DbContextOptions<ProductContext> options, IEnumerabl
             entity.Property(a => a.Name).HasMaxLength(50);
             entity.Property(a => a.Description).HasMaxLength(200);
             entity.HasIndex(a => a.Name).IsUnique();
+
+            entity.Navigation(a => a.ProductAttributes).UsePropertyAccessMode(PropertyAccessMode.Field);
         });
 
         // === Attribute ===
@@ -94,6 +103,8 @@ public class ProductContext(DbContextOptions<ProductContext> options, IEnumerabl
             entity.HasKey(a => a.Id);
             entity.Property(a => a.Name).HasMaxLength(100);
             entity.Property(a => a.Value).HasMaxLength(500);
+
+            entity.Navigation(a => a.ProductAttributes).UsePropertyAccessMode(PropertyAccessMode.Field);
 
             entity.HasOne(a => a.AttributeType)
                 .WithMany()
@@ -110,6 +121,8 @@ public class ProductContext(DbContextOptions<ProductContext> options, IEnumerabl
             entity.Property(p => p.Description).HasMaxLength(2000);
             entity.Property(p => p.Price).HasPrecision(18, 2);
             entity.HasIndex(p => p.Sku).IsUnique();
+
+            entity.Navigation(p => p.ProductAttributes).UsePropertyAccessMode(PropertyAccessMode.Field);
 
             entity.HasOne(p => p.Category)
                 .WithMany(c => c.Products)

@@ -83,8 +83,7 @@ public class UpdateAttributeTypeConsumer(ProductContext db) : IConsumer<UpdateAt
             return;
         }
 
-        entity.Name = command.Name;
-        entity.Description = command.Description;
+        entity.Update(command.Name, command.Description);
         await db.SaveChangesAsync(context.CancellationToken);
 
         await context.RespondAsync(new UpdateAttributeTypeResult(true));

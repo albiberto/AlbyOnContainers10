@@ -21,7 +21,7 @@
                 </span>
                 Products
             </h1>
-            <div class="pdm-page-subtitle">Manage your product catalog — pricing, SKUs, and assignments</div>
+            <div style="font-size: 0.85rem; color: var(--pdm-text-muted); margin-top: 2px;">Manage your product catalog — pricing, SKUs, and assignments</div>
         </div>
         <FluentButton Appearance="Appearance.Accent"
                       IconStart="@(new Icons.Regular.Size16.Add())"
@@ -30,21 +30,21 @@
         </FluentButton>
     </div>
 
-    <div class="pdm-data-section">
+    <div style="background: var(--pdm-bg-card); border: 1px solid var(--pdm-border); border-radius: var(--pdm-radius-lg); overflow: hidden;">
         @if (_loading)
         {
-            <div class="pdm-loading">
+            <div style="display: flex; flex-direction: column; align-items: center; padding: 48px; gap: 16px; color: var(--pdm-text-muted);">
                 <FluentProgressRing />
                 <span>Loading products…</span>
             </div>
         }
         else if (!_products.Any())
         {
-            <div class="pdm-empty-state">
-                <div class="pdm-empty-state-icon">
+            <div style="text-align: center; padding: 48px; color: var(--pdm-text-muted);">
+                <div style="width: 56px; height: 56px; margin: 0 auto 16px; background: var(--pdm-bg-subtle); border-radius: var(--pdm-radius-lg); display: flex; align-items: center; justify-content: center; opacity: 0.5;">
                     <FluentIcon Value="@(new Icons.Regular.Size24.Box())" Color="Color.Custom" CustomColor="#64748b" />
                 </div>
-                <p>No products yet.</p>
+                <p style="margin: 0;">No products yet.</p>
                 <p style="font-size: 0.8rem; margin-top: 4px;">Click "Add Product" to create your first one.</p>
             </div>
         }
@@ -57,31 +57,30 @@
                     <PropertyColumn Property="@(p => p.Sku)" Title="SKU" Sortable="true" />
                     <PropertyColumn Property="@(p => p.CategoryName)" Title="Category" />
                     <TemplateColumn Title="Price">
-                        <span style="font-weight: 500; font-variant-numeric: tabular-nums;">
-                            @context.Price.ToString("C")
-                        </span>
+                        <span style="font-weight: 500; font-variant-numeric: tabular-nums;">@context.Price.ToString("C")</span>
                     </TemplateColumn>
                     <TemplateColumn Title="Status">
-                        <div class="@(context.IsActive ? "pdm-status pdm-status-active" : "pdm-status pdm-status-inactive")">
-                            <span class="pdm-status-dot"></span>
-                            @(context.IsActive ? "Active" : "Inactive")
-                        </div>
+                        @if (context.IsActive)
+                        {
+                            <span style="display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 100px; font-size: 0.75rem; font-weight: 500; background: rgba(16,185,129,0.12); color: var(--pdm-success);">
+                                <span style="width: 6px; height: 6px; border-radius: 50%; background: currentColor;"></span> Active
+                            </span>
+                        }
+                        else
+                        {
+                            <span style="display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 100px; font-size: 0.75rem; font-weight: 500; background: rgba(100,116,139,0.12); color: var(--pdm-text-muted);">
+                                <span style="width: 6px; height: 6px; border-radius: 50%; background: currentColor;"></span> Inactive
+                            </span>
+                        }
                     </TemplateColumn>
                     <TemplateColumn Title="">
                         <FluentStack Orientation="Orientation.Horizontal" Style="gap: 2px;">
-                            <FluentButton Appearance="Appearance.Stealth"
-                                          IconStart="@(new Icons.Regular.Size16.Edit())"
-                                          Title="Edit"
-                                          OnClick="@(() => OpenEditDialog(context))" />
-                            <FluentButton Appearance="Appearance.Stealth"
-                                          IconStart="@(new Icons.Regular.Size16.Delete())"
-                                          Title="Delete"
-                                          OnClick="@(() => HandleDelete(context))" />
+                            <FluentButton Appearance="Appearance.Stealth" IconStart="@(new Icons.Regular.Size16.Edit())" Title="Edit" OnClick="@(() => OpenEditDialog(context))" />
+                            <FluentButton Appearance="Appearance.Stealth" IconStart="@(new Icons.Regular.Size16.Delete())" Title="Delete" OnClick="@(() => HandleDelete(context))" />
                         </FluentStack>
                     </TemplateColumn>
                 </FluentDataGrid>
             </div>
-
             <div style="padding: 12px 16px; border-top: 1px solid var(--pdm-border);">
                 <FluentPaginator State="@_pagination" />
             </div>
@@ -89,15 +88,14 @@
     </div>
 </div>
 
-@* Create/Edit Dialog *@
 <FluentDialog @bind-Hidden="@_dialogHidden" Modal="true" TrapFocus="true" PreventScroll="true">
     <FluentDialogHeader>
-        <div class="pdm-dialog-header">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
             <FluentIcon Value="@(_editingProduct is not null ? new Icons.Regular.Size20.Edit() : (Icon)new Icons.Regular.Size20.Add())"
                         Color="Color.Custom" CustomColor="#22d3ee" />
-            <h3>@(_editingProduct is not null ? "Edit Product" : "New Product")</h3>
+            <h3 style="margin: 0;">@(_editingProduct is not null ? "Edit Product" : "New Product")</h3>
         </div>
-        <div class="pdm-dialog-subtitle">
+        <div style="font-size: 0.825rem; color: var(--pdm-text-muted); margin-bottom: 16px;">
             @(_editingProduct is not null ? "Update product information" : "Fill in the details for the new product")
         </div>
     </FluentDialogHeader>
@@ -130,7 +128,6 @@
     private bool _loading = true;
     private bool _dialogHidden = true;
     private bool _saving;
-
     private string _formName = string.Empty;
     private string _formSku = string.Empty;
     private string? _formDescription;
@@ -139,10 +136,7 @@
     private Guid _formCategoryId;
     private ProductDto? _editingProduct;
 
-    protected override async Task OnInitializedAsync()
-    {
-        await LoadProducts();
-    }
+    protected override async Task OnInitializedAsync() => await LoadProducts();
 
     private async Task LoadProducts()
     {
@@ -154,72 +148,48 @@
 
     private void OpenCreateDialog()
     {
-        _editingProduct = null;
-        _formName = string.Empty;
-        _formSku = string.Empty;
-        _formDescription = null;
-        _formPrice = 0;
-        _formIsActive = true;
+        _editingProduct = null; _formName = string.Empty; _formSku = string.Empty;
+        _formDescription = null; _formPrice = 0; _formIsActive = true;
         _dialogHidden = false;
     }
 
     private void OpenEditDialog(ProductDto product)
     {
-        _editingProduct = product;
-        _formName = product.Name;
-        _formSku = product.Sku;
-        _formDescription = product.Description;
-        _formPrice = product.Price;
-        _formIsActive = product.IsActive;
-        _formCategoryId = product.CategoryId;
+        _editingProduct = product; _formName = product.Name; _formSku = product.Sku;
+        _formDescription = product.Description; _formPrice = product.Price;
+        _formIsActive = product.IsActive; _formCategoryId = product.CategoryId;
         _dialogHidden = false;
     }
 
     private async Task HandleSave()
     {
         if (string.IsNullOrWhiteSpace(_formName) || string.IsNullOrWhiteSpace(_formSku)) return;
-
         _saving = true;
 
         if (_editingProduct is not null)
         {
             var response = await UpdateProductClient.GetResponse<UpdateProductResult>(
                 new UpdateProduct(_editingProduct.Id, _formName, _formSku, _formDescription, _formPrice, _formCategoryId, _formIsActive));
-
-            if (response.Message.Success)
-                ToastService.ShowSuccess("Product updated successfully.");
-            else
-                ToastService.ShowError("Failed to update product.");
+            if (response.Message.Success) ToastService.ShowSuccess("Product updated successfully.");
+            else ToastService.ShowError("Failed to update product.");
         }
         else
         {
             var response = await CreateProductClient.GetResponse<CreateProductResult>(
                 new CreateProduct(_formName, _formSku, _formDescription, _formPrice, _formCategoryId));
-
-            if (response.Message.Id != Guid.Empty)
-                ToastService.ShowSuccess("Product created successfully.");
-            else
-                ToastService.ShowError("Failed to create product.");
+            if (response.Message.Id != Guid.Empty) ToastService.ShowSuccess("Product created successfully.");
+            else ToastService.ShowError("Failed to create product.");
         }
 
-        _saving = false;
-        _dialogHidden = true;
+        _saving = false; _dialogHidden = true;
         await LoadProducts();
     }
 
     private async Task HandleDelete(ProductDto product)
     {
-        var response = await DeleteProductClient.GetResponse<DeleteProductResult>(
-            new DeleteProduct(product.Id));
-
+        var response = await DeleteProductClient.GetResponse<DeleteProductResult>(new DeleteProduct(product.Id));
         if (response.Message.Success)
-        {
-            ToastService.ShowSuccess($"Product '{product.Name}' deleted.");
-            await LoadProducts();
-        }
-        else
-        {
-            ToastService.ShowError("Failed to delete product.");
-        }
+        { ToastService.ShowSuccess($"Product '{product.Name}' deleted."); await LoadProducts(); }
+        else ToastService.ShowError("Failed to delete product.");
     }
 }

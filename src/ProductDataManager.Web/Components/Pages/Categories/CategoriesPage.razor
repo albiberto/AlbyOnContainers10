@@ -20,7 +20,7 @@
                 </span>
                 Categories
             </h1>
-            <div class="pdm-page-subtitle">Organize your product catalog into hierarchical categories</div>
+            <div style="font-size: 0.85rem; color: var(--pdm-text-muted); margin-top: 2px;">Organize your product catalog into hierarchical categories</div>
         </div>
         <FluentButton Appearance="Appearance.Accent"
                       IconStart="@(new Icons.Regular.Size16.Add())"
@@ -31,24 +31,24 @@
 
     @if (_loading)
     {
-        <div class="pdm-loading">
+        <div style="display: flex; flex-direction: column; align-items: center; padding: 48px; gap: 16px; color: var(--pdm-text-muted);">
             <FluentProgressRing />
             <span>Loading categories…</span>
         </div>
     }
     else if (!_rootCategories.Any())
     {
-        <div class="pdm-empty-state">
-            <div class="pdm-empty-state-icon">
+        <div style="text-align: center; padding: 48px; color: var(--pdm-text-muted);">
+            <div style="width: 56px; height: 56px; margin: 0 auto 16px; background: var(--pdm-bg-subtle); border-radius: var(--pdm-radius-lg); display: flex; align-items: center; justify-content: center; opacity: 0.5;">
                 <FluentIcon Value="@(new Icons.Regular.Size24.FolderMultiple())" Color="Color.Custom" CustomColor="#64748b" />
             </div>
-            <p>No categories yet.</p>
+            <p style="margin: 0;">No categories yet.</p>
             <p style="font-size: 0.8rem; margin-top: 4px;">Click "Add Root Category" to create the first one.</p>
         </div>
     }
     else
     {
-        <div class="pdm-tree-container pdm-animate-slide">
+        <div style="background: var(--pdm-bg-card); border: 1px solid var(--pdm-border); border-radius: var(--pdm-radius-lg); padding: 16px;">
             <FluentTreeView>
                 @foreach (var category in _rootCategories)
                 {
@@ -63,27 +63,20 @@
     }
 </div>
 
-@* Create/Edit Dialog *@
 <FluentDialog @bind-Hidden="@_dialogHidden" Modal="true" TrapFocus="true" PreventScroll="true">
     <FluentDialogHeader>
-        <div class="pdm-dialog-header">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
             <FluentIcon Value="@(_editingCategory is not null ? new Icons.Regular.Size20.Edit() : (Icon)new Icons.Regular.Size20.Add())"
                         Color="Color.Custom" CustomColor="#818cf8" />
-            <h3>@(_editingCategory is not null ? "Edit Category" : "New Category")</h3>
+            <h3 style="margin: 0;">@(_editingCategory is not null ? "Edit Category" : "New Category")</h3>
         </div>
-        <div class="pdm-dialog-subtitle">
+        <div style="font-size: 0.825rem; color: var(--pdm-text-muted); margin-bottom: 16px;">
             @if (_editingCategory is not null)
-            {
-                <span>Update the category name and description</span>
-            }
+            { <span>Update the category name and description</span> }
             else if (_parentIdForCreate.HasValue)
-            {
-                <span>Create a new child category</span>
-            }
+            { <span>Create a new child category</span> }
             else
-            {
-                <span>Create a new root-level category</span>
-            }
+            { <span>Create a new root-level category</span> }
         </div>
     </FluentDialogHeader>
     <FluentDialogBody>
@@ -111,10 +104,7 @@
     private Guid? _parentIdForCreate;
     private CategoryDto? _editingCategory;
 
-    protected override async Task OnInitializedAsync()
-    {
-        await LoadRootCategories();
-    }
+    protected override async Task OnInitializedAsync() => await LoadRootCategories();
 
     private async Task LoadRootCategories()
     {
@@ -127,85 +117,58 @@
     private async Task LoadChildren(CategoryTreeNode node)
     {
         if (node.ChildrenLoaded) return;
-
         node.IsLoading = true;
         StateHasChanged();
-
-        var response = await ChildCategoriesClient.GetResponse<GetChildCategoriesResult>(
-            new GetChildCategories(node.Category.Id));
-
+        var response = await ChildCategoriesClient.GetResponse<GetChildCategoriesResult>(new GetChildCategories(node.Category.Id));
         node.Children = response.Message.Children.Select(c => new CategoryTreeNode(c)).ToList();
         node.ChildrenLoaded = true;
         node.IsLoading = false;
-
         StateHasChanged();
     }
 
     private void OpenCreateDialog(Guid? parentId)
     {
-        _parentIdForCreate = parentId;
-        _editingCategory = null;
-        _formName = string.Empty;
-        _formDescription = null;
+        _parentIdForCreate = parentId; _editingCategory = null;
+        _formName = string.Empty; _formDescription = null;
         _dialogHidden = false;
     }
 
     private void OpenEditDialog(CategoryDto category)
     {
-        _editingCategory = category;
-        _parentIdForCreate = null;
-        _formName = category.Name;
-        _formDescription = category.Description;
+        _editingCategory = category; _parentIdForCreate = null;
+        _formName = category.Name; _formDescription = category.Description;
         _dialogHidden = false;
     }
 
     private async Task HandleSave()
     {
         if (string.IsNullOrWhiteSpace(_formName)) return;
-
         _saving = true;
 
         if (_editingCategory is not null)
         {
             var response = await UpdateCategoryClient.GetResponse<UpdateCategoryResult>(
                 new UpdateCategory(_editingCategory.Id, _formName, _formDescription));
-
-            if (response.Message.Success)
-                ToastService.ShowSuccess("Category updated successfully.");
-            else
-                ToastService.ShowError("Failed to update category.");
+            ToastService.ShowSuccess(response.Message.Success ? "Category updated successfully." : "Failed to update category.");
         }
         else
         {
             var response = await CreateCategoryClient.GetResponse<CreateCategoryResult>(
                 new CreateCategory(_formName, _formDescription, _parentIdForCreate));
-
-            if (response.Message.Id != Guid.Empty)
-                ToastService.ShowSuccess("Category created successfully.");
-            else
-                ToastService.ShowError("Failed to create category.");
+            ToastService.ShowSuccess(response.Message.Id != Guid.Empty ? "Category created successfully." : "Failed to create category.");
         }
 
-        _saving = false;
-        _dialogHidden = true;
-
+        _saving = false; _dialogHidden = true;
         await LoadRootCategories();
     }
 
     private async Task HandleDelete(CategoryDto category)
     {
-        var response = await DeleteCategoryClient.GetResponse<DeleteCategoryResult>(
-            new DeleteCategory(category.Id));
-
+        var response = await DeleteCategoryClient.GetResponse<DeleteCategoryResult>(new DeleteCategory(category.Id));
         if (response.Message.Success)
-        {
-            ToastService.ShowSuccess($"Category '{category.Name}' deleted.");
-            await LoadRootCategories();
-        }
+        { ToastService.ShowSuccess($"Category '{category.Name}' deleted."); await LoadRootCategories(); }
         else
-        {
-            ToastService.ShowError("Cannot delete category (it may have children or products).");
-        }
+        { ToastService.ShowError("Cannot delete category (it may have children or products)."); }
     }
 
     public class CategoryTreeNode(CategoryDto category)
