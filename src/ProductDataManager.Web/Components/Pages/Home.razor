@@ -2,32 +2,69 @@
 
 <PageTitle>Product Data Manager</PageTitle>
 
-<FluentStack Orientation="Orientation.Vertical" HorizontalAlignment="HorizontalAlignment.Center" Style="margin-top: 80px;">
-    <FluentIcon Value="@(new Icons.Regular.Size48.Box())" Color="Color.Accent" />
-    <h1>Product Data Manager</h1>
-    <p style="color: var(--neutral-foreground-hint); font-size: 1.1rem;">
-        Back-office tool for managing the e-commerce product catalog.
-    </p>
-    <FluentStack Orientation="Orientation.Horizontal" Style="margin-top: 32px; gap: 16px;">
-        <FluentCard Style="width: 200px; text-align: center; padding: 24px;">
-            <FluentIcon Value="@(new Icons.Regular.Size24.FolderMultiple())" Color="Color.Accent" />
-            <h4>Categories</h4>
-            <FluentAnchor Href="/categories" Appearance="Appearance.Accent">Manage</FluentAnchor>
-        </FluentCard>
-        <FluentCard Style="width: 200px; text-align: center; padding: 24px;">
-            <FluentIcon Value="@(new Icons.Regular.Size24.Box())" Color="Color.Accent" />
-            <h4>Products</h4>
-            <FluentAnchor Href="/products" Appearance="Appearance.Accent">Manage</FluentAnchor>
-        </FluentCard>
-        <FluentCard Style="width: 200px; text-align: center; padding: 24px;">
-            <FluentIcon Value="@(new Icons.Regular.Size24.TextDescription())" Color="Color.Accent" />
-            <h4>Descriptions</h4>
-            <FluentAnchor Href="/description-types" Appearance="Appearance.Accent">Manage</FluentAnchor>
-        </FluentCard>
-        <FluentCard Style="width: 200px; text-align: center; padding: 24px;">
-            <FluentIcon Value="@(new Icons.Regular.Size24.Tag())" Color="Color.Accent" />
-            <h4>Attributes</h4>
-            <FluentAnchor Href="/attribute-types" Appearance="Appearance.Accent">Manage</FluentAnchor>
-        </FluentCard>
-    </FluentStack>
-</FluentStack>
+<div class="pdm-animate-in">
+    <div class="pdm-hero">
+        <div class="pdm-hero-icon">
+            <FluentIcon Value="@(new Icons.Regular.Size32.Box())" Color="Color.Custom" CustomColor="#fff" />
+        </div>
+        <h1>Product Data Manager</h1>
+        <p>
+            Your centralized hub for managing the e-commerce product catalog.
+            Organize categories, manage products, and configure attributes with ease.
+        </p>
+    </div>
+
+    <div class="pdm-dashboard-grid">
+        <a href="/categories" class="pdm-dashboard-card" style="--card-accent: #6366f1;">
+            <div class="pdm-dashboard-card-icon categories">
+                <FluentIcon Value="@(new Icons.Regular.Size24.FolderMultiple())" Color="Color.Custom" CustomColor="currentColor" />
+            </div>
+            <div>
+                <h3>Categories</h3>
+                <p>Organize products into a hierarchical tree structure with unlimited nesting depth.</p>
+            </div>
+            <span class="pdm-dashboard-card-action">
+                Manage categories →
+            </span>
+        </a>
+
+        <a href="/products" class="pdm-dashboard-card" style="--card-accent: #06b6d4;">
+            <div class="pdm-dashboard-card-icon products">
+                <FluentIcon Value="@(new Icons.Regular.Size24.Box())" Color="Color.Custom" CustomColor="currentColor" />
+            </div>
+            <div>
+                <h3>Products</h3>
+                <p>Create and manage your product catalog with SKUs, pricing, and category assignments.</p>
+            </div>
+            <span class="pdm-dashboard-card-action">
+                Manage products →
+            </span>
+        </a>
+
+        <a href="/description-types" class="pdm-dashboard-card" style="--card-accent: #10b981;">
+            <div class="pdm-dashboard-card-icon descriptions">
+                <FluentIcon Value="@(new Icons.Regular.Size24.TextDescription())" Color="Color.Custom" CustomColor="currentColor" />
+            </div>
+            <div>
+                <h3>Description Types</h3>
+                <p>Define structured description schemas with configurable value sets for product details.</p>
+            </div>
+            <span class="pdm-dashboard-card-action">
+                Manage descriptions →
+            </span>
+        </a>
+
+        <a href="/attribute-types" class="pdm-dashboard-card" style="--card-accent: #f59e0b;">
+            <div class="pdm-dashboard-card-icon attributes">
+                <FluentIcon Value="@(new Icons.Regular.Size24.Tag())" Color="Color.Custom" CustomColor="currentColor" />
+            </div>
+            <div>
+                <h3>Attribute Types</h3>
+                <p>Configure custom attribute schemas with key-value pairs for product specifications.</p>
+            </div>
+            <span class="pdm-dashboard-card-action">
+                Manage attributes →
+            </span>
+        </a>
+    </div>
+</div>

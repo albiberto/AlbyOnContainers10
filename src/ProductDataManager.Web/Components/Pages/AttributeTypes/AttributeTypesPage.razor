@@ -11,91 +11,129 @@
 
 <PageTitle>Attribute Types — Product Data Manager</PageTitle>
 
-<FluentStack Orientation="Orientation.Vertical" Style="gap: 16px;">
-    <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center">
-        <h1>Attribute Types</h1>
-        <FluentSpacer />
+<div class="pdm-animate-in">
+    <div class="pdm-page-header">
+        <div>
+            <h1>
+                <span class="pdm-page-header-icon" style="background: rgba(245, 158, 11, 0.12);">
+                    <FluentIcon Value="@(new Icons.Regular.Size20.Tag())" Color="Color.Custom" CustomColor="#f59e0b" />
+                </span>
+                Attribute Types
+            </h1>
+            <div class="pdm-page-subtitle">Define custom attributes with key-value pairs for product specifications</div>
+        </div>
         <FluentButton Appearance="Appearance.Accent"
-                      IconStart="@(new Icons.Regular.Size20.Add())"
+                      IconStart="@(new Icons.Regular.Size16.Add())"
                       OnClick="OpenCreateDialog">
             Add Attribute Type
         </FluentButton>
-    </FluentStack>
+    </div>
 
     @if (_loading)
     {
-        <FluentProgressRing />
+        <div class="pdm-loading">
+            <FluentProgressRing />
+            <span>Loading attribute types…</span>
+        </div>
+    }
+    else if (!_attributeTypes.Any())
+    {
+        <div class="pdm-empty-state">
+            <div class="pdm-empty-state-icon">
+                <FluentIcon Value="@(new Icons.Regular.Size24.Tag())" Color="Color.Custom" CustomColor="#64748b" />
+            </div>
+            <p>No attribute types yet.</p>
+            <p style="font-size: 0.8rem; margin-top: 4px;">Click "Add Attribute Type" to start defining product attributes.</p>
+        </div>
     }
     else
     {
-        @foreach (var at in _attributeTypes)
-        {
-            <FluentCard Style="padding: 16px;">
-                <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center">
-                    <FluentStack Orientation="Orientation.Vertical" Style="flex: 1;">
-                        <h3 style="margin: 0;">@at.Name</h3>
-                        @if (!string.IsNullOrEmpty(at.Description))
+        <FluentStack Orientation="Orientation.Vertical" Style="gap: 16px;">
+            @foreach (var at in _attributeTypes)
+            {
+                <div class="pdm-item-card pdm-animate-slide">
+                    <div class="pdm-item-card-header">
+                        <div class="pdm-item-card-info">
+                            <h3 class="pdm-item-card-name">@at.Name</h3>
+                            @if (!string.IsNullOrEmpty(at.Description))
+                            {
+                                <div class="pdm-item-card-desc">@at.Description</div>
+                            }
+                        </div>
+                        <div class="pdm-item-card-actions">
+                            <FluentButton Appearance="Appearance.Stealth"
+                                          IconStart="@(new Icons.Regular.Size16.Edit())"
+                                          Title="Edit"
+                                          OnClick="@(() => OpenEditDialog(at))" />
+                            <FluentButton Appearance="Appearance.Stealth"
+                                          IconStart="@(new Icons.Regular.Size16.Delete())"
+                                          Title="Delete"
+                                          OnClick="@(() => HandleDeleteType(at))" />
+                        </div>
+                    </div>
+
+                    <div class="pdm-item-card-body">
+                        @if (at.Attributes.Any())
                         {
-                            <FluentLabel Style="color: var(--neutral-foreground-hint);">@at.Description</FluentLabel>
+                            <FluentDataGrid Items="@at.Attributes.AsQueryable()" TGridItem="AttributeDto"
+                                            Style="width: 100%;" GridTemplateColumns="1fr 1fr auto">
+                                <PropertyColumn Property="@(a => a.Name)" Title="Name" />
+                                <PropertyColumn Property="@(a => a.Value)" Title="Value" />
+                                <TemplateColumn Title="">
+                                    <FluentButton Appearance="Appearance.Stealth"
+                                                  IconStart="@(new Icons.Regular.Size16.Delete())"
+                                                  Title="Remove attribute"
+                                                  OnClick="@(() => HandleDeleteAttribute(context.Id))" />
+                                </TemplateColumn>
+                            </FluentDataGrid>
                         }
-                    </FluentStack>
-                    <FluentButton Appearance="Appearance.Stealth"
-                                  IconStart="@(new Icons.Regular.Size16.Edit())"
-                                  OnClick="@(() => OpenEditDialog(at))" />
-                    <FluentButton Appearance="Appearance.Stealth"
-                                  IconStart="@(new Icons.Regular.Size16.Delete())"
-                                  OnClick="@(() => HandleDeleteType(at))" />
-                </FluentStack>
+                        else
+                        {
+                            <div class="pdm-text-muted" style="font-size: 0.825rem; padding: 8px 0;">
+                                No attributes defined yet.
+                            </div>
+                        }
 
-                @* Attributes list *@
-                <FluentDivider Style="margin: 12px 0;" />
-                <FluentDataGrid Items="@at.Attributes.AsQueryable()" TGridItem="AttributeDto"
-                                Style="width: 100%;" GridTemplateColumns="1fr 1fr 0.3fr">
-                    <PropertyColumn Property="@(a => a.Name)" Title="Name" />
-                    <PropertyColumn Property="@(a => a.Value)" Title="Value" />
-                    <TemplateColumn Title="">
-                        <FluentButton Appearance="Appearance.Stealth"
-                                      IconStart="@(new Icons.Regular.Size16.Delete())"
-                                      OnClick="@(() => HandleDeleteAttribute(context.Id))" />
-                    </TemplateColumn>
-                </FluentDataGrid>
-
-                @* Add new attribute *@
-                <FluentStack Orientation="Orientation.Horizontal" Style="gap: 8px; margin-top: 12px;">
-                    <FluentTextField @bind-Value="_newAttrName" Placeholder="Attribute name" Style="flex: 1;" />
-                    <FluentTextField @bind-Value="_newAttrValue" Placeholder="Value" Style="flex: 1;" />
-                    <FluentButton Appearance="Appearance.Outline"
-                                  IconStart="@(new Icons.Regular.Size16.Add())"
-                                  OnClick="@(() => HandleAddAttribute(at.Id))">
-                        Add
-                    </FluentButton>
-                </FluentStack>
-            </FluentCard>
-        }
-
-        @if (!_attributeTypes.Any())
-        {
-            <FluentCard Style="padding: 24px; text-align: center;">
-                <FluentLabel>No attribute types yet.</FluentLabel>
-            </FluentCard>
-        }
+                        <div class="pdm-inline-form">
+                            <FluentTextField @bind-Value="_newAttrName" Placeholder="Attribute name" Style="flex: 1;" />
+                            <FluentTextField @bind-Value="_newAttrValue" Placeholder="Value" Style="flex: 1;" />
+                            <FluentButton Appearance="Appearance.Outline"
+                                          IconStart="@(new Icons.Regular.Size16.Add())"
+                                          OnClick="@(() => HandleAddAttribute(at.Id))">
+                                Add
+                            </FluentButton>
+                        </div>
+                    </div>
+                </div>
+            }
+        </FluentStack>
     }
-</FluentStack>
+</div>
 
 @* Create/Edit Dialog *@
 <FluentDialog @bind-Hidden="@_dialogHidden" Modal="true" TrapFocus="true" PreventScroll="true">
     <FluentDialogHeader>
-        <h3>@(_editing is not null ? "Edit Attribute Type" : "New Attribute Type")</h3>
+        <div class="pdm-dialog-header">
+            <FluentIcon Value="@(_editing is not null ? new Icons.Regular.Size20.Edit() : (Icon)new Icons.Regular.Size20.Add())"
+                        Color="Color.Custom" CustomColor="#f59e0b" />
+            <h3>@(_editing is not null ? "Edit Attribute Type" : "New Attribute Type")</h3>
+        </div>
+        <div class="pdm-dialog-subtitle">
+            @(_editing is not null ? "Update the attribute type details" : "Define a new attribute type for products")
+        </div>
     </FluentDialogHeader>
     <FluentDialogBody>
-        <FluentStack Orientation="Orientation.Vertical" Style="gap: 12px; min-width: 400px;">
-            <FluentTextField @bind-Value="_formName" Label="Name" Required="true" Style="width: 100%;" />
-            <FluentTextArea @bind-Value="_formDescription" Label="Description" Rows="2" Style="width: 100%;" />
+        <FluentStack Orientation="Orientation.Vertical" Style="gap: 16px; min-width: 420px;">
+            <FluentTextField @bind-Value="_formName" Label="Name" Required="true" Style="width: 100%;" Placeholder="e.g. Color, Size, Material..." />
+            <FluentTextArea @bind-Value="_formDescription" Label="Description" Rows="2" Style="width: 100%;" Placeholder="Optional description..." />
         </FluentStack>
     </FluentDialogBody>
     <FluentDialogFooter>
-        <FluentButton Appearance="Appearance.Accent" OnClick="HandleSave" Loading="_saving">Save</FluentButton>
         <FluentButton Appearance="Appearance.Neutral" OnClick="@(() => _dialogHidden = true)">Cancel</FluentButton>
+        <FluentButton Appearance="Appearance.Accent" OnClick="HandleSave" Loading="_saving"
+                      IconStart="@(new Icons.Regular.Size16.Checkmark())">
+            @(_editing is not null ? "Update" : "Create")
+        </FluentButton>
     </FluentDialogFooter>
 </FluentDialog>
 

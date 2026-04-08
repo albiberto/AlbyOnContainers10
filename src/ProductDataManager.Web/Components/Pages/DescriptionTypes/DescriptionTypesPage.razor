@@ -12,88 +12,127 @@
 
 <PageTitle>Description Types — Product Data Manager</PageTitle>
 
-<FluentStack Orientation="Orientation.Vertical" Style="gap: 16px;">
-    <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center">
-        <h1>Description Types</h1>
-        <FluentSpacer />
+<div class="pdm-animate-in">
+    <div class="pdm-page-header">
+        <div>
+            <h1>
+                <span class="pdm-page-header-icon" style="background: rgba(16, 185, 129, 0.12);">
+                    <FluentIcon Value="@(new Icons.Regular.Size20.TextDescription())" Color="Color.Custom" CustomColor="#10b981" />
+                </span>
+                Description Types
+            </h1>
+            <div class="pdm-page-subtitle">Define structured description schemas with configurable value sets</div>
+        </div>
         <FluentButton Appearance="Appearance.Accent"
-                      IconStart="@(new Icons.Regular.Size20.Add())"
+                      IconStart="@(new Icons.Regular.Size16.Add())"
                       OnClick="OpenCreateDialog">
             Add Description Type
         </FluentButton>
-    </FluentStack>
+    </div>
 
     @if (_loading)
     {
-        <FluentProgressRing />
+        <div class="pdm-loading">
+            <FluentProgressRing />
+            <span>Loading description types…</span>
+        </div>
+    }
+    else if (!_descriptionTypes.Any())
+    {
+        <div class="pdm-empty-state">
+            <div class="pdm-empty-state-icon">
+                <FluentIcon Value="@(new Icons.Regular.Size24.TextDescription())" Color="Color.Custom" CustomColor="#64748b" />
+            </div>
+            <p>No description types yet.</p>
+            <p style="font-size: 0.8rem; margin-top: 4px;">Click "Add Description Type" to start defining product descriptions.</p>
+        </div>
     }
     else
     {
-        @foreach (var dt in _descriptionTypes)
-        {
-            <FluentCard Style="padding: 16px;">
-                <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center">
-                    <FluentStack Orientation="Orientation.Vertical" Style="flex: 1;">
-                        <h3 style="margin: 0;">@dt.Name</h3>
-                        @if (!string.IsNullOrEmpty(dt.Description))
-                        {
-                            <FluentLabel Style="color: var(--neutral-foreground-hint);">@dt.Description</FluentLabel>
-                        }
-                    </FluentStack>
-                    <FluentButton Appearance="Appearance.Stealth"
-                                  IconStart="@(new Icons.Regular.Size16.Edit())"
-                                  OnClick="@(() => OpenEditDialog(dt))" />
-                    <FluentButton Appearance="Appearance.Stealth"
-                                  IconStart="@(new Icons.Regular.Size16.Delete())"
-                                  OnClick="@(() => HandleDelete(dt))" />
-                </FluentStack>
-
-                @* Values *@
-                <FluentDivider Style="margin: 12px 0;" />
-                <FluentStack Orientation="Orientation.Horizontal" Style="gap: 8px; flex-wrap: wrap;">
-                    @foreach (var value in dt.Values)
-                    {
-                        <FluentBadge Appearance="Appearance.Accent">
-                            @value.Value
+        <FluentStack Orientation="Orientation.Vertical" Style="gap: 16px;">
+            @foreach (var dt in _descriptionTypes)
+            {
+                <div class="pdm-item-card pdm-animate-slide">
+                    <div class="pdm-item-card-header">
+                        <div class="pdm-item-card-info">
+                            <h3 class="pdm-item-card-name">@dt.Name</h3>
+                            @if (!string.IsNullOrEmpty(dt.Description))
+                            {
+                                <div class="pdm-item-card-desc">@dt.Description</div>
+                            }
+                        </div>
+                        <div class="pdm-item-card-actions">
                             <FluentButton Appearance="Appearance.Stealth"
-                                          IconStart="@(new Icons.Regular.Size12.Dismiss())"
-                                          Style="margin-left: 4px;"
-                                          OnClick="@(() => HandleDeleteValue(value.Id))" />
-                        </FluentBadge>
-                    }
-                    <FluentStack Orientation="Orientation.Horizontal" Style="gap: 4px;">
-                        <FluentTextField @bind-Value="_newValueText" Placeholder="New value..." Style="width: 150px;" />
-                        <FluentButton Appearance="Appearance.Outline"
-                                      IconStart="@(new Icons.Regular.Size16.Add())"
-                                      OnClick="@(() => HandleAddValue(dt.Id))" />
-                    </FluentStack>
-                </FluentStack>
-            </FluentCard>
-        }
+                                          IconStart="@(new Icons.Regular.Size16.Edit())"
+                                          Title="Edit"
+                                          OnClick="@(() => OpenEditDialog(dt))" />
+                            <FluentButton Appearance="Appearance.Stealth"
+                                          IconStart="@(new Icons.Regular.Size16.Delete())"
+                                          Title="Delete"
+                                          OnClick="@(() => HandleDelete(dt))" />
+                        </div>
+                    </div>
 
-        @if (!_descriptionTypes.Any())
-        {
-            <FluentCard Style="padding: 24px; text-align: center;">
-                <FluentLabel>No description types yet.</FluentLabel>
-            </FluentCard>
-        }
+                    <div class="pdm-item-card-body">
+                        <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
+                            @foreach (var value in dt.Values)
+                            {
+                                <span class="pdm-tag pdm-tag-accent">
+                                    @value.Value
+                                    <button class="pdm-tag-remove" title="Remove value"
+                                            @onclick="@(() => HandleDeleteValue(value.Id))">
+                                        <FluentIcon Value="@(new Icons.Regular.Size12.Dismiss())" Color="Color.Custom" CustomColor="currentColor" />
+                                    </button>
+                                </span>
+                            }
+
+                            @if (!dt.Values.Any())
+                            {
+                                <span class="pdm-text-muted" style="font-size: 0.825rem;">
+                                    No values defined yet.
+                                </span>
+                            }
+                        </div>
+
+                        <div class="pdm-inline-form">
+                            <FluentTextField @bind-Value="_newValueText" Placeholder="New value..." Style="flex: 1;" />
+                            <FluentButton Appearance="Appearance.Outline"
+                                          IconStart="@(new Icons.Regular.Size16.Add())"
+                                          OnClick="@(() => HandleAddValue(dt.Id))">
+                                Add
+                            </FluentButton>
+                        </div>
+                    </div>
+                </div>
+            }
+        </FluentStack>
     }
-</FluentStack>
+</div>
 
 @* Create/Edit Dialog *@
 <FluentDialog @bind-Hidden="@_dialogHidden" Modal="true" TrapFocus="true" PreventScroll="true">
     <FluentDialogHeader>
-        <h3>@(_editing is not null ? "Edit Description Type" : "New Description Type")</h3>
+        <div class="pdm-dialog-header">
+            <FluentIcon Value="@(_editing is not null ? new Icons.Regular.Size20.Edit() : (Icon)new Icons.Regular.Size20.Add())"
+                        Color="Color.Custom" CustomColor="#10b981" />
+            <h3>@(_editing is not null ? "Edit Description Type" : "New Description Type")</h3>
+        </div>
+        <div class="pdm-dialog-subtitle">
+            @(_editing is not null ? "Update the description type details" : "Define a new description type for products")
+        </div>
     </FluentDialogHeader>
     <FluentDialogBody>
-        <FluentStack Orientation="Orientation.Vertical" Style="gap: 12px; min-width: 400px;">
-            <FluentTextField @bind-Value="_formName" Label="Name" Required="true" Style="width: 100%;" />
-            <FluentTextArea @bind-Value="_formDescription" Label="Description" Rows="2" Style="width: 100%;" />
+        <FluentStack Orientation="Orientation.Vertical" Style="gap: 16px; min-width: 420px;">
+            <FluentTextField @bind-Value="_formName" Label="Name" Required="true" Style="width: 100%;" Placeholder="e.g. Technical Specs, Features..." />
+            <FluentTextArea @bind-Value="_formDescription" Label="Description" Rows="2" Style="width: 100%;" Placeholder="Optional description..." />
         </FluentStack>
     </FluentDialogBody>
     <FluentDialogFooter>
-        <FluentButton Appearance="Appearance.Accent" OnClick="HandleSave" Loading="_saving">Save</FluentButton>
         <FluentButton Appearance="Appearance.Neutral" OnClick="@(() => _dialogHidden = true)">Cancel</FluentButton>
+        <FluentButton Appearance="Appearance.Accent" OnClick="HandleSave" Loading="_saving"
+                      IconStart="@(new Icons.Regular.Size16.Checkmark())">
+            @(_editing is not null ? "Update" : "Create")
+        </FluentButton>
     </FluentDialogFooter>
 </FluentDialog>
 

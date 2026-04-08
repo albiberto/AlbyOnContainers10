@@ -11,24 +11,44 @@
 
 <PageTitle>Categories — Product Data Manager</PageTitle>
 
-<FluentStack Orientation="Orientation.Vertical" Style="gap: 16px;">
-    <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center">
-        <h1>Categories</h1>
-        <FluentSpacer />
+<div class="pdm-animate-in">
+    <div class="pdm-page-header">
+        <div>
+            <h1>
+                <span class="pdm-page-header-icon">
+                    <FluentIcon Value="@(new Icons.Regular.Size20.FolderMultiple())" Color="Color.Custom" CustomColor="#818cf8" />
+                </span>
+                Categories
+            </h1>
+            <div class="pdm-page-subtitle">Organize your product catalog into hierarchical categories</div>
+        </div>
         <FluentButton Appearance="Appearance.Accent"
-                      IconStart="@(new Icons.Regular.Size20.Add())"
+                      IconStart="@(new Icons.Regular.Size16.Add())"
                       OnClick="@(() => OpenCreateDialog(null))">
             Add Root Category
         </FluentButton>
-    </FluentStack>
+    </div>
 
     @if (_loading)
     {
-        <FluentProgressRing />
+        <div class="pdm-loading">
+            <FluentProgressRing />
+            <span>Loading categories…</span>
+        </div>
+    }
+    else if (!_rootCategories.Any())
+    {
+        <div class="pdm-empty-state">
+            <div class="pdm-empty-state-icon">
+                <FluentIcon Value="@(new Icons.Regular.Size24.FolderMultiple())" Color="Color.Custom" CustomColor="#64748b" />
+            </div>
+            <p>No categories yet.</p>
+            <p style="font-size: 0.8rem; margin-top: 4px;">Click "Add Root Category" to create the first one.</p>
+        </div>
     }
     else
     {
-        <FluentCard Style="padding: 16px;">
+        <div class="pdm-tree-container pdm-animate-slide">
             <FluentTreeView>
                 @foreach (var category in _rootCategories)
                 {
@@ -39,31 +59,45 @@
                                       OnAddChild="OpenCreateDialog" />
                 }
             </FluentTreeView>
-
-            @if (!_rootCategories.Any())
-            {
-                <FluentLabel Style="padding: 24px; color: var(--neutral-foreground-hint);">
-                    No categories yet. Click "Add Root Category" to create the first one.
-                </FluentLabel>
-            }
-        </FluentCard>
+        </div>
     }
-</FluentStack>
+</div>
 
 @* Create/Edit Dialog *@
 <FluentDialog @bind-Hidden="@_dialogHidden" Modal="true" TrapFocus="true" PreventScroll="true">
     <FluentDialogHeader>
-        <h3>@(_editingCategory is not null ? "Edit Category" : "New Category")</h3>
+        <div class="pdm-dialog-header">
+            <FluentIcon Value="@(_editingCategory is not null ? new Icons.Regular.Size20.Edit() : (Icon)new Icons.Regular.Size20.Add())"
+                        Color="Color.Custom" CustomColor="#818cf8" />
+            <h3>@(_editingCategory is not null ? "Edit Category" : "New Category")</h3>
+        </div>
+        <div class="pdm-dialog-subtitle">
+            @if (_editingCategory is not null)
+            {
+                <span>Update the category name and description</span>
+            }
+            else if (_parentIdForCreate.HasValue)
+            {
+                <span>Create a new child category</span>
+            }
+            else
+            {
+                <span>Create a new root-level category</span>
+            }
+        </div>
     </FluentDialogHeader>
     <FluentDialogBody>
-        <FluentStack Orientation="Orientation.Vertical" Style="gap: 12px; min-width: 400px;">
-            <FluentTextField @bind-Value="_formName" Label="Name" Required="true" Style="width: 100%;" />
-            <FluentTextArea @bind-Value="_formDescription" Label="Description" Rows="3" Style="width: 100%;" />
+        <FluentStack Orientation="Orientation.Vertical" Style="gap: 16px; min-width: 420px;">
+            <FluentTextField @bind-Value="_formName" Label="Name" Required="true" Style="width: 100%;" Placeholder="e.g. Electronics, Clothing..." />
+            <FluentTextArea @bind-Value="_formDescription" Label="Description" Rows="3" Style="width: 100%;" Placeholder="Optional description for this category..." />
         </FluentStack>
     </FluentDialogBody>
     <FluentDialogFooter>
-        <FluentButton Appearance="Appearance.Accent" OnClick="HandleSave" Loading="_saving">Save</FluentButton>
         <FluentButton Appearance="Appearance.Neutral" OnClick="@(() => _dialogHidden = true)">Cancel</FluentButton>
+        <FluentButton Appearance="Appearance.Accent" OnClick="HandleSave" Loading="_saving"
+                      IconStart="@(new Icons.Regular.Size16.Checkmark())">
+            @(_editingCategory is not null ? "Update" : "Create")
+        </FluentButton>
     </FluentDialogFooter>
 </FluentDialog>
 
@@ -155,7 +189,6 @@
         _saving = false;
         _dialogHidden = true;
 
-        // Reload tree
         await LoadRootCategories();
     }
 

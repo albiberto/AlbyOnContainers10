@@ -4,21 +4,22 @@
                 Expanded="@Category.IsExpanded"
                 OnExpandedChanged="HandleExpandedChanged">
 
-    @* Context menu actions *@
-    <FluentStack Slot="end" Orientation="Orientation.Horizontal" Style="gap: 4px;">
+    @* Action buttons (visible on hover via CSS) *@
+    <FluentStack Slot="end" Orientation="Orientation.Horizontal" Style="gap: 2px; opacity: 0.5; transition: opacity 150ms;"
+                 Class="pdm-tree-actions">
         <FluentButton Appearance="Appearance.Stealth"
                       IconStart="@(new Icons.Regular.Size16.Add())"
-                      Title="Add child"
+                      Title="Add child category"
                       OnClick="@(() => OnAddChild.InvokeAsync(Category.Category.Id))"
                       OnClick:stopPropagation="true" />
         <FluentButton Appearance="Appearance.Stealth"
                       IconStart="@(new Icons.Regular.Size16.Edit())"
-                      Title="Edit"
+                      Title="Edit category"
                       OnClick="@(() => OnEdit.InvokeAsync(Category.Category))"
                       OnClick:stopPropagation="true" />
         <FluentButton Appearance="Appearance.Stealth"
                       IconStart="@(new Icons.Regular.Size16.Delete())"
-                      Title="Delete"
+                      Title="Delete category"
                       OnClick="@(() => OnDelete.InvokeAsync(Category.Category))"
                       OnClick:stopPropagation="true" />
     </FluentStack>
@@ -26,8 +27,10 @@
     @if (Category.IsLoading)
     {
         <FluentTreeItem>
-            <FluentProgressRing Style="width: 16px; height: 16px;" />
-            <span style="color: var(--neutral-foreground-hint); margin-left: 8px;">Loading...</span>
+            <FluentStack Orientation="Orientation.Horizontal" Style="gap: 8px; align-items: center;">
+                <FluentProgressRing Style="width: 14px; height: 14px;" />
+                <span class="pdm-text-muted" style="font-size: 0.8rem;">Loading…</span>
+            </FluentStack>
         </FluentTreeItem>
     }
     else if (Category.ChildrenLoaded)
@@ -44,7 +47,7 @@
     else if (Category.Category.HasChildren)
     {
         @* Placeholder so the expand icon shows *@
-        <FluentTreeItem Text="..." />
+        <FluentTreeItem Text="…" />
     }
 </FluentTreeItem>
 

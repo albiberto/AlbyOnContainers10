@@ -1,0 +1,892 @@
+/* ============================================
+   Product Data Manager — Design System
+   Premium Enterprise Dark Theme
+   ============================================ */
+
+/* ── Custom Properties ────────────────────── */
+:root {
+    /* Brand palette */
+    --pdm-primary: #6366f1;
+    --pdm-primary-light: #818cf8;
+    --pdm-primary-dark: #4f46e5;
+    --pdm-primary-glow: rgba(99, 102, 241, 0.15);
+    --pdm-primary-glow-strong: rgba(99, 102, 241, 0.3);
+
+    --pdm-accent: #06b6d4;
+    --pdm-accent-light: #22d3ee;
+
+    --pdm-success: #10b981;
+    --pdm-warning: #f59e0b;
+    --pdm-danger: #ef4444;
+    --pdm-danger-hover: #dc2626;
+
+    /* Surface palette (dark theme) */
+    --pdm-bg-base: #0f1117;
+    --pdm-bg-elevated: #161925;
+    --pdm-bg-surface: #1e2235;
+    --pdm-bg-card: #232840;
+    --pdm-bg-card-hover: #2a3050;
+    --pdm-bg-subtle: #2d3350;
+
+    /* Borders */
+    --pdm-border: rgba(255, 255, 255, 0.06);
+    --pdm-border-hover: rgba(255, 255, 255, 0.12);
+    --pdm-border-accent: rgba(99, 102, 241, 0.3);
+
+    /* Text */
+    --pdm-text-primary: #f1f5f9;
+    --pdm-text-secondary: #94a3b8;
+    --pdm-text-muted: #64748b;
+    --pdm-text-accent: #a5b4fc;
+
+    /* Shadows */
+    --pdm-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+    --pdm-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.3);
+    --pdm-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.4);
+    --pdm-shadow-glow: 0 0 20px rgba(99, 102, 241, 0.15);
+
+    /* Radii */
+    --pdm-radius-sm: 6px;
+    --pdm-radius-md: 10px;
+    --pdm-radius-lg: 16px;
+    --pdm-radius-xl: 20px;
+
+    /* Transitions */
+    --pdm-transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    --pdm-transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+    --pdm-transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* Spacing */
+    --pdm-space-xs: 4px;
+    --pdm-space-sm: 8px;
+    --pdm-space-md: 16px;
+    --pdm-space-lg: 24px;
+    --pdm-space-xl: 32px;
+    --pdm-space-2xl: 48px;
+
+    /* Header */
+    --pdm-header-height: 56px;
+    --pdm-sidebar-width: 260px;
+    --pdm-sidebar-collapsed: 56px;
+}
+
+/* ── Global Reset & Typography ────────────── */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--pdm-bg-base);
+    color: var(--pdm-text-primary);
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    line-height: 1.6;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.3;
+    color: var(--pdm-text-primary);
+}
+
+h1 { font-size: 1.75rem; }
+h2 { font-size: 1.4rem; }
+h3 { font-size: 1.15rem; }
+h4 { font-size: 1rem; }
+
+/* ── Custom Scrollbar ─────────────────────── */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* ── Layout: Header ───────────────────────── */
+.pdm-header {
+    height: var(--pdm-header-height);
+    background: linear-gradient(135deg, var(--pdm-bg-elevated) 0%, var(--pdm-bg-surface) 100%);
+    border-bottom: 1px solid var(--pdm-border);
+    display: flex;
+    align-items: center;
+    padding: 0 var(--pdm-space-lg);
+    gap: var(--pdm-space-md);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(12px);
+}
+
+.pdm-header-brand {
+    display: flex;
+    align-items: center;
+    gap: var(--pdm-space-sm);
+    text-decoration: none;
+    color: var(--pdm-text-primary);
+}
+
+.pdm-header-brand-icon {
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(135deg, var(--pdm-primary), var(--pdm-accent));
+    border-radius: var(--pdm-radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
+.pdm-header-title {
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--pdm-text-primary);
+}
+
+.pdm-header-subtitle {
+    font-size: 0.7rem;
+    font-weight: 400;
+    color: var(--pdm-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.pdm-header-user {
+    display: flex;
+    align-items: center;
+    gap: var(--pdm-space-sm);
+    padding: 6px 12px;
+    border-radius: var(--pdm-radius-md);
+    transition: background var(--pdm-transition-fast);
+    cursor: pointer;
+}
+
+.pdm-header-user:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* ── Layout: Sidebar ──────────────────────── */
+.pdm-sidebar {
+    width: var(--pdm-sidebar-width);
+    min-width: var(--pdm-sidebar-width);
+    background: var(--pdm-bg-elevated);
+    border-right: 1px solid var(--pdm-border);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
+    transition: width var(--pdm-transition-base);
+}
+
+.pdm-sidebar-section {
+    padding: var(--pdm-space-md) var(--pdm-space-sm);
+}
+
+.pdm-sidebar-label {
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--pdm-text-muted);
+    padding: var(--pdm-space-sm) var(--pdm-space-md);
+    margin-bottom: var(--pdm-space-xs);
+}
+
+.pdm-nav-item {
+    display: flex;
+    align-items: center;
+    gap: var(--pdm-space-sm);
+    padding: 10px var(--pdm-space-md);
+    margin: 2px var(--pdm-space-sm);
+    border-radius: var(--pdm-radius-md);
+    color: var(--pdm-text-secondary);
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 450;
+    transition: all var(--pdm-transition-fast);
+    position: relative;
+    cursor: pointer;
+}
+
+.pdm-nav-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--pdm-text-primary);
+}
+
+.pdm-nav-item.active,
+.pdm-nav-item[aria-current="true"] {
+    background: var(--pdm-primary-glow);
+    color: var(--pdm-primary-light);
+    font-weight: 500;
+}
+
+.pdm-nav-item.active::before,
+.pdm-nav-item[aria-current="true"]::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 20px;
+    background: var(--pdm-primary);
+    border-radius: 0 3px 3px 0;
+}
+
+.pdm-nav-icon {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    opacity: 0.7;
+}
+
+.pdm-nav-item:hover .pdm-nav-icon,
+.pdm-nav-item.active .pdm-nav-icon {
+    opacity: 1;
+}
+
+/* ── Layout: Content Area ─────────────────── */
+.pdm-content-wrapper {
+    display: flex;
+    height: calc(100vh - var(--pdm-header-height));
+    overflow: hidden;
+}
+
+.pdm-main-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--pdm-space-xl);
+    background: var(--pdm-bg-base);
+}
+
+/* ── Page Header Pattern ──────────────────── */
+.pdm-page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--pdm-space-lg);
+    padding-bottom: var(--pdm-space-md);
+    border-bottom: 1px solid var(--pdm-border);
+}
+
+.pdm-page-header h1 {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--pdm-space-sm);
+}
+
+.pdm-page-header-icon {
+    width: 36px;
+    height: 36px;
+    background: var(--pdm-primary-glow);
+    border-radius: var(--pdm-radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pdm-page-subtitle {
+    font-size: 0.85rem;
+    color: var(--pdm-text-muted);
+    margin-top: 2px;
+}
+
+/* ── Cards ────────────────────────────────── */
+.pdm-card {
+    background: var(--pdm-bg-card);
+    border: 1px solid var(--pdm-border);
+    border-radius: var(--pdm-radius-lg);
+    padding: var(--pdm-space-lg);
+    transition: all var(--pdm-transition-base);
+}
+
+.pdm-card:hover {
+    border-color: var(--pdm-border-hover);
+    box-shadow: var(--pdm-shadow-md);
+}
+
+.pdm-card-interactive:hover {
+    border-color: var(--pdm-border-accent);
+    box-shadow: var(--pdm-shadow-glow);
+    transform: translateY(-2px);
+}
+
+.pdm-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--pdm-space-md);
+}
+
+.pdm-card-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0;
+    color: var(--pdm-text-primary);
+}
+
+.pdm-card-description {
+    font-size: 0.825rem;
+    color: var(--pdm-text-secondary);
+    margin-top: 2px;
+}
+
+/* ── Dashboard Cards (Home) ───────────────── */
+.pdm-dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: var(--pdm-space-lg);
+    margin-top: var(--pdm-space-xl);
+}
+
+.pdm-dashboard-card {
+    background: var(--pdm-bg-card);
+    border: 1px solid var(--pdm-border);
+    border-radius: var(--pdm-radius-lg);
+    padding: var(--pdm-space-xl);
+    text-align: left;
+    transition: all var(--pdm-transition-base);
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+    gap: var(--pdm-space-md);
+    position: relative;
+    overflow: hidden;
+}
+
+.pdm-dashboard-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--card-accent, var(--pdm-primary)), transparent);
+    opacity: 0;
+    transition: opacity var(--pdm-transition-base);
+}
+
+.pdm-dashboard-card:hover {
+    border-color: var(--pdm-border-accent);
+    box-shadow: var(--pdm-shadow-glow);
+    transform: translateY(-3px);
+}
+
+.pdm-dashboard-card:hover::before {
+    opacity: 1;
+}
+
+.pdm-dashboard-card-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--pdm-radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+}
+
+.pdm-dashboard-card-icon.categories {
+    background: rgba(99, 102, 241, 0.12);
+    color: var(--pdm-primary-light);
+}
+
+.pdm-dashboard-card-icon.products {
+    background: rgba(6, 182, 212, 0.12);
+    color: var(--pdm-accent-light);
+}
+
+.pdm-dashboard-card-icon.descriptions {
+    background: rgba(16, 185, 129, 0.12);
+    color: var(--pdm-success);
+}
+
+.pdm-dashboard-card-icon.attributes {
+    background: rgba(245, 158, 11, 0.12);
+    color: var(--pdm-warning);
+}
+
+.pdm-dashboard-card h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.pdm-dashboard-card p {
+    margin: 0;
+    font-size: 0.825rem;
+    color: var(--pdm-text-secondary);
+    line-height: 1.5;
+}
+
+.pdm-dashboard-card-action {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--pdm-primary-light);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: auto;
+}
+
+.pdm-dashboard-card:hover .pdm-dashboard-card-action {
+    color: var(--pdm-primary);
+}
+
+/* ── Hero Section (Home) ──────────────────── */
+.pdm-hero {
+    text-align: center;
+    padding: var(--pdm-space-2xl) 0 var(--pdm-space-xl);
+    position: relative;
+}
+
+.pdm-hero::before {
+    content: '';
+    position: absolute;
+    top: -40px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, var(--pdm-primary-glow) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+.pdm-hero-icon {
+    width: 72px;
+    height: 72px;
+    margin: 0 auto var(--pdm-space-lg);
+    background: linear-gradient(135deg, var(--pdm-primary), var(--pdm-accent));
+    border-radius: var(--pdm-radius-xl);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 32px rgba(99, 102, 241, 0.25);
+    position: relative;
+    z-index: 1;
+}
+
+.pdm-hero h1 {
+    font-size: 2rem;
+    margin: 0 0 var(--pdm-space-sm);
+    background: linear-gradient(135deg, var(--pdm-text-primary) 0%, var(--pdm-text-secondary) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    position: relative;
+    z-index: 1;
+}
+
+.pdm-hero p {
+    font-size: 0.95rem;
+    color: var(--pdm-text-muted);
+    max-width: 480px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+}
+
+/* ── Data Grids ───────────────────────────── */
+.pdm-data-section {
+    background: var(--pdm-bg-card);
+    border: 1px solid var(--pdm-border);
+    border-radius: var(--pdm-radius-lg);
+    overflow: hidden;
+}
+
+.pdm-data-section fluent-data-grid,
+.pdm-data-section .fluent-data-grid {
+    --data-grid-cell-padding: 12px 16px;
+}
+
+/* ── Item Cards (Attribute Types, Description Types) ── */
+.pdm-item-card {
+    background: var(--pdm-bg-card);
+    border: 1px solid var(--pdm-border);
+    border-radius: var(--pdm-radius-lg);
+    padding: var(--pdm-space-lg);
+    margin-bottom: var(--pdm-space-md);
+    transition: all var(--pdm-transition-base);
+}
+
+.pdm-item-card:hover {
+    border-color: var(--pdm-border-hover);
+}
+
+.pdm-item-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--pdm-space-md);
+}
+
+.pdm-item-card-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.pdm-item-card-name {
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin: 0;
+    color: var(--pdm-text-primary);
+}
+
+.pdm-item-card-desc {
+    font-size: 0.825rem;
+    color: var(--pdm-text-secondary);
+    margin-top: 4px;
+}
+
+.pdm-item-card-actions {
+    display: flex;
+    gap: 2px;
+    flex-shrink: 0;
+}
+
+.pdm-item-card-body {
+    margin-top: var(--pdm-space-md);
+    padding-top: var(--pdm-space-md);
+    border-top: 1px solid var(--pdm-border);
+}
+
+/* ── Tags / Badges ────────────────────────── */
+.pdm-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 100px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    background: var(--pdm-bg-subtle);
+    color: var(--pdm-text-secondary);
+    border: 1px solid var(--pdm-border);
+    transition: all var(--pdm-transition-fast);
+}
+
+.pdm-tag:hover {
+    border-color: var(--pdm-border-hover);
+    background: var(--pdm-bg-card-hover);
+}
+
+.pdm-tag-accent {
+    background: var(--pdm-primary-glow);
+    color: var(--pdm-primary-light);
+    border-color: rgba(99, 102, 241, 0.2);
+}
+
+.pdm-tag-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    cursor: pointer;
+    opacity: 0.5;
+    transition: opacity var(--pdm-transition-fast);
+    background: none;
+    border: none;
+    color: inherit;
+    padding: 0;
+}
+
+.pdm-tag-remove:hover {
+    opacity: 1;
+    background: rgba(239, 68, 68, 0.2);
+    color: var(--pdm-danger);
+}
+
+/* ── Status Badges ────────────────────────── */
+.pdm-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    border-radius: 100px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.pdm-status-active {
+    background: rgba(16, 185, 129, 0.12);
+    color: var(--pdm-success);
+}
+
+.pdm-status-inactive {
+    background: rgba(100, 116, 139, 0.12);
+    color: var(--pdm-text-muted);
+}
+
+.pdm-status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+/* ── Empty State ──────────────────────────── */
+.pdm-empty-state {
+    text-align: center;
+    padding: var(--pdm-space-2xl);
+    color: var(--pdm-text-muted);
+}
+
+.pdm-empty-state-icon {
+    width: 56px;
+    height: 56px;
+    margin: 0 auto var(--pdm-space-md);
+    background: var(--pdm-bg-subtle);
+    border-radius: var(--pdm-radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.5;
+}
+
+.pdm-empty-state p {
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+/* ── Loading State ────────────────────────── */
+.pdm-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--pdm-space-2xl);
+    gap: var(--pdm-space-md);
+    color: var(--pdm-text-muted);
+}
+
+/* ── Dialogs Enhancement ──────────────────── */
+.pdm-dialog-header {
+    display: flex;
+    align-items: center;
+    gap: var(--pdm-space-sm);
+    margin-bottom: var(--pdm-space-xs);
+}
+
+.pdm-dialog-header h3 {
+    margin: 0;
+    font-size: 1.15rem;
+}
+
+.pdm-dialog-subtitle {
+    font-size: 0.825rem;
+    color: var(--pdm-text-muted);
+    margin-bottom: var(--pdm-space-md);
+}
+
+/* ── Add Inline Form ──────────────────────── */
+.pdm-inline-form {
+    display: flex;
+    align-items: flex-end;
+    gap: var(--pdm-space-sm);
+    padding: var(--pdm-space-md);
+    background: var(--pdm-bg-surface);
+    border-radius: var(--pdm-radius-md);
+    border: 1px dashed var(--pdm-border);
+    margin-top: var(--pdm-space-md);
+}
+
+.pdm-inline-form:focus-within {
+    border-color: var(--pdm-primary);
+    background: var(--pdm-bg-card);
+}
+
+/* ── Tree View Enhancement ────────────────── */
+.pdm-tree-container {
+    background: var(--pdm-bg-card);
+    border: 1px solid var(--pdm-border);
+    border-radius: var(--pdm-radius-lg);
+    padding: var(--pdm-space-md);
+}
+
+/* ── Footer ───────────────────────────────── */
+.pdm-footer {
+    padding: var(--pdm-space-md) var(--pdm-space-lg);
+    border-top: 1px solid var(--pdm-border);
+    background: var(--pdm-bg-elevated);
+    font-size: 0.75rem;
+    color: var(--pdm-text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* ── Animations ───────────────────────────── */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInLeft {
+    from { opacity: 0; transform: translateX(-12px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 15px rgba(99, 102, 241, 0.15); }
+    50% { box-shadow: 0 0 25px rgba(99, 102, 241, 0.3); }
+}
+
+.pdm-animate-in {
+    animation: fadeIn var(--pdm-transition-slow) ease-out;
+}
+
+.pdm-animate-slide {
+    animation: slideInLeft var(--pdm-transition-slow) ease-out;
+}
+
+/* ── Fluent UI Component Overrides ────────── */
+
+/* Override FluentUI design tokens for dark theme */
+fluent-design-system-provider,
+body {
+    --neutral-fill-rest: var(--pdm-bg-card);
+    --neutral-fill-hover: var(--pdm-bg-card-hover);
+    --accent-fill-rest: var(--pdm-primary);
+    --accent-fill-hover: var(--pdm-primary-dark);
+}
+
+/* Better FluentCard styling */
+fluent-card, .fluent-card {
+    background: var(--pdm-bg-card) !important;
+    border: 1px solid var(--pdm-border) !important;
+    border-radius: var(--pdm-radius-lg) !important;
+    box-shadow: none !important;
+}
+
+/* Better FluentDataGrid */
+fluent-data-grid-row {
+    border-bottom-color: var(--pdm-border) !important;
+}
+
+fluent-data-grid-row:hover {
+    background: var(--pdm-bg-card-hover) !important;
+}
+
+/* FluentButton subtle improvements */
+fluent-button[appearance="stealth"]:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+/* FluentNavMenu overrides */
+fluent-nav-menu {
+    background: transparent !important;
+}
+
+/* FluentDialog better styling */
+fluent-dialog::part(control) {
+    background: var(--pdm-bg-card) !important;
+    border: 1px solid var(--pdm-border) !important;
+    border-radius: var(--pdm-radius-xl) !important;
+    box-shadow: var(--pdm-shadow-lg) !important;
+}
+
+/* FluentDivider */
+fluent-divider {
+    border-color: var(--pdm-border) !important;
+}
+
+/* FluentTreeItem better spacing */
+fluent-tree-item {
+    margin: 1px 0;
+}
+
+fluent-tree-item::part(positioning-region) {
+    border-radius: var(--pdm-radius-sm);
+}
+
+fluent-tree-item:hover::part(positioning-region) {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+/* FluentProgressRing accent color */
+fluent-progress-ring {
+    --accent-fill-rest: var(--pdm-primary);
+}
+
+/* Fix the FluentHeader */
+fluent-header {
+    background: transparent !important;
+}
+
+/* Remove the FluentFooter background */
+fluent-footer {
+    background: transparent !important;
+}
+
+/* ── Utility Classes ──────────────────────── */
+.pdm-flex-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pdm-flex-between {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.pdm-gap-sm { gap: var(--pdm-space-sm); }
+.pdm-gap-md { gap: var(--pdm-space-md); }
+.pdm-gap-lg { gap: var(--pdm-space-lg); }
+
+.pdm-mt-sm { margin-top: var(--pdm-space-sm); }
+.pdm-mt-md { margin-top: var(--pdm-space-md); }
+.pdm-mt-lg { margin-top: var(--pdm-space-lg); }
+
+.pdm-text-muted { color: var(--pdm-text-muted); }
+.pdm-text-secondary { color: var(--pdm-text-secondary); }
+.pdm-text-accent { color: var(--pdm-text-accent); }
+
+/* ── Responsive ───────────────────────────── */
+@media (max-width: 768px) {
+    .pdm-sidebar {
+        width: var(--pdm-sidebar-collapsed);
+        min-width: var(--pdm-sidebar-collapsed);
+    }
+
+    .pdm-main-content {
+        padding: var(--pdm-space-md);
+    }
+
+    .pdm-dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+}

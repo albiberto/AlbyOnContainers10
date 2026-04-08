@@ -1,55 +1,86 @@
 @inherits LayoutComponentBase
 
-<FluentLayout>
-    <FluentHeader>
-        <h3 style="margin: 0; color: white;">Product Data Manager</h3>
-        <FluentSpacer />
-        <AuthorizeView>
-            <Authorized>
+<div class="pdm-header">
+    <a href="/" class="pdm-header-brand">
+        <div class="pdm-header-brand-icon">
+            <FluentIcon Value="@(new Icons.Regular.Size20.Box())" Color="Color.Custom" CustomColor="#fff" />
+        </div>
+        <div>
+            <div class="pdm-header-title">Product Data Manager</div>
+            <div class="pdm-header-subtitle">E-Commerce Catalog</div>
+        </div>
+    </a>
+    <FluentSpacer />
+    <AuthorizeView>
+        <Authorized>
+            <div class="pdm-header-user">
                 <FluentPersona Name="@context.User.Identity?.Name"
-                               ImageSize="32px" />
-            </Authorized>
-            <NotAuthorized>
-                <FluentAnchor Href="/login" Appearance="Appearance.Stealth">Login</FluentAnchor>
-            </NotAuthorized>
-        </AuthorizeView>
-    </FluentHeader>
+                               ImageSize="28px" />
+            </div>
+        </Authorized>
+        <NotAuthorized>
+            <FluentButton Href="/login" Appearance="Appearance.Stealth"
+                          IconStart="@(new Icons.Regular.Size16.Person())">
+                Login
+            </FluentButton>
+        </NotAuthorized>
+    </AuthorizeView>
+</div>
 
-    <FluentStack Orientation="Orientation.Horizontal" Style="height: calc(100vh - 50px);">
-        <FluentNavMenu Width="250" Title="Navigation" Collapsible="true">
-            <FluentNavLink Href="/categories"
-                           Icon="@(new Icons.Regular.Size20.FolderMultiple())"
-                           IconColor="Color.Accent">
+<div class="pdm-content-wrapper">
+    <nav class="pdm-sidebar">
+        <div class="pdm-sidebar-section">
+            <div class="pdm-sidebar-label">Navigation</div>
+
+            <NavLink class="pdm-nav-item" href="/" Match="NavLinkMatch.All">
+                <span class="pdm-nav-icon">
+                    <FluentIcon Value="@(new Icons.Regular.Size20.Home())" Color="Color.Custom" CustomColor="currentColor" />
+                </span>
+                Dashboard
+            </NavLink>
+        </div>
+
+        <div class="pdm-sidebar-section">
+            <div class="pdm-sidebar-label">Catalog</div>
+
+            <NavLink class="pdm-nav-item" href="/categories">
+                <span class="pdm-nav-icon">
+                    <FluentIcon Value="@(new Icons.Regular.Size20.FolderMultiple())" Color="Color.Custom" CustomColor="currentColor" />
+                </span>
                 Categories
-            </FluentNavLink>
-            <FluentNavLink Href="/products"
-                           Icon="@(new Icons.Regular.Size20.Box())"
-                           IconColor="Color.Accent">
+            </NavLink>
+
+            <NavLink class="pdm-nav-item" href="/products">
+                <span class="pdm-nav-icon">
+                    <FluentIcon Value="@(new Icons.Regular.Size20.Box())" Color="Color.Custom" CustomColor="currentColor" />
+                </span>
                 Products
-            </FluentNavLink>
-            <FluentNavLink Href="/description-types"
-                           Icon="@(new Icons.Regular.Size20.TextDescription())"
-                           IconColor="Color.Accent">
+            </NavLink>
+        </div>
+
+        <div class="pdm-sidebar-section">
+            <div class="pdm-sidebar-label">Configuration</div>
+
+            <NavLink class="pdm-nav-item" href="/description-types">
+                <span class="pdm-nav-icon">
+                    <FluentIcon Value="@(new Icons.Regular.Size20.TextDescription())" Color="Color.Custom" CustomColor="currentColor" />
+                </span>
                 Description Types
-            </FluentNavLink>
-            <FluentNavLink Href="/attribute-types"
-                           Icon="@(new Icons.Regular.Size20.Tag())"
-                           IconColor="Color.Accent">
+            </NavLink>
+
+            <NavLink class="pdm-nav-item" href="/attribute-types">
+                <span class="pdm-nav-icon">
+                    <FluentIcon Value="@(new Icons.Regular.Size20.Tag())" Color="Color.Custom" CustomColor="currentColor" />
+                </span>
                 Attribute Types
-            </FluentNavLink>
-        </FluentNavMenu>
+            </NavLink>
+        </div>
+    </nav>
 
-        <FluentBodyContent Style="padding: 24px; overflow-y: auto; flex: 1;">
-            @Body
-        </FluentBodyContent>
-    </FluentStack>
-
-    <FluentFooter>
-        <span style="font-size: 0.8rem; color: var(--neutral-foreground-hint);">
-            © @DateTime.Now.Year — Product Data Manager — E-commerce Enterprise
-        </span>
-    </FluentFooter>
-</FluentLayout>
+    <main class="pdm-main-content">
+        @Body
+    </main>
+</div>
 
 <FluentToastProvider />
 <FluentDialogProvider />
