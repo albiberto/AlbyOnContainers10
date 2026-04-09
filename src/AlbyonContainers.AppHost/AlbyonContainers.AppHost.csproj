@@ -13,7 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ProductDataManager.Web\ProductDataManager.Web.csproj" />
+    <ProjectReference Include="..\ProductInformationManager.Web\ProductInformationManager.Web.csproj" />
   </ItemGroup>
 
 </Project>

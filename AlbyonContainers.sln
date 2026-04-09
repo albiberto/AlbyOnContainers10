@@ -1,19 +1,27 @@
-
+﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AlbyonContainers.AppHost", "src\AlbyonContainers.AppHost\AlbyonContainers.AppHost.csproj", "{A1B2C3D4-0001-0001-0001-000000000001}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AlbyOnContainers.AppHost", "src\AlbyOnContainers.AppHost\AlbyOnContainers.AppHost.csproj", "{A1B2C3D4-0001-0001-0001-000000000001}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AlbyonContainers.ServiceDefaults", "src\AlbyonContainers.ServiceDefaults\AlbyonContainers.ServiceDefaults.csproj", "{A1B2C3D4-0002-0002-0002-000000000002}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AlbyOnContainers.ServiceDefaults", "src\AlbyOnContainers.ServiceDefaults\AlbyOnContainers.ServiceDefaults.csproj", "{A1B2C3D4-0002-0002-0002-000000000002}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ecommerce.Shared.Security", "src\Ecommerce.Shared.Security\Ecommerce.Shared.Security.csproj", "{A1B2C3D4-0003-0003-0003-000000000003}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AlbyOnContainers.Shared.Security", "src\AlbyOnContainers.Shared.Security\AlbyOnContainers.Shared.Security.csproj", "{A1B2C3D4-0003-0003-0003-000000000003}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProductDataManager.Models", "src\ProductDataManager.Models\ProductDataManager.Models.csproj", "{A1B2C3D4-0004-0004-0004-000000000004}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProductInformationManager.Domain", "src\ProductInformationManager.Domain\ProductInformationManager.Domain.csproj", "{A1B2C3D4-0004-0004-0004-000000000004}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProductDataManager.Infrastructure", "src\ProductDataManager.Infrastructure\ProductDataManager.Infrastructure.csproj", "{A1B2C3D4-0005-0005-0005-000000000005}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProductInformationManager.Infrastructure", "src\ProductInformationManager.Infrastructure\ProductInformationManager.Infrastructure.csproj", "{A1B2C3D4-0005-0005-0005-000000000005}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProductDataManager.Web", "src\ProductDataManager.Web\ProductDataManager.Web.csproj", "{A1B2C3D4-0006-0006-0006-000000000006}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProductInformationManager.Web", "src\ProductInformationManager.Web\ProductInformationManager.Web.csproj", "{A1B2C3D4-0006-0006-0006-000000000006}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AlbyOnContainers.Shared.Conctracts", "AlbyOnContainers.Shared.Conctracts\AlbyOnContainers.Shared.Conctracts.csproj", "{6459E8DF-F53A-46F9-93B7-4EAEE0477B60}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProductInformationManager.Messages", "ProductInformationManager.Messages\ProductInformationManager.Messages.csproj", "{CA28C412-E17D-4D3B-A5FD-7C5013980667}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProductInformationManager.Application", "ProductInformationManager.Application\ProductInformationManager.Application.csproj", "{FF5536FF-CAD8-414D-AA68-BD933C534A1C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AlbyOnContainers.Shared.Domain", "AlbyOnContainers.Shared.Domain\AlbyOnContainers.Shared.Domain.csproj", "{E69D2FBD-156B-4460-B822-D6457C0BBFD2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -45,5 +53,21 @@ Global
 		{A1B2C3D4-0006-0006-0006-000000000006}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A1B2C3D4-0006-0006-0006-000000000006}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A1B2C3D4-0006-0006-0006-000000000006}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6459E8DF-F53A-46F9-93B7-4EAEE0477B60}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6459E8DF-F53A-46F9-93B7-4EAEE0477B60}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6459E8DF-F53A-46F9-93B7-4EAEE0477B60}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6459E8DF-F53A-46F9-93B7-4EAEE0477B60}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CA28C412-E17D-4D3B-A5FD-7C5013980667}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CA28C412-E17D-4D3B-A5FD-7C5013980667}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CA28C412-E17D-4D3B-A5FD-7C5013980667}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CA28C412-E17D-4D3B-A5FD-7C5013980667}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FF5536FF-CAD8-414D-AA68-BD933C534A1C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FF5536FF-CAD8-414D-AA68-BD933C534A1C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FF5536FF-CAD8-414D-AA68-BD933C534A1C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FF5536FF-CAD8-414D-AA68-BD933C534A1C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E69D2FBD-156B-4460-B822-D6457C0BBFD2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E69D2FBD-156B-4460-B822-D6457C0BBFD2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E69D2FBD-156B-4460-B822-D6457C0BBFD2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E69D2FBD-156B-4460-B822-D6457C0BBFD2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
