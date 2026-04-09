@@ -15,7 +15,7 @@ var keycloak = builder.AddContainer("keycloak", "quay.io/keycloak/keycloak", "24
     .WithArgs("start-dev", "--import-realm");
 
 // Product Data Manager Web
-builder.AddProject<Projects.ProductDataManager_Web>("productdatamanager")
+builder.AddProject<Projects.ProductInformationManager_Web>("productdatamanager")
     .WithReference(postgres)
     .WithExternalHttpEndpoints();
 
