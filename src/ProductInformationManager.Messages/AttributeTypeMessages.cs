@@ -1,4 +1,6 @@
-namespace ProductInformationManager.Messages.AttributeTypes;
+using ProductInformationManager.Domain;
+
+namespace ProductInformationManager.Messages;
 
 // === Queries ===
 
@@ -38,12 +40,10 @@ public record DeleteAttributeResult(bool Success);
 
 public record AttributeTypeDto(Guid Id, string Name, string? Description, List<AttributeDto> Attributes)
 {
-    public static AttributeTypeDto FromEntity(AttributeType entity) =>
-        new(entity.Id, entity.Name, entity.Description, []);
+    public static AttributeTypeDto FromEntity(AttributeType entity) => new(entity.Id.Value, entity.Name, entity.Description, []);
 }
 
 public record AttributeDto(Guid Id, string Name, string Value)
 {
-    public static AttributeDto FromEntity(Attribute entity) =>
-        new(entity.Id, entity.Name, entity.Value);
+    public static AttributeDto FromEntity(Domain.Attribute entity) => new(entity.Id.Value, entity.Name, entity.Value);
 }

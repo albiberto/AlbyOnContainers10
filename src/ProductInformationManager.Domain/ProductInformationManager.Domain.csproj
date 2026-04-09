@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\AlbyOnContainers.Shared.Domain\AlbyOnContainers.Shared.Domain.csproj" />
+    <ProjectReference Include="..\AlbyOnContainers.Shared.Domain\AlbyOnContainers.Shared.Domain.csproj" />
   </ItemGroup>
 
 </Project>

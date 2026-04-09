@@ -12,6 +12,8 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\ProductInformationManager.Domain\ProductInformationManager.Domain.csproj" />
+      <ProjectReference Include="..\ProductInformationManager.Infrastructure\ProductInformationManager.Infrastructure.csproj" />
       <ProjectReference Include="..\ProductInformationManager.Messages\ProductInformationManager.Messages.csproj" />
       <ProjectReference Include="..\src\ProductInformationManager.Infrastructure\ProductInformationManager.Infrastructure.csproj" />
     </ItemGroup>
