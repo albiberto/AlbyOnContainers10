@@ -1,7 +1,9 @@
 var builder = DistributedApplication.CreateBuilder(args);
 
-// PostgreSQL con volume persistente
-var postgres = builder.AddPostgres("postgres")
+var pgPassword = builder.AddParameter("postgres-password");
+
+// PostgreSQL con volume persistente e password statica
+var postgres = builder.AddPostgres("postgres", pgPassword)
     .WithDataVolume("productdatamanager-pgdata")
     .WithPgAdmin()
     .AddDatabase("productdb");
