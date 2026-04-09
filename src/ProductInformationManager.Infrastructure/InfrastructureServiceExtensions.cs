@@ -11,6 +11,9 @@ public static class InfrastructureServiceExtensions
     {
         services.AddSingleton<IInterceptor, AuditableEntityInterceptor>();
         services.AddDbContext<ProductContext>(options => options.UseNpgsql(connectionString));
+        
+        // Registra l'operatore di migrazione automatica come Background Service
+        services.AddHostedService<MigrationHostedService>();
 
         return services;
     }
