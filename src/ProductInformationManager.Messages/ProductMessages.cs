@@ -1,4 +1,4 @@
-namespace ProductInformationManager.Messages.Products;
+namespace ProductInformationManager.Messages;
 
 // === Queries ===
 public record GetProducts(int Page = 1, int PageSize = 20, Guid? CategoryId = null, bool? IsActive = null);

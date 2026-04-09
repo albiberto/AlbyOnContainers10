@@ -4,7 +4,7 @@ using ProductInformationManager.Domain;
 using ProductInformationManager.Domain.Exceptions;
 using ProductInformationManager.Domain.ValueObjects;
 using ProductInformationManager.Infrastructure;
-using ProductInformationManager.Messages.Products;
+using ProductInformationManager.Messages;
 
 namespace ProductInformationManager.Application;
 

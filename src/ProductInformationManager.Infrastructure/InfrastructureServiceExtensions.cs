@@ -1,10 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
-using ProductDataManager.Infrastructure.Interceptors;
-using ProductInformationManager.Infrastructure;
+using ProductInformationManager.Infrastructure.Interceptors;
 
-namespace ProductDataManager.Infrastructure;
+namespace ProductInformationManager.Infrastructure;
 
 public static class InfrastructureServiceExtensions
 {

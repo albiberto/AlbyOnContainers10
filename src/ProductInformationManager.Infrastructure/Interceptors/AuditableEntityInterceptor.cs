@@ -2,7 +2,7 @@ using AlbyOnContainers.Shared.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 
-namespace ProductDataManager.Infrastructure.Interceptors;
+namespace ProductInformationManager.Infrastructure.Interceptors;
 
 public class AuditableEntityInterceptor : SaveChangesInterceptor
 {
