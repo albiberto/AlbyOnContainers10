@@ -5,7 +5,7 @@ namespace ProductInformationManager.Application;
 
 public static class ApplicationServiceExtensions
 {
-    public static IServiceCollection AddInfrastructure(this IServiceCollection services)
+    public static IServiceCollection AddApplication(this IServiceCollection services)
     {
         // Register MassTransit Mediator with auto-discovery of consumers
         services.AddMediator(cfg =>

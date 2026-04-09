@@ -1,11 +1,9 @@
 @page "/products"
 @using MassTransit
-@using ProductDataManager.Infrastructure.Messages.Products
-@using ProductDataManager.Infrastructure.Messages.Categories
 
 @inject IRequestClient<GetProducts> ProductsClient
 @inject IRequestClient<CreateProduct> CreateProductClient
-@inject IRequestClient<UpdateProduct> UpdateProductClient
+@inject IPublishEndpoint PublishEndpoint
 @inject IRequestClient<DeleteProduct> DeleteProductClient
 @inject IRequestClient<GetRootCategories> CategoriesClient
 @inject IToastService ToastService
@@ -52,13 +50,10 @@
         {
             <div style="padding: 4px;">
                 <FluentDataGrid Items="@_products.AsQueryable()" Pagination="@_pagination" TGridItem="ProductDto"
-                                Style="width: 100%;" GridTemplateColumns="1fr 0.6fr 0.5fr 0.5fr 0.4fr 0.5fr">
+                                Style="width: 100%;" GridTemplateColumns="1fr 0.6fr 0.5fr 0.4fr 0.5fr">
                     <PropertyColumn Property="@(p => p.Name)" Title="Name" Sortable="true" />
                     <PropertyColumn Property="@(p => p.Sku)" Title="SKU" Sortable="true" />
                     <PropertyColumn Property="@(p => p.CategoryName)" Title="Category" />
-                    <TemplateColumn Title="Price">
-                        <span style="font-weight: 500; font-variant-numeric: tabular-nums;">@context.Price.ToString("C")</span>
-                    </TemplateColumn>
                     <TemplateColumn Title="Status">
                         @if (context.IsActive)
                         {
@@ -104,7 +99,6 @@
             <FluentTextField @bind-Value="_formName" Label="Name" Required="true" Style="width: 100%;" Placeholder="e.g. Wireless Headphones" />
             <FluentStack Orientation="Orientation.Horizontal" Style="gap: 12px;">
                 <FluentTextField @bind-Value="_formSku" Label="SKU" Required="true" Style="flex: 1;" Placeholder="e.g. WH-1000XM5" />
-                <FluentNumberField @bind-Value="_formPrice" Label="Price" Min="0" Step="0.01m" Style="flex: 1;" />
             </FluentStack>
             <FluentTextArea @bind-Value="_formDescription" Label="Description" Rows="3" Style="width: 100%;" Placeholder="Product description..." />
             @if (_editingProduct is not null)
@@ -131,7 +125,6 @@
     private string _formName = string.Empty;
     private string _formSku = string.Empty;
     private string? _formDescription;
-    private decimal _formPrice;
     private bool _formIsActive = true;
     private Guid _formCategoryId;
     private ProductDto? _editingProduct;
@@ -149,14 +142,14 @@
     private void OpenCreateDialog()
     {
         _editingProduct = null; _formName = string.Empty; _formSku = string.Empty;
-        _formDescription = null; _formPrice = 0; _formIsActive = true;
+        _formDescription = null; _formIsActive = true;
         _dialogHidden = false;
     }
 
     private void OpenEditDialog(ProductDto product)
     {
         _editingProduct = product; _formName = product.Name; _formSku = product.Sku;
-        _formDescription = product.Description; _formPrice = product.Price;
+        _formDescription = product.Description;
         _formIsActive = product.IsActive; _formCategoryId = product.CategoryId;
         _dialogHidden = false;
     }
@@ -168,15 +161,22 @@
 
         if (_editingProduct is not null)
         {
-            var response = await UpdateProductClient.GetResponse<UpdateProductResult>(
-                new UpdateProduct(_editingProduct.Id, _formName, _formSku, _formDescription, _formPrice, _formCategoryId, _formIsActive));
-            if (response.Message.Success) ToastService.ShowSuccess("Product updated successfully.");
-            else ToastService.ShowError("Failed to update product.");
+            if (_formName != _editingProduct.Name || _formDescription != _editingProduct.Description)
+                await PublishEndpoint.Publish(new UpdateProductDetails(_editingProduct.Id, _formName, _formDescription));
+            
+            if (_formCategoryId != _editingProduct.CategoryId)
+                await PublishEndpoint.Publish(new ChangeProductCategory(_editingProduct.Id, _formCategoryId));
+                
+            if (_formIsActive != _editingProduct.IsActive)
+                await PublishEndpoint.Publish(new ChangeProductStatus(_editingProduct.Id, _formIsActive));
+            
+            ToastService.ShowSuccess("Product updated successfully.");
         }
         else
         {
             var response = await CreateProductClient.GetResponse<CreateProductResult>(
-                new CreateProduct(_formName, _formSku, _formDescription, _formPrice, _formCategoryId));
+                new CreateProduct(_formName, _formSku, _formCategoryId));
+                
             if (response.Message.Id != Guid.Empty) ToastService.ShowSuccess("Product created successfully.");
             else ToastService.ShowError("Failed to create product.");
         }

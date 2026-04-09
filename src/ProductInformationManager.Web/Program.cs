@@ -1,7 +1,8 @@
 using AlbyOnContainers.ServiceDefaults;
 using AlbyOnContainers.Shared.Security;
 using Microsoft.FluentUI.AspNetCore.Components;
-using ProductDataManager.Infrastructure;
+using ProductInformationManager.Application;
+using ProductInformationManager.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,9 +12,12 @@ builder.AddServiceDefaults();
 // Authentication via Keycloak
 builder.Services.AddKeycloakAuthentication(builder.Configuration);
 
-// Infrastructure (EF Core + MassTransit Mediator)
-builder.Services.AddInfrastructure(
-    builder.Configuration.GetConnectionString("productdb")!);
+// Application (MassTransit)
+builder.Services.AddApplication();
+
+// Infrastructure (EF Core)
+var connection = builder.Configuration.GetConnectionString("productdb") ?? throw new InvalidOperationException("Connection string 'productdb' not found.");
+builder.Services.AddInfrastructure(connection);
 
 // Fluent UI Blazor
 builder.Services.AddFluentUIComponents();
