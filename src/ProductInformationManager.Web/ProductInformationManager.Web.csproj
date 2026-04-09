@@ -17,9 +17,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ProductInformationManager.Infrastructure\ProductInformationManager.Infrastructure.csproj" />
-    <ProjectReference Include="..\AlbyOnContainers.Shared.Security\AlbyOnContainers.Shared.Security.csproj" />
     <ProjectReference Include="..\AlbyOnContainers.ServiceDefaults\AlbyOnContainers.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\AlbyOnContainers.Shared.Security\AlbyOnContainers.Shared.Security.csproj" />
+    <ProjectReference Include="..\ProductInformationManager.Application\ProductInformationManager.Application.csproj" />
   </ItemGroup>
 
 </Project>

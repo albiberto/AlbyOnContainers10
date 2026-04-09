@@ -38,7 +38,7 @@ app.UseAuthorization();
 
 app.MapDefaultEndpoints();
 
-app.MapRazorComponents<ProductDataManager.Web.Components.App>()
+app.MapRazorComponents<ProductInformationManager.Web.Components.App>()
     .AddInteractiveServerRenderMode();
 
 app.Run();
