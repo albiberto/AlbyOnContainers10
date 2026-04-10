@@ -16,25 +16,25 @@ public record GetAttributeTypeByIdResult(AttributeTypeDto? AttributeType);
 
 public record CreateAttributeType(string Name, string? Description);
 
-public record CreateAttributeTypeResult(Guid Id);
+public record CreateAttributeTypeResult(bool Success, Guid Id = default, string? ErrorMessage = null);
 
 public record UpdateAttributeType(Guid Id, string Name, string? Description);
 
-public record UpdateAttributeTypeResult(bool Success);
+public record UpdateAttributeTypeResult(bool Success, string? ErrorMessage = null);
 
 public record DeleteAttributeType(Guid Id);
 
-public record DeleteAttributeTypeResult(bool Success);
+public record DeleteAttributeTypeResult(bool Success, string? ErrorMessage = null);
 
 // === Attributes ===
 
 public record CreateAttribute(string Name, string Value, Guid AttributeTypeId);
 
-public record CreateAttributeResult(Guid Id);
+public record CreateAttributeResult(bool Success, Guid Id = default, string? ErrorMessage = null);
 
 public record DeleteAttribute(Guid Id);
 
-public record DeleteAttributeResult(bool Success);
+public record DeleteAttributeResult(bool Success, string? ErrorMessage = null);
 
 // === DTOs ===
 

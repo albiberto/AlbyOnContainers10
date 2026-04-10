@@ -3,9 +3,13 @@
 
 @inject IRequestClient<GetProducts> ProductsClient
 @inject IRequestClient<CreateProduct> CreateProductClient
-@inject IPublishEndpoint PublishEndpoint
+@inject IRequestClient<UpdateProductDetails> UpdateDetailsClient
+@inject IRequestClient<ChangeProductCategory> ChangeCategoryClient
+@inject IRequestClient<ChangeProductStatus> ChangeStatusClient
 @inject IRequestClient<DeleteProduct> DeleteProductClient
-@inject IRequestClient<GetRootCategories> CategoriesClient
+@inject IRequestClient<GetAllCategoriesFlat> CategoriesClient
+@inject IRequestClient<GetCategoryDescriptions> CategoryDescriptionsClient
+@inject IRequestClient<SetProductDescription> SetDescriptionClient
 @inject IToastService ToastService
 
 <PageTitle>Products — Product Data Manager</PageTitle>
@@ -71,7 +75,7 @@
                     <TemplateColumn Title="">
                         <FluentStack Orientation="Orientation.Horizontal" Style="gap: 2px;">
                             <FluentButton Appearance="Appearance.Stealth" IconStart="@(new Icons.Regular.Size16.Edit())" Title="Edit" OnClick="@(() => OpenEditDialog(context))" />
-                            <FluentButton Appearance="Appearance.Stealth" IconStart="@(new Icons.Regular.Size16.Delete())" Title="Delete" OnClick="@(() => HandleDelete(context))" />
+                            <FluentButton Appearance="Appearance.Stealth" IconStart="@(new Icons.Regular.Size16.Delete())" Title="Delete" OnClick="@(() => ConfirmDelete(context))" />
                         </FluentStack>
                     </TemplateColumn>
                 </FluentDataGrid>
@@ -100,10 +104,36 @@
             <FluentStack Orientation="Orientation.Horizontal" Style="gap: 12px;">
                 <FluentTextField @bind-Value="_formSku" Label="SKU" Required="true" Style="flex: 1;" Placeholder="e.g. WH-1000XM5" />
             </FluentStack>
+            <FluentSelect TOption="CategoryFlatDto"
+                          Items="@_allCategories"
+                          Label="Category"
+                          Required="true"
+                          OptionValue="@(c => c.Id.ToString())"
+                          OptionText="@(c => new string('\u2003', c.Depth) + c.Name)"
+                          @bind-SelectedOption="_selectedCategory"
+                          Style="width: 100%;"
+                          Placeholder="Select a category..." />
             <FluentTextArea @bind-Value="_formDescription" Label="Description" Rows="3" Style="width: 100%;" Placeholder="Product description..." />
             @if (_editingProduct is not null)
             {
                 <FluentCheckbox @bind-Value="_formIsActive" Label="Active" />
+            }
+
+            @if (_categoryDescriptions.Any())
+            {
+                <h4 style="margin: 8px 0 0; font-size: 0.9rem;">Descriptions</h4>
+                @foreach (var desc in _categoryDescriptions)
+                {
+                    <FluentSelect TOption="DescriptionValueDto"
+                                  Items="@desc.Values"
+                                  Label="@desc.DescriptionTypeName"
+                                  OptionValue="@(v => v.Id.ToString())"
+                                  OptionText="@(v => v.Value)"
+                                  SelectedOption="@(_selectedDescValues.GetValueOrDefault(desc.DescriptionTypeId))"
+                                  SelectedOptionChanged="@(v => OnDescriptionValueChanged(desc.DescriptionTypeId, v))"
+                                  Style="width: 100%;"
+                                  Placeholder="Select a value..." />
+                }
             }
         </FluentStack>
     </FluentDialogBody>
@@ -112,6 +142,28 @@
         <FluentButton Appearance="Appearance.Accent" OnClick="HandleSave" Loading="_saving"
                       IconStart="@(new Icons.Regular.Size16.Checkmark())">
             @(_editingProduct is not null ? "Update" : "Create")
+        </FluentButton>
+    </FluentDialogFooter>
+</FluentDialog>
+
+@* Confirm Delete Dialog *@
+<FluentDialog @bind-Hidden="@_confirmDeleteHidden" Modal="true" TrapFocus="true" PreventScroll="true">
+    <FluentDialogHeader>
+        <div class="pdm-dialog-header">
+            <FluentIcon Value="@(new Icons.Regular.Size20.Warning())" Color="Color.Custom" CustomColor="#ef4444" />
+            <h3>Confirm Deletion</h3>
+        </div>
+    </FluentDialogHeader>
+    <FluentDialogBody>
+        <p>Are you sure you want to delete the product <strong>@_productToDelete?.Name</strong>?</p>
+        <p style="font-size: 0.85rem; color: var(--pdm-text-muted);">This action cannot be undone.</p>
+    </FluentDialogBody>
+    <FluentDialogFooter>
+        <FluentButton Appearance="Appearance.Neutral" OnClick="@(() => _confirmDeleteHidden = true)">Cancel</FluentButton>
+        <FluentButton Appearance="Appearance.Accent" Style="--accent-fill-rest: #ef4444; --accent-fill-hover: #dc2626;"
+                      OnClick="HandleDelete" Loading="_deleting"
+                      IconStart="@(new Icons.Regular.Size16.Delete())">
+            Delete
         </FluentButton>
     </FluentDialogFooter>
 </FluentDialog>
@@ -126,10 +178,24 @@
     private string _formSku = string.Empty;
     private string? _formDescription;
     private bool _formIsActive = true;
-    private Guid _formCategoryId;
     private ProductDto? _editingProduct;
 
-    protected override async Task OnInitializedAsync() => await LoadProducts();
+    // Categories & descriptions for the form
+    private List<CategoryFlatDto> _allCategories = [];
+    private CategoryFlatDto? _selectedCategory;
+    private List<CategoryDescriptionRuleDto> _categoryDescriptions = [];
+    private Dictionary<Guid, DescriptionValueDto?> _selectedDescValues = new();
+
+    // Confirm delete
+    private bool _confirmDeleteHidden = true;
+    private bool _deleting;
+    private ProductDto? _productToDelete;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadProducts();
+        await LoadCategories();
+    }
 
     private async Task LoadProducts()
     {
@@ -139,57 +205,159 @@
         _loading = false;
     }
 
+    private async Task LoadCategories()
+    {
+        var response = await CategoriesClient.GetResponse<GetAllCategoriesFlatResult>(new GetAllCategoriesFlat());
+        _allCategories = response.Message.Categories;
+    }
+
     private void OpenCreateDialog()
     {
         _editingProduct = null; _formName = string.Empty; _formSku = string.Empty;
         _formDescription = null; _formIsActive = true;
+        _selectedCategory = null;
+        _categoryDescriptions = [];
+        _selectedDescValues = new();
         _dialogHidden = false;
     }
 
-    private void OpenEditDialog(ProductDto product)
+    private async Task OpenEditDialog(ProductDto product)
     {
         _editingProduct = product; _formName = product.Name; _formSku = product.Sku;
         _formDescription = product.Description;
-        _formIsActive = product.IsActive; _formCategoryId = product.CategoryId;
+        _formIsActive = product.IsActive;
+        _selectedCategory = _allCategories.FirstOrDefault(c => c.Id == product.CategoryId);
         _dialogHidden = false;
+
+        // Load descriptions for the product's category
+        if (_selectedCategory is not null)
+            await LoadCategoryDescriptions(product.CategoryId, product.Descriptions);
+    }
+
+    private async Task LoadCategoryDescriptions(Guid categoryId, List<ProductDescriptionDto>? existingDescriptions = null)
+    {
+        var response = await CategoryDescriptionsClient.GetResponse<GetCategoryDescriptionsResult>(
+            new GetCategoryDescriptions(categoryId));
+        _categoryDescriptions = response.Message.Descriptions;
+
+        _selectedDescValues = new();
+        if (existingDescriptions is not null)
+        {
+            foreach (var desc in existingDescriptions)
+            {
+                var rule = _categoryDescriptions.FirstOrDefault(r => r.DescriptionTypeId == desc.TypeId);
+                var value = rule?.Values.FirstOrDefault(v => v.Id == desc.ValueId);
+                if (value is not null)
+                    _selectedDescValues[desc.TypeId] = value;
+            }
+        }
+    }
+
+    private async Task OnSelectedCategoryChanged()
+    {
+        if (_selectedCategory is not null)
+            await LoadCategoryDescriptions(_selectedCategory.Id);
+        else
+        {
+            _categoryDescriptions = [];
+            _selectedDescValues = new();
+        }
+        StateHasChanged();
+    }
+
+    private void OnDescriptionValueChanged(Guid descriptionTypeId, DescriptionValueDto? value)
+    {
+        _selectedDescValues[descriptionTypeId] = value;
     }
 
     private async Task HandleSave()
     {
-        if (string.IsNullOrWhiteSpace(_formName) || string.IsNullOrWhiteSpace(_formSku)) return;
+        if (string.IsNullOrWhiteSpace(_formName) || string.IsNullOrWhiteSpace(_formSku) || _selectedCategory is null) return;
         _saving = true;
 
         if (_editingProduct is not null)
         {
             if (_formName != _editingProduct.Name || _formDescription != _editingProduct.Description)
-                await PublishEndpoint.Publish(new UpdateProductDetails(_editingProduct.Id, _formName, _formDescription));
-            
-            if (_formCategoryId != _editingProduct.CategoryId)
-                await PublishEndpoint.Publish(new ChangeProductCategory(_editingProduct.Id, _formCategoryId));
-                
+            {
+                var r = await UpdateDetailsClient.GetResponse<UpdateProductDetailsResult>(
+                    new UpdateProductDetails(_editingProduct.Id, _formName, _formDescription));
+                if (!r.Message.Success)
+                { ToastService.ShowError(r.Message.ErrorMessage ?? "Failed to update product details."); _saving = false; return; }
+            }
+
+            if (_selectedCategory.Id != _editingProduct.CategoryId)
+            {
+                var r = await ChangeCategoryClient.GetResponse<ChangeProductCategoryResult>(
+                    new ChangeProductCategory(_editingProduct.Id, _selectedCategory.Id));
+                if (!r.Message.Success)
+                { ToastService.ShowError(r.Message.ErrorMessage ?? "Failed to change category."); _saving = false; return; }
+            }
+
             if (_formIsActive != _editingProduct.IsActive)
-                await PublishEndpoint.Publish(new ChangeProductStatus(_editingProduct.Id, _formIsActive));
-            
+            {
+                var r = await ChangeStatusClient.GetResponse<ChangeProductStatusResult>(
+                    new ChangeProductStatus(_editingProduct.Id, _formIsActive));
+                if (!r.Message.Success)
+                { ToastService.ShowError(r.Message.ErrorMessage ?? "Failed to change status."); _saving = false; return; }
+            }
+
+            // Save description selections
+            foreach (var kvp in _selectedDescValues.Where(kv => kv.Value is not null))
+            {
+                await SetDescriptionClient.GetResponse<SetProductDescriptionResult>(
+                    new SetProductDescription(_editingProduct.Id, kvp.Key, kvp.Value!.Id));
+            }
+
             ToastService.ShowSuccess("Product updated successfully.");
         }
         else
         {
             var response = await CreateProductClient.GetResponse<CreateProductResult>(
-                new CreateProduct(_formName, _formSku, _formCategoryId));
-                
-            if (response.Message.Id != Guid.Empty) ToastService.ShowSuccess("Product created successfully.");
-            else ToastService.ShowError("Failed to create product.");
+                new CreateProduct(_formName, _formSku, _selectedCategory.Id));
+
+            if (response.Message.Success)
+            {
+                // Save description selections for the new product
+                foreach (var kvp in _selectedDescValues.Where(kv => kv.Value is not null))
+                {
+                    await SetDescriptionClient.GetResponse<SetProductDescriptionResult>(
+                        new SetProductDescription(response.Message.Id, kvp.Key, kvp.Value!.Id));
+                }
+                ToastService.ShowSuccess("Product created successfully.");
+            }
+            else
+            {
+                ToastService.ShowError(response.Message.ErrorMessage ?? "Failed to create product.");
+            }
         }
 
         _saving = false; _dialogHidden = true;
         await LoadProducts();
     }
 
-    private async Task HandleDelete(ProductDto product)
+    private void ConfirmDelete(ProductDto product)
     {
-        var response = await DeleteProductClient.GetResponse<DeleteProductResult>(new DeleteProduct(product.Id));
+        _productToDelete = product;
+        _confirmDeleteHidden = false;
+    }
+
+    private async Task HandleDelete()
+    {
+        if (_productToDelete is null) return;
+        _deleting = true;
+
+        var response = await DeleteProductClient.GetResponse<DeleteProductResult>(new DeleteProduct(_productToDelete.Id));
         if (response.Message.Success)
-        { ToastService.ShowSuccess($"Product '{product.Name}' deleted."); await LoadProducts(); }
-        else ToastService.ShowError("Failed to delete product.");
+        {
+            ToastService.ShowSuccess($"Product '{_productToDelete.Name}' deleted.");
+            await LoadProducts();
+        }
+        else
+        {
+            ToastService.ShowError(response.Message.ErrorMessage ?? "Failed to delete product.");
+        }
+
+        _deleting = false;
+        _confirmDeleteHidden = true;
     }
 }

@@ -7,6 +7,10 @@
 @inject IRequestClient<CreateCategory> CreateCategoryClient
 @inject IRequestClient<UpdateCategory> UpdateCategoryClient
 @inject IRequestClient<DeleteCategory> DeleteCategoryClient
+@inject IRequestClient<GetDescriptionTypes> DescriptionTypesClient
+@inject IRequestClient<AddCategoryDescriptionRule> AddRuleClient
+@inject IRequestClient<RemoveCategoryDescriptionRule> RemoveRuleClient
+@inject IRequestClient<GetCategoryDescriptions> CategoryDescriptionsClient
 @inject IToastService ToastService
 
 <PageTitle>Categories — Product Data Manager</PageTitle>
@@ -55,8 +59,9 @@
                     <CategoryTreeItem Category="category"
                                       OnExpand="LoadChildren"
                                       OnEdit="OpenEditDialog"
-                                      OnDelete="HandleDelete"
-                                      OnAddChild="OpenCreateDialog" />
+                                      OnDelete="ConfirmDelete"
+                                      OnAddChild="OpenCreateDialog"
+                                      OnManageDescriptions="OpenDescriptionRulesDialog" />
                 }
             </FluentTreeView>
         </div>
@@ -94,6 +99,98 @@
     </FluentDialogFooter>
 </FluentDialog>
 
+@* Confirm Delete Dialog *@
+<FluentDialog @bind-Hidden="@_confirmDeleteHidden" Modal="true" TrapFocus="true" PreventScroll="true">
+    <FluentDialogHeader>
+        <div class="pdm-dialog-header">
+            <FluentIcon Value="@(new Icons.Regular.Size20.Warning())" Color="Color.Custom" CustomColor="#ef4444" />
+            <h3>Confirm Deletion</h3>
+        </div>
+    </FluentDialogHeader>
+    <FluentDialogBody>
+        <p>Are you sure you want to delete the category <strong>@_categoryToDelete?.Name</strong>?</p>
+        <p style="font-size: 0.85rem; color: var(--pdm-text-muted);">This action cannot be undone.</p>
+    </FluentDialogBody>
+    <FluentDialogFooter>
+        <FluentButton Appearance="Appearance.Neutral" OnClick="@(() => _confirmDeleteHidden = true)">Cancel</FluentButton>
+        <FluentButton Appearance="Appearance.Accent" Style="--accent-fill-rest: #ef4444; --accent-fill-hover: #dc2626;"
+                      OnClick="HandleDelete" Loading="_deleting"
+                      IconStart="@(new Icons.Regular.Size16.Delete())">
+            Delete
+        </FluentButton>
+    </FluentDialogFooter>
+</FluentDialog>
+
+@* Description Rules Dialog *@
+<FluentDialog @bind-Hidden="@_descRulesHidden" Modal="true" TrapFocus="true" PreventScroll="true">
+    <FluentDialogHeader>
+        <div class="pdm-dialog-header">
+            <FluentIcon Value="@(new Icons.Regular.Size20.TextDescription())" Color="Color.Custom" CustomColor="#10b981" />
+            <h3>Description Rules — @_descRulesCategoryName</h3>
+        </div>
+        <div class="pdm-dialog-subtitle">Manage which description types are associated with this category</div>
+    </FluentDialogHeader>
+    <FluentDialogBody>
+        @if (_descRulesLoading)
+        {
+            <div class="pdm-loading-state" style="padding: 24px;">
+                <FluentProgressRing />
+                <span>Loading descriptions…</span>
+            </div>
+        }
+        else
+        {
+            @if (_effectiveDescriptions.Any())
+            {
+                <FluentDataGrid Items="@_effectiveDescriptions.AsQueryable()" TGridItem="CategoryDescriptionRuleDto"
+                                Style="width: 100%; margin-bottom: 16px;" GridTemplateColumns="1fr 0.5fr 0.5fr auto">
+                    <PropertyColumn Property="@(d => d.DescriptionTypeName)" Title="Description Type" />
+                    <TemplateColumn Title="Mandatory">
+                        @if (context.IsMandatory)
+                        { <FluentBadge Appearance="Appearance.Accent">Yes</FluentBadge> }
+                        else
+                        { <FluentBadge>No</FluentBadge> }
+                    </TemplateColumn>
+                    <TemplateColumn Title="Source">
+                        @if (context.IsInherited)
+                        { <FluentBadge Appearance="Appearance.Neutral" Style="font-size: 0.75rem;">Inherited from @context.SourceCategoryName</FluentBadge> }
+                        else
+                        { <FluentBadge Appearance="Appearance.Accent" Style="font-size: 0.75rem;">Own</FluentBadge> }
+                    </TemplateColumn>
+                    <TemplateColumn Title="">
+                        @if (!context.IsInherited)
+                        {
+                            <FluentButton Appearance="Appearance.Stealth" IconStart="@(new Icons.Regular.Size16.Delete())"
+                                          Title="Remove" OnClick="@(() => HandleRemoveRule(context.DescriptionTypeId))" />
+                        }
+                    </TemplateColumn>
+                </FluentDataGrid>
+            }
+            else
+            {
+                <div class="pdm-no-items-text" style="margin-bottom: 16px;">No description rules defined for this category.</div>
+            }
+
+            <div class="pdm-inline-form">
+                <FluentSelect TOption="DescriptionTypeDto"
+                              Items="@_availableDescriptionTypes"
+                              OptionValue="@(dt => dt.Id.ToString())"
+                              OptionText="@(dt => dt.Name)"
+                              @bind-SelectedOption="_selectedDescType"
+                              Style="flex: 1;"
+                              Placeholder="Select a description type..." />
+                <FluentButton Appearance="Appearance.Outline" IconStart="@(new Icons.Regular.Size16.Add())"
+                              OnClick="HandleAddRule" Disabled="@(_selectedDescType is null)">
+                    Add
+                </FluentButton>
+            </div>
+        }
+    </FluentDialogBody>
+    <FluentDialogFooter>
+        <FluentButton Appearance="Appearance.Neutral" OnClick="@(() => _descRulesHidden = true)">Close</FluentButton>
+    </FluentDialogFooter>
+</FluentDialog>
+
 @code {
     private List<CategoryTreeNode> _rootCategories = [];
     private bool _loading = true;
@@ -103,6 +200,20 @@
     private string? _formDescription;
     private Guid? _parentIdForCreate;
     private CategoryDto? _editingCategory;
+
+    // Confirm delete
+    private bool _confirmDeleteHidden = true;
+    private bool _deleting;
+    private CategoryDto? _categoryToDelete;
+
+    // Description rules
+    private bool _descRulesHidden = true;
+    private bool _descRulesLoading;
+    private Guid _descRulesCategoryId;
+    private string _descRulesCategoryName = string.Empty;
+    private List<CategoryDescriptionRuleDto> _effectiveDescriptions = [];
+    private List<DescriptionTypeDto> _availableDescriptionTypes = [];
+    private DescriptionTypeDto? _selectedDescType;
 
     protected override async Task OnInitializedAsync() => await LoadRootCategories();
 
@@ -149,26 +260,115 @@
         {
             var response = await UpdateCategoryClient.GetResponse<UpdateCategoryResult>(
                 new UpdateCategory(_editingCategory.Id, _formName, _formDescription));
-            ToastService.ShowSuccess(response.Message.Success ? "Category updated successfully." : "Failed to update category.");
+            if (response.Message.Success)
+                ToastService.ShowSuccess("Category updated successfully.");
+            else
+                ToastService.ShowError(response.Message.ErrorMessage ?? "Failed to update category.");
         }
         else
         {
             var response = await CreateCategoryClient.GetResponse<CreateCategoryResult>(
                 new CreateCategory(_formName, _formDescription, _parentIdForCreate));
-            ToastService.ShowSuccess(response.Message.Id != Guid.Empty ? "Category created successfully." : "Failed to create category.");
+            if (response.Message.Success)
+                ToastService.ShowSuccess("Category created successfully.");
+            else
+                ToastService.ShowError(response.Message.ErrorMessage ?? "Failed to create category.");
         }
 
         _saving = false; _dialogHidden = true;
         await LoadRootCategories();
     }
 
-    private async Task HandleDelete(CategoryDto category)
+    private void ConfirmDelete(CategoryDto category)
     {
-        var response = await DeleteCategoryClient.GetResponse<DeleteCategoryResult>(new DeleteCategory(category.Id));
+        _categoryToDelete = category;
+        _confirmDeleteHidden = false;
+    }
+
+    private async Task HandleDelete()
+    {
+        if (_categoryToDelete is null) return;
+        _deleting = true;
+
+        var response = await DeleteCategoryClient.GetResponse<DeleteCategoryResult>(new DeleteCategory(_categoryToDelete.Id));
         if (response.Message.Success)
-        { ToastService.ShowSuccess($"Category '{category.Name}' deleted."); await LoadRootCategories(); }
+        {
+            ToastService.ShowSuccess($"Category '{_categoryToDelete.Name}' deleted.");
+            await LoadRootCategories();
+        }
         else
-        { ToastService.ShowError("Cannot delete category (it may have children or products)."); }
+        {
+            ToastService.ShowError(response.Message.ErrorMessage ?? "Cannot delete category.");
+        }
+
+        _deleting = false;
+        _confirmDeleteHidden = true;
+    }
+
+    private async Task OpenDescriptionRulesDialog(CategoryDto category)
+    {
+        _descRulesCategoryId = category.Id;
+        _descRulesCategoryName = category.Name;
+        _descRulesHidden = false;
+        _descRulesLoading = true;
+        StateHasChanged();
+
+        await LoadDescriptionRules();
+        _descRulesLoading = false;
+    }
+
+    private async Task LoadDescriptionRules()
+    {
+        var descriptionsTask = CategoryDescriptionsClient.GetResponse<GetCategoryDescriptionsResult>(
+            new GetCategoryDescriptions(_descRulesCategoryId));
+        var typesTask = DescriptionTypesClient.GetResponse<GetDescriptionTypesResult>(new GetDescriptionTypes());
+
+        await Task.WhenAll(descriptionsTask, typesTask);
+
+        _effectiveDescriptions = (await descriptionsTask).Message.Descriptions;
+        var allTypes = (await typesTask).Message.DescriptionTypes;
+
+        var usedTypeIds = _effectiveDescriptions
+            .Where(d => !d.IsInherited)
+            .Select(d => d.DescriptionTypeId)
+            .ToHashSet();
+        _availableDescriptionTypes = allTypes.Where(t => !usedTypeIds.Contains(t.Id)).ToList();
+        _selectedDescType = null;
+    }
+
+    private async Task HandleAddRule()
+    {
+        if (_selectedDescType is null) return;
+        var response = await AddRuleClient.GetResponse<AddCategoryDescriptionRuleResult>(
+            new AddCategoryDescriptionRule(_descRulesCategoryId, _selectedDescType.Id, false));
+
+        if (response.Message.Success)
+        {
+            ToastService.ShowSuccess($"Description '{_selectedDescType.Name}' associated.");
+            await LoadDescriptionRules();
+            StateHasChanged();
+        }
+        else
+        {
+            ToastService.ShowError(response.Message.ErrorMessage ?? "Failed to add description rule.");
+        }
+    }
+
+    private async Task HandleRemoveRule(Guid descriptionTypeId)
+    {
+        var response = await RemoveRuleClient.GetResponse<RemoveCategoryDescriptionRuleResult>(
+            new RemoveCategoryDescriptionRule(_descRulesCategoryId, descriptionTypeId));
+
+        if (response.Message.Success)
+        {
+            ToastService.ShowSuccess("Description rule removed.");
+            await LoadDescriptionRules();
+            StateHasChanged();
+        }
+        else
+        {
+            ToastService.ShowError(response.Message.ErrorMessage ?? "Failed to remove description rule.");
+        }
     }
 
     public class CategoryTreeNode(CategoryDto category)

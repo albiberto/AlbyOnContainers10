@@ -1,5 +1,7 @@
-﻿using MassTransit;
+using FluentValidation;
+using MassTransit;
 using Microsoft.EntityFrameworkCore;
+using ProductInformationManager.Application.Resources;
 using ProductInformationManager.Domain;
 using ProductInformationManager.Domain.Exceptions;
 using ProductInformationManager.Domain.ValueObjects;
@@ -8,39 +10,50 @@ using ProductInformationManager.Messages;
 
 namespace ProductInformationManager.Application;
 
-public class CreateAttributeTypeConsumer(ProductContext db) : IConsumer<CreateAttributeType>
+public class CreateAttributeTypeConsumer(ProductContext db, IValidator<CreateAttributeType> validator) : IConsumer<CreateAttributeType>
 {
     public async Task Consume(ConsumeContext<CreateAttributeType> context)
     {
         var command = context.Message;
-        
-        // Uso del Domain Model puro (l'ID viene generato internamente dalla factory)
+
+        var validation = await validator.ValidateAsync(command, context.CancellationToken);
+        if (!validation.IsValid)
+        {
+            await context.RespondAsync(new CreateAttributeTypeResult(false, ErrorMessage: validation.Errors[0].ErrorMessage));
+            return;
+        }
+
         var entity = new AttributeType(command.Name, command.Description);
 
         db.AttributeTypes.Add(entity);
         await db.SaveChangesAsync(context.CancellationToken);
 
-        // Estrazione del valore primitivo .Value per il messaggio di risposta
-        await context.RespondAsync(new CreateAttributeTypeResult(entity.Id.Value));
+        await context.RespondAsync(new CreateAttributeTypeResult(true, entity.Id.Value));
     }
 }
 
-public class UpdateAttributeTypeConsumer(ProductContext db) : IConsumer<UpdateAttributeType>
+public class UpdateAttributeTypeConsumer(ProductContext db, IValidator<UpdateAttributeType> validator) : IConsumer<UpdateAttributeType>
 {
     public async Task Consume(ConsumeContext<UpdateAttributeType> context)
     {
         var command = context.Message;
-        var typeId = new AttributeTypeId(command.Id); // Cast Strongly-Typed
-        
+
+        var validation = await validator.ValidateAsync(command, context.CancellationToken);
+        if (!validation.IsValid)
+        {
+            await context.RespondAsync(new UpdateAttributeTypeResult(false, validation.Errors[0].ErrorMessage));
+            return;
+        }
+
+        var typeId = new AttributeTypeId(command.Id);
         var entity = await db.AttributeTypes.FindAsync([typeId], context.CancellationToken);
 
         if (entity is null)
         {
-            await context.RespondAsync(new UpdateAttributeTypeResult(false));
+            await context.RespondAsync(new UpdateAttributeTypeResult(false, ValidationMessages.AttributeTypeNotFound));
             return;
         }
 
-        // Passaggio per il metodo di business del Dominio
         entity.Rename(command.Name, command.Description);
         
         await db.SaveChangesAsync(context.CancellationToken);
@@ -48,30 +61,38 @@ public class UpdateAttributeTypeConsumer(ProductContext db) : IConsumer<UpdateAt
     }
 }
 
-public class CreateAttributeConsumer(ProductContext db) : IConsumer<CreateAttribute>
+public class CreateAttributeConsumer(ProductContext db, IValidator<CreateAttribute> validator) : IConsumer<CreateAttribute>
 {
     public async Task Consume(ConsumeContext<CreateAttribute> context)
     {
         var command = context.Message;
+
+        var validation = await validator.ValidateAsync(command, context.CancellationToken);
+        if (!validation.IsValid)
+        {
+            await context.RespondAsync(new CreateAttributeResult(false, ErrorMessage: validation.Errors[0].ErrorMessage));
+            return;
+        }
+
         var typeId = new AttributeTypeId(command.AttributeTypeId);
 
-        // Carichiamo l'Aggregato Root includendo i figli per validare l'idempotenza
         var attributeType = await db.AttributeTypes
             .Include(at => at.Attributes)
             .FirstOrDefaultAsync(at => at.Id == typeId, context.CancellationToken);
 
         if (attributeType is null)
-            throw new DomainException($"AttributeType {typeId.Value} non trovato.");
+        {
+            await context.RespondAsync(new CreateAttributeResult(false, ErrorMessage: ValidationMessages.AttributeTypeNotFound));
+            return;
+        }
 
-        // NON usiamo new Attribute(). Deleghiamo all'Aggregato la creazione!
         attributeType.AddAttribute(command.Name, command.Value);
         
         await db.SaveChangesAsync(context.CancellationToken);
 
-        // Recuperiamo l'ultimo inserito per restituirne l'ID
         var newAttrId = attributeType.Attributes.Last().Id.Value;
 
-        await context.RespondAsync(new CreateAttributeResult(newAttrId));
+        await context.RespondAsync(new CreateAttributeResult(true, newAttrId));
     }
 }
 
@@ -84,7 +105,17 @@ public class DeleteAttributeConsumer(ProductContext db) : IConsumer<DeleteAttrib
 
         if (entity is null)
         {
-            await context.RespondAsync(new DeleteAttributeResult(false));
+            await context.RespondAsync(new DeleteAttributeResult(false, ValidationMessages.AttributeTypeNotFound));
+            return;
+        }
+
+        // Check if attribute is used by any product
+        var isUsedByProducts = await db.Set<ProductAttribute>()
+            .AnyAsync(pa => pa.AttributeId == attributeId, context.CancellationToken);
+
+        if (isUsedByProducts)
+        {
+            await context.RespondAsync(new DeleteAttributeResult(false, ValidationMessages.AttributeDeleteInUse));
             return;
         }
 
@@ -103,7 +134,19 @@ public class DeleteAttributeTypeConsumer(ProductContext db) : IConsumer<DeleteAt
 
         if (entity is null)
         {
-            await context.RespondAsync(new DeleteAttributeTypeResult(false));
+            await context.RespondAsync(new DeleteAttributeTypeResult(false, ValidationMessages.AttributeTypeNotFound));
+            return;
+        }
+
+        // Check if any attributes of this type are used by products
+        var isUsedByProducts = await db.Attributes
+            .Where(a => a.AttributeTypeId == typeId)
+            .SelectMany(a => db.Set<ProductAttribute>().Where(pa => pa.AttributeId == a.Id))
+            .AnyAsync(context.CancellationToken);
+
+        if (isUsedByProducts)
+        {
+            await context.RespondAsync(new DeleteAttributeTypeResult(false, ValidationMessages.AttributeTypeDeleteInUse));
             return;
         }
 

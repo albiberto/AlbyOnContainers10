@@ -62,7 +62,7 @@
                         </div>
                         <div class="pdm-section-card__actions">
                             <FluentButton Appearance="Appearance.Stealth" IconStart="@(new Icons.Regular.Size16.Edit())" Title="Edit" OnClick="@(() => OpenEditDialog(dt))" />
-                            <FluentButton Appearance="Appearance.Stealth" IconStart="@(new Icons.Regular.Size16.Delete())" Title="Delete" OnClick="@(() => HandleDelete(dt))" />
+                            <FluentButton Appearance="Appearance.Stealth" IconStart="@(new Icons.Regular.Size16.Delete())" Title="Delete" OnClick="@(() => ConfirmDelete(dt))" />
                         </div>
                     </div>
 
@@ -72,7 +72,7 @@
                             {
                                 <span class="pdm-tag">
                                     @value.Value
-                                    <button class="pdm-tag-remove" title="Remove value" @onclick="@(() => HandleDeleteValue(value.Id))">
+                                    <button class="pdm-tag-remove" title="Remove value" @onclick="@(() => ConfirmDeleteValue(value.Id))">
                                         <FluentIcon Value="@(new Icons.Regular.Size12.Dismiss())" Color="Color.Custom" CustomColor="currentColor" />
                                     </button>
                                 </span>
@@ -83,10 +83,12 @@
                             }
                         </div>
 
-                        <div class="pdm-inline-form">
-                            <FluentTextField @bind-Value="_newValueText" Placeholder="New value..." Style="flex: 1;" />
-                            <FluentButton Appearance="Appearance.Outline" IconStart="@(new Icons.Regular.Size16.Add())" OnClick="@(() => HandleAddValue(dt.Id))">Add</FluentButton>
-                        </div>
+                            <div class="pdm-inline-form">
+                                <FluentTextField @bind-Value="_newValueText" Placeholder="New value..." Style="flex: 1;" />
+                                <FluentButton Appearance="Appearance.Outline" IconStart="@(new Icons.Regular.Size16.Add())" OnClick="@(() => HandleAddValue(dt.Id))">Add</FluentButton>
+                            </div>
+
+                            @* Delete value buttons get confirm *@
                     </div>
                 </div>
             }
@@ -119,6 +121,50 @@
     </FluentDialogFooter>
 </FluentDialog>
 
+@* Confirm Delete Type Dialog *@
+<FluentDialog @bind-Hidden="@_confirmDeleteHidden" Modal="true" TrapFocus="true" PreventScroll="true">
+    <FluentDialogHeader>
+        <div class="pdm-dialog-header">
+            <FluentIcon Value="@(new Icons.Regular.Size20.Warning())" Color="Color.Custom" CustomColor="#ef4444" />
+            <h3>Confirm Deletion</h3>
+        </div>
+    </FluentDialogHeader>
+    <FluentDialogBody>
+        <p>Are you sure you want to delete the description type <strong>@_typeToDelete?.Name</strong>?</p>
+        <p style="font-size: 0.85rem; color: var(--pdm-text-muted);">This will also remove all associated values. This action cannot be undone.</p>
+    </FluentDialogBody>
+    <FluentDialogFooter>
+        <FluentButton Appearance="Appearance.Neutral" OnClick="@(() => _confirmDeleteHidden = true)">Cancel</FluentButton>
+        <FluentButton Appearance="Appearance.Accent" Style="--accent-fill-rest: #ef4444; --accent-fill-hover: #dc2626;"
+                      OnClick="HandleDelete" Loading="_deleting"
+                      IconStart="@(new Icons.Regular.Size16.Delete())">
+            Delete
+        </FluentButton>
+    </FluentDialogFooter>
+</FluentDialog>
+
+@* Confirm Delete Value Dialog *@
+<FluentDialog @bind-Hidden="@_confirmDeleteValueHidden" Modal="true" TrapFocus="true" PreventScroll="true">
+    <FluentDialogHeader>
+        <div class="pdm-dialog-header">
+            <FluentIcon Value="@(new Icons.Regular.Size20.Warning())" Color="Color.Custom" CustomColor="#ef4444" />
+            <h3>Confirm Value Deletion</h3>
+        </div>
+    </FluentDialogHeader>
+    <FluentDialogBody>
+        <p>Are you sure you want to delete this description value?</p>
+        <p style="font-size: 0.85rem; color: var(--pdm-text-muted);">Products using this value will lose the association.</p>
+    </FluentDialogBody>
+    <FluentDialogFooter>
+        <FluentButton Appearance="Appearance.Neutral" OnClick="@(() => _confirmDeleteValueHidden = true)">Cancel</FluentButton>
+        <FluentButton Appearance="Appearance.Accent" Style="--accent-fill-rest: #ef4444; --accent-fill-hover: #dc2626;"
+                      OnClick="HandleDeleteValue" Loading="_deletingValue"
+                      IconStart="@(new Icons.Regular.Size16.Delete())">
+            Delete
+        </FluentButton>
+    </FluentDialogFooter>
+</FluentDialog>
+
 @code {
     private List<DescriptionTypeDto> _descriptionTypes = [];
     private bool _loading = true;
@@ -128,6 +174,16 @@
     private string? _formDescription;
     private string _newValueText = string.Empty;
     private DescriptionTypeDto? _editing;
+
+    // Confirm delete type
+    private bool _confirmDeleteHidden = true;
+    private bool _deleting;
+    private DescriptionTypeDto? _typeToDelete;
+
+    // Confirm delete value
+    private bool _confirmDeleteValueHidden = true;
+    private bool _deletingValue;
+    private Guid _valueToDeleteId;
 
     protected override async Task OnInitializedAsync() => await LoadData();
 
@@ -149,34 +205,78 @@
         _saving = true;
         if (_editing is not null)
         {
-            await UpdateClient.GetResponse<UpdateDescriptionTypeResult>(new UpdateDescriptionType(_editing.Id, _formName, _formDescription));
-            ToastService.ShowSuccess("Description type updated.");
+            var response = await UpdateClient.GetResponse<UpdateDescriptionTypeResult>(new UpdateDescriptionType(_editing.Id, _formName, _formDescription));
+            if (response.Message.Success)
+                ToastService.ShowSuccess("Description type updated.");
+            else
+                ToastService.ShowError(response.Message.ErrorMessage ?? "Failed to update description type.");
         }
         else
         {
-            await CreateClient.GetResponse<CreateDescriptionTypeResult>(new CreateDescriptionType(_formName, _formDescription));
-            ToastService.ShowSuccess("Description type created.");
+            var response = await CreateClient.GetResponse<CreateDescriptionTypeResult>(new CreateDescriptionType(_formName, _formDescription));
+            if (response.Message.Success)
+                ToastService.ShowSuccess("Description type created.");
+            else
+                ToastService.ShowError(response.Message.ErrorMessage ?? "Failed to create description type.");
         }
         _saving = false; _dialogHidden = true; await LoadData();
     }
 
-    private async Task HandleDelete(DescriptionTypeDto dt)
+    private void ConfirmDelete(DescriptionTypeDto dt)
     {
-        var response = await DeleteClient.GetResponse<DeleteDescriptionTypeResult>(new DeleteDescriptionType(dt.Id));
-        if (response.Message.Success) { ToastService.ShowSuccess($"'{dt.Name}' deleted."); await LoadData(); }
-        else ToastService.ShowError("Failed to delete.");
+        _typeToDelete = dt;
+        _confirmDeleteHidden = false;
+    }
+
+    private async Task HandleDelete()
+    {
+        if (_typeToDelete is null) return;
+        _deleting = true;
+        var response = await DeleteClient.GetResponse<DeleteDescriptionTypeResult>(new DeleteDescriptionType(_typeToDelete.Id));
+        if (response.Message.Success)
+        {
+            ToastService.ShowSuccess($"'{_typeToDelete.Name}' deleted.");
+            await LoadData();
+        }
+        else
+        {
+            ToastService.ShowError(response.Message.ErrorMessage ?? "Cannot delete description type.");
+        }
+        _deleting = false;
+        _confirmDeleteHidden = true;
     }
 
     private async Task HandleAddValue(Guid descriptionTypeId)
     {
         if (string.IsNullOrWhiteSpace(_newValueText)) return;
-        await AddValueClient.GetResponse<AddDescriptionValueResult>(new AddDescriptionValue(descriptionTypeId, _newValueText));
+        var response = await AddValueClient.GetResponse<AddDescriptionValueResult>(new AddDescriptionValue(descriptionTypeId, _newValueText));
+        if (response.Message.Success)
+            ToastService.ShowSuccess("Value added.");
+        else
+            ToastService.ShowError(response.Message.ErrorMessage ?? "Failed to add value.");
         _newValueText = string.Empty; await LoadData();
     }
 
-    private async Task HandleDeleteValue(Guid valueId)
+    private void ConfirmDeleteValue(Guid valueId)
     {
-        await DeleteValueClient.GetResponse<DeleteDescriptionValueResult>(new DeleteDescriptionValue(valueId));
-        await LoadData();
+        _valueToDeleteId = valueId;
+        _confirmDeleteValueHidden = false;
+    }
+
+    private async Task HandleDeleteValue()
+    {
+        _deletingValue = true;
+        var response = await DeleteValueClient.GetResponse<DeleteDescriptionValueResult>(new DeleteDescriptionValue(_valueToDeleteId));
+        if (response.Message.Success)
+        {
+            ToastService.ShowSuccess("Value deleted.");
+            await LoadData();
+        }
+        else
+        {
+            ToastService.ShowError(response.Message.ErrorMessage ?? "Cannot delete value — it may be used by products.");
+        }
+        _deletingValue = false;
+        _confirmDeleteValueHidden = true;
     }
 }

@@ -1,4 +1,4 @@
-﻿using MassTransit;
+using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using ProductInformationManager.Domain.ValueObjects;
 using ProductInformationManager.Infrastructure;
@@ -21,7 +21,8 @@ public class GetCategoryByIdConsumer(ProductContext db) : IConsumer<GetCategoryB
                 c.Description,
                 c.Path,
                 c.ParentId != null ? c.ParentId.Value : null,
-                c.Children.Any() // Magia di EF Core: diventa un "EXISTS (SELECT 1 FROM Categories WHERE ParentId = Id)"
+                c.Children.Any(),
+                c.DescriptionRules.Count
             ))
             .FirstOrDefaultAsync(context.CancellationToken);
 
@@ -45,7 +46,8 @@ public class GetChildCategoriesConsumer(ProductContext db) : IConsumer<GetChildC
                 c.Description,
                 c.Path,
                 c.ParentId != null ? c.ParentId.Value : null,
-                c.Children.Any()
+                c.Children.Any(),
+                c.DescriptionRules.Count
             ))
             .ToListAsync(context.CancellationToken);
 
@@ -59,7 +61,7 @@ public class GetRootCategoriesConsumer(ProductContext db) : IConsumer<GetRootCat
     {
         var dtos = await db.Categories
             .AsNoTracking()
-            .Where(c => c.ParentId == null) // Le root non hanno padre
+            .Where(c => c.ParentId == null)
             .OrderBy(c => c.Name)
             .Select(c => new CategoryDto(
                 c.Id.Value,
@@ -67,10 +69,30 @@ public class GetRootCategoriesConsumer(ProductContext db) : IConsumer<GetRootCat
                 c.Description,
                 c.Path,
                 null,
-                c.Children.Any()
+                c.Children.Any(),
+                c.DescriptionRules.Count
             ))
             .ToListAsync(context.CancellationToken);
 
         await context.RespondAsync(new GetRootCategoriesResult(dtos));
+    }
+}
+
+public class GetAllCategoriesFlatConsumer(ProductContext db) : IConsumer<GetAllCategoriesFlat>
+{
+    public async Task Consume(ConsumeContext<GetAllCategoriesFlat> context)
+    {
+        var categories = await db.Categories
+            .AsNoTracking()
+            .OrderBy(c => c.Path)
+            .Select(c => new CategoryFlatDto(
+                c.Id.Value,
+                c.Name,
+                c.Path,
+                c.Path.Split('.', StringSplitOptions.None).Length - 1
+            ))
+            .ToListAsync(context.CancellationToken);
+
+        await context.RespondAsync(new GetAllCategoriesFlatResult(categories));
     }
 }

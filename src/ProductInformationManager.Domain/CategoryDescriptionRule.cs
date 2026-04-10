@@ -26,7 +26,7 @@ public class CategoryDescriptionRule : AuditableEntity
     public Category Category { get; private set; } = null!;
 
     // Comportamento esplicito
-    internal void ChangeMandatoryStatus(bool isMandatory) 
+    public void ChangeMandatoryStatus(bool isMandatory) 
     {
         IsMandatory = isMandatory;
     }

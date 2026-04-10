@@ -11,6 +11,11 @@
                       OnClick="@(() => OnAddChild.InvokeAsync(Category.Category.Id))"
                       OnClick:stopPropagation="true" />
         <FluentButton Appearance="Appearance.Stealth"
+                      IconStart="@(new Icons.Regular.Size16.TextDescription())"
+                      Title="Manage descriptions"
+                      OnClick="@(() => OnManageDescriptions.InvokeAsync(Category.Category))"
+                      OnClick:stopPropagation="true" />
+        <FluentButton Appearance="Appearance.Stealth"
                       IconStart="@(new Icons.Regular.Size16.Edit())"
                       Title="Edit category"
                       OnClick="@(() => OnEdit.InvokeAsync(Category.Category))"
@@ -39,7 +44,8 @@
                               OnExpand="OnExpand"
                               OnEdit="OnEdit"
                               OnDelete="OnDelete"
-                              OnAddChild="OnAddChild" />
+                              OnAddChild="OnAddChild"
+                              OnManageDescriptions="OnManageDescriptions" />
         }
     }
     else if (Category.Category.HasChildren)
@@ -64,6 +70,9 @@
 
     [Parameter]
     public EventCallback<Guid?> OnAddChild { get; set; }
+
+    [Parameter]
+    public EventCallback<CategoryDto> OnManageDescriptions { get; set; }
 
     private async Task HandleExpandedChanged(bool expanded)
     {

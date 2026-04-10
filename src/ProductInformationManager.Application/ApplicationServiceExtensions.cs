@@ -1,3 +1,4 @@
+using FluentValidation;
 using MassTransit;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -12,6 +13,12 @@ public static class ApplicationServiceExtensions
         {
             cfg.AddConsumers(typeof(ApplicationServiceExtensions).Assembly);
         });
+
+        // Register FluentValidation validators from this assembly
+        services.AddValidatorsFromAssembly(typeof(ApplicationServiceExtensions).Assembly);
+
+        // Register localization for validation messages
+        services.AddLocalization();
 
         return services;
     }
