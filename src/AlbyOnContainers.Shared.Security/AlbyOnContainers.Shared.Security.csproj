@@ -13,7 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\AlbyOnContainers.ServiceDefaults\AlbyOnContainers.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\AlbyonContainers.ServiceDefaults\AlbyonContainers.ServiceDefaults.csproj" />
   </ItemGroup>
 
 </Project>
