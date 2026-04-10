@@ -81,6 +81,7 @@
         if (expanded && !Category.ChildrenLoaded && Category.Category.HasChildren)
         {
             await OnExpand.InvokeAsync(Category);
+            StateHasChanged();
         }
     }
 }
