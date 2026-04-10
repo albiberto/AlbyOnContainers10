@@ -1,6 +1,6 @@
 <FluentTreeItem Text="@Category.Category.Name"
-                Expanded="@Category.IsExpanded"
-                OnExpandedChanged="HandleExpandedChanged">
+                @bind-Expanded="Category.IsExpanded"
+                @bind-Expanded:after="HandleExpandedChanged">
 
     @* Action buttons (visible on hover via CSS) *@
     <FluentStack Slot="end" Orientation="Orientation.Horizontal" Style="gap: 2px; opacity: 0.5; transition: opacity 150ms;"
@@ -74,11 +74,9 @@
     [Parameter]
     public EventCallback<CategoryDto> OnManageDescriptions { get; set; }
 
-    private async Task HandleExpandedChanged(bool expanded)
+    private async Task HandleExpandedChanged()
     {
-        Category.IsExpanded = expanded;
-
-        if (expanded && !Category.ChildrenLoaded && Category.Category.HasChildren)
+        if (Category.IsExpanded && !Category.ChildrenLoaded && Category.Category.HasChildren)
         {
             await OnExpand.InvokeAsync(Category);
             StateHasChanged();
