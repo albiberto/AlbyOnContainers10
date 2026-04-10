@@ -12,11 +12,35 @@
     <link rel="stylesheet" href="css/app.css" />
     <link rel="stylesheet" href="ProductInformationManager.Web.styles.css" />
     <HeadOutlet @rendermode="RenderMode.InteractiveServer" />
+    <script>
+        (function() {
+            var theme = localStorage.getItem('pdm-theme');
+            if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
 </head>
 <body>
     <Routes @rendermode="RenderMode.InteractiveServer" />
 
     <script src="_framework/blazor.web.js"></script>
     <script src="_content/Microsoft.FluentUI.AspNetCore.Components/Microsoft.FluentUI.AspNetCore.Components.lib.module.js" type="module" async></script>
+    <script>
+        window.pdmTheme = {
+            toggle: function() {
+                var html = document.documentElement;
+                var current = html.getAttribute('data-theme');
+                var next = current === 'dark' ? 'light' : 'dark';
+                if (next === 'light') { html.removeAttribute('data-theme'); }
+                else { html.setAttribute('data-theme', 'dark'); }
+                localStorage.setItem('pdm-theme', next);
+                return next;
+            },
+            get: function() {
+                return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+            }
+        };
+    </script>
 </body>
 </html>

@@ -31,19 +31,19 @@
 
     @if (_loading)
     {
-        <div style="display: flex; flex-direction: column; align-items: center; padding: 48px; gap: 16px; color: var(--pdm-text-muted);">
+        <div class="pdm-loading-state">
             <FluentProgressRing />
             <span>Loading attribute types…</span>
         </div>
     }
     else if (!_attributeTypes.Any())
     {
-        <div style="text-align: center; padding: 48px; color: var(--pdm-text-muted);">
-            <div style="width: 56px; height: 56px; margin: 0 auto 16px; background: var(--pdm-bg-subtle); border-radius: var(--pdm-radius-lg); display: flex; align-items: center; justify-content: center; opacity: 0.5;">
+        <div class="pdm-empty-state">
+            <div class="pdm-empty-state__icon">
                 <FluentIcon Value="@(new Icons.Regular.Size24.Tag())" Color="Color.Custom" CustomColor="#64748b" />
             </div>
-            <p style="margin: 0;">No attribute types yet.</p>
-            <p style="font-size: 0.8rem; margin-top: 4px;">Click "Add Attribute Type" to start defining product attributes.</p>
+            <p>No attribute types yet.</p>
+            <p>Click "Add Attribute Type" to start defining product attributes.</p>
         </div>
     }
     else
@@ -51,22 +51,22 @@
         <FluentStack Orientation="Orientation.Vertical" Style="gap: 16px;">
             @foreach (var at in _attributeTypes)
             {
-                <FluentCard Style="padding: 24px;">
-                    <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;">
-                        <div style="flex: 1; min-width: 0;">
-                            <h3 style="margin: 0; font-size: 1.05rem;">@at.Name</h3>
+                <div class="pdm-section-card">
+                    <div class="pdm-section-card__header">
+                        <div class="pdm-section-card__body">
+                            <h3 class="pdm-section-card__title">@at.Name</h3>
                             @if (!string.IsNullOrEmpty(at.Description))
                             {
-                                <div style="font-size: 0.825rem; color: var(--pdm-text-secondary); margin-top: 4px;">@at.Description</div>
+                                <div class="pdm-section-card__description">@at.Description</div>
                             }
                         </div>
-                        <div style="display: flex; gap: 2px; flex-shrink: 0;">
+                        <div class="pdm-section-card__actions">
                             <FluentButton Appearance="Appearance.Stealth" IconStart="@(new Icons.Regular.Size16.Edit())" Title="Edit" OnClick="@(() => OpenEditDialog(at))" />
                             <FluentButton Appearance="Appearance.Stealth" IconStart="@(new Icons.Regular.Size16.Delete())" Title="Delete" OnClick="@(() => HandleDeleteType(at))" />
                         </div>
                     </div>
 
-                    <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--pdm-border);">
+                    <div class="pdm-section-card__content">
                         @if (at.Attributes.Any())
                         {
                             <FluentDataGrid Items="@at.Attributes.AsQueryable()" TGridItem="AttributeDto"
@@ -80,7 +80,7 @@
                         }
                         else
                         {
-                            <div style="font-size: 0.825rem; color: var(--pdm-text-muted); padding: 8px 0;">No attributes defined yet.</div>
+                            <div class="pdm-no-items-text">No attributes defined yet.</div>
                         }
 
                         <div class="pdm-inline-form">
@@ -89,7 +89,7 @@
                             <FluentButton Appearance="Appearance.Outline" IconStart="@(new Icons.Regular.Size16.Add())" OnClick="@(() => HandleAddAttribute(at.Id))">Add</FluentButton>
                         </div>
                     </div>
-                </FluentCard>
+                </div>
             }
         </FluentStack>
     }
@@ -97,17 +97,17 @@
 
 <FluentDialog @bind-Hidden="@_dialogHidden" Modal="true" TrapFocus="true" PreventScroll="true">
     <FluentDialogHeader>
-        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+        <div class="pdm-dialog-header">
             <FluentIcon Value="@(_editing is not null ? new Icons.Regular.Size20.Edit() : (Icon)new Icons.Regular.Size20.Add())"
                         Color="Color.Custom" CustomColor="#f59e0b" />
-            <h3 style="margin: 0;">@(_editing is not null ? "Edit Attribute Type" : "New Attribute Type")</h3>
+            <h3>@(_editing is not null ? "Edit Attribute Type" : "New Attribute Type")</h3>
         </div>
-        <div style="font-size: 0.825rem; color: var(--pdm-text-muted); margin-bottom: 16px;">
+        <div class="pdm-dialog-subtitle">
             @(_editing is not null ? "Update the attribute type details" : "Define a new attribute type for products")
         </div>
     </FluentDialogHeader>
     <FluentDialogBody>
-        <FluentStack Orientation="Orientation.Vertical" Style="gap: 16px; min-width: 420px;">
+        <FluentStack Orientation="Orientation.Vertical" Class="pdm-dialog-form">
             <FluentTextField @bind-Value="_formName" Label="Name" Required="true" Style="width: 100%;" Placeholder="e.g. Color, Size, Material..." />
             <FluentTextArea @bind-Value="_formDescription" Label="Description" Rows="2" Style="width: 100%;" Placeholder="Optional description..." />
         </FluentStack>
