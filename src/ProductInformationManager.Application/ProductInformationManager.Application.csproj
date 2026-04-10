@@ -7,7 +7,10 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="FluentValidation" Version="11.*" />
+        <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.*" />
         <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.5"/>
+        <PackageReference Include="Microsoft.Extensions.Localization" Version="10.*" />
         <PackageReference Include="MassTransit" Version="8.*"/>
     </ItemGroup>
 
@@ -15,7 +18,8 @@
       <ProjectReference Include="..\ProductInformationManager.Domain\ProductInformationManager.Domain.csproj" />
       <ProjectReference Include="..\ProductInformationManager.Infrastructure\ProductInformationManager.Infrastructure.csproj" />
       <ProjectReference Include="..\ProductInformationManager.Messages\ProductInformationManager.Messages.csproj" />
-      <ProjectReference Include="..\src\ProductInformationManager.Infrastructure\ProductInformationManager.Infrastructure.csproj" />
+      <ProjectReference Include="..\AlbyOnContainers.Shared.Domain\AlbyOnContainers.Shared.Domain.csproj" />
     </ItemGroup>
+
 
 </Project>

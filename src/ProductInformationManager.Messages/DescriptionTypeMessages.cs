@@ -9,20 +9,20 @@ public record GetDescriptionTypeByIdResult(DescriptionTypeDto? DescriptionType);
 
 // === Commands ===
 public record CreateDescriptionType(string Name, string? Description);
-public record CreateDescriptionTypeResult(Guid Id);
+public record CreateDescriptionTypeResult(bool Success, Guid Id = default, string? ErrorMessage = null);
 
 public record UpdateDescriptionType(Guid Id, string Name, string? Description);
-public record UpdateDescriptionTypeResult(bool Success);
+public record UpdateDescriptionTypeResult(bool Success, string? ErrorMessage = null);
 
 public record DeleteDescriptionType(Guid Id);
-public record DeleteDescriptionTypeResult(bool Success);
+public record DeleteDescriptionTypeResult(bool Success, string? ErrorMessage = null);
 
 // === Description Values ===
 public record AddDescriptionValue(Guid DescriptionTypeId, string Value);
-public record AddDescriptionValueResult(Guid Id);
+public record AddDescriptionValueResult(bool Success, Guid Id = default, string? ErrorMessage = null);
 
 public record DeleteDescriptionValue(Guid Id);
-public record DeleteDescriptionValueResult(bool Success);
+public record DeleteDescriptionValueResult(bool Success, string? ErrorMessage = null);
 
 // === DTOs ===
 public record DescriptionTypeDto(Guid Id, string Name, string? Description, List<DescriptionValueDto> Values);
