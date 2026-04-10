@@ -28,27 +28,27 @@
         </FluentButton>
     </div>
 
-    <div style="background: var(--pdm-bg-card); border: 1px solid var(--pdm-border); border-radius: var(--pdm-radius-lg); overflow: hidden;">
+    <div class="pdm-data-panel">
         @if (_loading)
         {
-            <div style="display: flex; flex-direction: column; align-items: center; padding: 48px; gap: 16px; color: var(--pdm-text-muted);">
+            <div class="pdm-loading-state">
                 <FluentProgressRing />
                 <span>Loading products…</span>
             </div>
         }
         else if (!_products.Any())
         {
-            <div style="text-align: center; padding: 48px; color: var(--pdm-text-muted);">
-                <div style="width: 56px; height: 56px; margin: 0 auto 16px; background: var(--pdm-bg-subtle); border-radius: var(--pdm-radius-lg); display: flex; align-items: center; justify-content: center; opacity: 0.5;">
+            <div class="pdm-empty-state">
+                <div class="pdm-empty-state__icon">
                     <FluentIcon Value="@(new Icons.Regular.Size24.Box())" Color="Color.Custom" CustomColor="#64748b" />
                 </div>
-                <p style="margin: 0;">No products yet.</p>
-                <p style="font-size: 0.8rem; margin-top: 4px;">Click "Add Product" to create your first one.</p>
+                <p>No products yet.</p>
+                <p>Click "Add Product" to create your first one.</p>
             </div>
         }
         else
         {
-            <div style="padding: 4px;">
+            <div class="pdm-data-panel__grid-wrapper">
                 <FluentDataGrid Items="@_products.AsQueryable()" Pagination="@_pagination" TGridItem="ProductDto"
                                 Style="width: 100%;" GridTemplateColumns="1fr 0.6fr 0.5fr 0.4fr 0.5fr">
                     <PropertyColumn Property="@(p => p.Name)" Title="Name" Sortable="true" />
@@ -57,14 +57,14 @@
                     <TemplateColumn Title="Status">
                         @if (context.IsActive)
                         {
-                            <span style="display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 100px; font-size: 0.75rem; font-weight: 500; background: rgba(16,185,129,0.12); color: var(--pdm-success);">
-                                <span style="width: 6px; height: 6px; border-radius: 50%; background: currentColor;"></span> Active
+                            <span class="pdm-status-badge pdm-status-badge--active">
+                                <span class="pdm-status-dot"></span> Active
                             </span>
                         }
                         else
                         {
-                            <span style="display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 100px; font-size: 0.75rem; font-weight: 500; background: rgba(100,116,139,0.12); color: var(--pdm-text-muted);">
-                                <span style="width: 6px; height: 6px; border-radius: 50%; background: currentColor;"></span> Inactive
+                            <span class="pdm-status-badge pdm-status-badge--inactive">
+                                <span class="pdm-status-dot"></span> Inactive
                             </span>
                         }
                     </TemplateColumn>
@@ -76,7 +76,7 @@
                     </TemplateColumn>
                 </FluentDataGrid>
             </div>
-            <div style="padding: 12px 16px; border-top: 1px solid var(--pdm-border);">
+            <div class="pdm-data-panel__footer">
                 <FluentPaginator State="@_pagination" />
             </div>
         }
@@ -85,17 +85,17 @@
 
 <FluentDialog @bind-Hidden="@_dialogHidden" Modal="true" TrapFocus="true" PreventScroll="true">
     <FluentDialogHeader>
-        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+        <div class="pdm-dialog-header">
             <FluentIcon Value="@(_editingProduct is not null ? new Icons.Regular.Size20.Edit() : (Icon)new Icons.Regular.Size20.Add())"
                         Color="Color.Custom" CustomColor="#22d3ee" />
-            <h3 style="margin: 0;">@(_editingProduct is not null ? "Edit Product" : "New Product")</h3>
+            <h3>@(_editingProduct is not null ? "Edit Product" : "New Product")</h3>
         </div>
-        <div style="font-size: 0.825rem; color: var(--pdm-text-muted); margin-bottom: 16px;">
+        <div class="pdm-dialog-subtitle">
             @(_editingProduct is not null ? "Update product information" : "Fill in the details for the new product")
         </div>
     </FluentDialogHeader>
     <FluentDialogBody>
-        <FluentStack Orientation="Orientation.Vertical" Style="gap: 16px; min-width: 480px;">
+        <FluentStack Orientation="Orientation.Vertical" Class="pdm-dialog-form">
             <FluentTextField @bind-Value="_formName" Label="Name" Required="true" Style="width: 100%;" Placeholder="e.g. Wireless Headphones" />
             <FluentStack Orientation="Orientation.Horizontal" Style="gap: 12px;">
                 <FluentTextField @bind-Value="_formSku" Label="SKU" Required="true" Style="flex: 1;" Placeholder="e.g. WH-1000XM5" />

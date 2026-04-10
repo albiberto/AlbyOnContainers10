@@ -31,24 +31,24 @@
 
     @if (_loading)
     {
-        <div style="display: flex; flex-direction: column; align-items: center; padding: 48px; gap: 16px; color: var(--pdm-text-muted);">
+        <div class="pdm-loading-state">
             <FluentProgressRing />
             <span>Loading categories…</span>
         </div>
     }
     else if (!_rootCategories.Any())
     {
-        <div style="text-align: center; padding: 48px; color: var(--pdm-text-muted);">
-            <div style="width: 56px; height: 56px; margin: 0 auto 16px; background: var(--pdm-bg-subtle); border-radius: var(--pdm-radius-lg); display: flex; align-items: center; justify-content: center; opacity: 0.5;">
+        <div class="pdm-empty-state">
+            <div class="pdm-empty-state__icon">
                 <FluentIcon Value="@(new Icons.Regular.Size24.FolderMultiple())" Color="Color.Custom" CustomColor="#64748b" />
             </div>
-            <p style="margin: 0;">No categories yet.</p>
-            <p style="font-size: 0.8rem; margin-top: 4px;">Click "Add Root Category" to create the first one.</p>
+            <p>No categories yet.</p>
+            <p>Click "Add Root Category" to create the first one.</p>
         </div>
     }
     else
     {
-        <div style="background: var(--pdm-bg-card); border: 1px solid var(--pdm-border); border-radius: var(--pdm-radius-lg); padding: 16px;">
+        <div class="pdm-data-panel pdm-data-panel--padded">
             <FluentTreeView>
                 @foreach (var category in _rootCategories)
                 {
@@ -65,12 +65,12 @@
 
 <FluentDialog @bind-Hidden="@_dialogHidden" Modal="true" TrapFocus="true" PreventScroll="true">
     <FluentDialogHeader>
-        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+        <div class="pdm-dialog-header">
             <FluentIcon Value="@(_editingCategory is not null ? new Icons.Regular.Size20.Edit() : (Icon)new Icons.Regular.Size20.Add())"
                         Color="Color.Custom" CustomColor="#818cf8" />
-            <h3 style="margin: 0;">@(_editingCategory is not null ? "Edit Category" : "New Category")</h3>
+            <h3>@(_editingCategory is not null ? "Edit Category" : "New Category")</h3>
         </div>
-        <div style="font-size: 0.825rem; color: var(--pdm-text-muted); margin-bottom: 16px;">
+        <div class="pdm-dialog-subtitle">
             @if (_editingCategory is not null)
             { <span>Update the category name and description</span> }
             else if (_parentIdForCreate.HasValue)
@@ -80,7 +80,7 @@
         </div>
     </FluentDialogHeader>
     <FluentDialogBody>
-        <FluentStack Orientation="Orientation.Vertical" Style="gap: 16px; min-width: 420px;">
+        <FluentStack Orientation="Orientation.Vertical" Class="pdm-dialog-form">
             <FluentTextField @bind-Value="_formName" Label="Name" Required="true" Style="width: 100%;" Placeholder="e.g. Electronics, Clothing..." />
             <FluentTextArea @bind-Value="_formDescription" Label="Description" Rows="3" Style="width: 100%;" Placeholder="Optional description for this category..." />
         </FluentStack>
