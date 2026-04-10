@@ -9,7 +9,8 @@ public static class InfrastructureServiceExtensions
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, string connectionString)
     {
-        services.AddSingleton<IInterceptor, AuditableEntityInterceptor>();
+        services.AddHttpContextAccessor();
+        services.AddScoped<IInterceptor, AuditableEntityInterceptor>();
         services.AddDbContext<ProductContext>(options => options.UseNpgsql(connectionString));
         
         // Registra l'operatore di migrazione automatica come Background Service

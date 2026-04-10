@@ -3,19 +3,20 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 
 namespace AlbyOnContainers.Shared.Security;
 
 public static class KeycloakAuthenticationExtensions
 {
-    public static IServiceCollection AddKeycloakAuthentication(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddKeycloakAuthentication(this IServiceCollection services, IConfiguration configuration, IHostEnvironment environment)
     {
         var keycloakSection = configuration.GetSection("Keycloak");
 
-        var authority = keycloakSection["Authority"] ?? "http://localhost:8080/realms/productdatamanager";
-        var clientId = keycloakSection["ClientId"] ?? "productdatamanager-web";
-        var clientSecret = keycloakSection["ClientSecret"] ?? "secret";
+        var authority = keycloakSection["Authority"] ?? throw new InvalidOperationException("Keycloak:Authority configuration is required.");
+        var clientId = keycloakSection["ClientId"] ?? throw new InvalidOperationException("Keycloak:ClientId configuration is required.");
+        var clientSecret = keycloakSection["ClientSecret"] ?? throw new InvalidOperationException("Keycloak:ClientSecret configuration is required.");
 
         services.AddAuthentication(options =>
             {
@@ -32,7 +33,7 @@ public static class KeycloakAuthenticationExtensions
                 options.SaveTokens = true;
                 options.GetClaimsFromUserInfoEndpoint = true;
                 options.MapInboundClaims = false;
-                options.RequireHttpsMetadata = false; // Dev only
+                options.RequireHttpsMetadata = !environment.IsDevelopment();
 
                 options.Scope.Clear();
                 options.Scope.Add("openid");
