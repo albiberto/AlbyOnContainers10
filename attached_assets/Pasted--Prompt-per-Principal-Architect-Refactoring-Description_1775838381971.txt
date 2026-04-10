@@ -1,0 +1,81 @@
+📋 Prompt per Principal Architect: Refactoring Description Types Module
+Ruolo: Agisci come un Principal Software Architect e Senior .NET Developer con esperienza in sistemi enterprise distribuiti.
+Stack: .NET 10, C# 13, Blazor Fluent UI, MassTransit (CQRS/Messaging), EF Core + PostgreSQL, .NET Aspire.
+
+Obiettivo: Eseguire il refactoring completo del modulo "Description Types" per supportare associazioni multiple alle categorie, coerenza del dominio DDD e una UI scalabile.
+
+1. Requisiti UI & UX (Blazor Fluent UI)
+Grid Principale (DescriptionTypes.razor):
+
+Implementa una FluentDataGrid con PaginationState (20 item per pagina).
+
+Colonne: Nome, Descrizione (troncata), Badge "Global/Specialized", Tag Cloud dei primi 5 Valori, Tag Cloud delle Categorie associate.
+
+Se IsGlobal è true, nella colonna categorie mostra un badge unico "Tutte le Categorie" con stile distintivo.
+
+CSS Isolation: Sposta tutto il CSS in DescriptionTypes.razor.css. Usa Flexbox, variabili Fluent UI e rimuovi ogni stile inline.
+
+Edit Popup (FluentDialog):
+
+Gestione Name e Description.
+
+Toggle IsGlobal. Se true, nasconde la selezione categorie.
+
+Multi-Category Selection: Se IsGlobal è false, usa FluentAutocomplete. Carica le prime 50 categorie all'avvio e filtra localmente sulla lista _allCategories (cache) durante il typing.
+
+Values Grid: Una sezione dinamica per aggiungere/rimuovere i valori supportati (Value Objects).
+
+State Management: Assicura il reset completo del FormModel e dei DiffBuffer alla chiusura del dialog o al passaggio da Edit a Create.
+
+2. Logica di Business & DDD (Domain)
+Aggiornamento Aggregate Root (DescriptionType.cs):
+
+Aggiungi proprietà IsGlobal.
+
+Implementa il metodo UpdateMetadata(string name, string description, bool isGlobal).
+
+Invariante di Integrità: Se IsGlobal diventa true, il dominio deve invalidare/rimuovere tutte le CategoryDescriptionRule esistenti.
+
+Relazione N:N: La mappatura tra DescriptionType e Category deve passare per la tabella di join CategoryDescriptionRule.
+
+3. Messaging & Application Logic (MassTransit)
+Pattern Diff: Nel salvataggio (UI -> Consumer), calcola la differenza tra le categorie precedentemente associate e quelle nuove. Invia comandi granulari AddCategoryDescriptionRule e RemoveCategoryDescriptionRule.
+
+Consistenza nei Consumer:
+
+I consumer devono essere idempotenti.
+
+Usa Primary Constructors per iniettare ProductContext e IValidator.
+
+Validazione (FluentValidation):
+
+Se IsGlobal è false, la lista delle categorie associate non può essere vuota.
+
+Validazione nomi duplicati (case-insensitive).
+
+4. Linee Guida Codice (C# 13)
+Usa Collection Expressions [] per inizializzare liste e array.
+
+Usa Primary Constructors ovunque possibile.
+
+Utilizza i record per i DTO e per gli Strongly-Typed ID.
+
+Gestisci la concorrenza ottimistica nel salvataggio.
+
+5. Input di Riferimento (Codice Base)
+(Incolla qui sotto il codice che hai già, inclusi DescriptionType.cs, Category.cs e i Consumer attuali)
+
+Output Richiesto:
+
+Codice completo di DescriptionTypes.razor e DescriptionTypes.razor.css.
+
+Aggiornamento dell'Aggregate Root DescriptionType.
+
+Implementazione dei Consumer MassTransit aggiornati con logica di sincronizzazione.
+
+Classi FluentValidation aggiornate.
+
+Indicazione precisa dei campi che richiedono una nuova migrazione EF Core.
+
+💡 Nota per l'IA:
+Non generare un progetto base. Voglio un codice pronto per la produzione che rispetti rigorosamente la separazione dei livelli tra Dominio, Applicazione e UI. Gestisci gli errori tramite IToastService e assicurati che ogni operazione asincrona supporti il CancellationToken.

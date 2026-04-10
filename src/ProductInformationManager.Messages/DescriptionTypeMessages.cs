@@ -8,10 +8,21 @@ public record GetDescriptionTypeById(Guid Id);
 public record GetDescriptionTypeByIdResult(DescriptionTypeDto? DescriptionType);
 
 // === Commands ===
-public record CreateDescriptionType(string Name, string? Description);
+public record CreateDescriptionType(
+    string Name,
+    string? Description,
+    bool IsGlobal,
+    List<Guid> CategoryIds);
+
 public record CreateDescriptionTypeResult(bool Success, Guid Id = default, string? ErrorMessage = null);
 
-public record UpdateDescriptionType(Guid Id, string Name, string? Description);
+public record UpdateDescriptionType(
+    Guid Id,
+    string Name,
+    string? Description,
+    bool IsGlobal,
+    List<Guid> CategoryIds);
+
 public record UpdateDescriptionTypeResult(bool Success, string? ErrorMessage = null);
 
 public record DeleteDescriptionType(Guid Id);
@@ -25,5 +36,12 @@ public record DeleteDescriptionValue(Guid Id);
 public record DeleteDescriptionValueResult(bool Success, string? ErrorMessage = null);
 
 // === DTOs ===
-public record DescriptionTypeDto(Guid Id, string Name, string? Description, List<DescriptionValueDto> Values);
+public record DescriptionTypeDto(
+    Guid Id,
+    string Name,
+    string? Description,
+    bool IsGlobal,
+    List<DescriptionValueDto> Values,
+    List<Guid> CategoryIds);
+
 public record DescriptionValueDto(Guid Id, string Value);

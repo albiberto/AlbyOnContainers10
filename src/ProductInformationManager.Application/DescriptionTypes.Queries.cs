@@ -1,4 +1,4 @@
-﻿using MassTransit;
+using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using ProductInformationManager.Domain.ValueObjects;
 using ProductInformationManager.Infrastructure;
@@ -12,7 +12,6 @@ public class GetDescriptionTypeByIdConsumer(ProductContext db) : IConsumer<GetDe
     {
         var typeId = new DescriptionTypeId(context.Message.Id);
 
-        // Proiezione diretta: EF Core esegue una Left Join e restituisce solo ciò che ci serve
         var dto = await db.DescriptionTypes
             .AsNoTracking()
             .Where(d => d.Id == typeId)
@@ -20,7 +19,14 @@ public class GetDescriptionTypeByIdConsumer(ProductContext db) : IConsumer<GetDe
                 d.Id.Value,
                 d.Name,
                 d.Description,
-                d.Values.Select(v => new DescriptionValueDto(v.Id.Value, v.Value)).ToList()
+                d.IsGlobal,
+                d.Values
+                    .OrderBy(v => v.Value)
+                    .Select(v => new DescriptionValueDto(v.Id.Value, v.Value))
+                    .ToList(),
+                d.CategoryRules
+                    .Select(r => r.CategoryId.Value)
+                    .ToList()
             ))
             .FirstOrDefaultAsync(context.CancellationToken);
 
@@ -32,7 +38,6 @@ public class GetDescriptionTypesConsumer(ProductContext db) : IConsumer<GetDescr
 {
     public async Task Consume(ConsumeContext<GetDescriptionTypes> context)
     {
-        // Nessun Include, una sola query SQL ottimizzata con AsNoTracking
         var dtos = await db.DescriptionTypes
             .AsNoTracking()
             .OrderBy(d => d.Name)
@@ -40,9 +45,13 @@ public class GetDescriptionTypesConsumer(ProductContext db) : IConsumer<GetDescr
                 d.Id.Value,
                 d.Name,
                 d.Description,
+                d.IsGlobal,
                 d.Values
                     .OrderBy(v => v.Value)
                     .Select(v => new DescriptionValueDto(v.Id.Value, v.Value))
+                    .ToList(),
+                d.CategoryRules
+                    .Select(r => r.CategoryId.Value)
                     .ToList()
             ))
             .ToListAsync(context.CancellationToken);

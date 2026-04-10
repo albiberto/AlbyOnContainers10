@@ -2,6 +2,7 @@
 @using MassTransit
 
 @inject IRequestClient<GetDescriptionTypes> DescriptionTypesClient
+@inject IRequestClient<GetAllCategoriesFlat> CategoriesClient
 @inject IRequestClient<CreateDescriptionType> CreateClient
 @inject IRequestClient<UpdateDescriptionType> UpdateClient
 @inject IRequestClient<DeleteDescriptionType> DeleteClient
@@ -20,7 +21,7 @@
                 </span>
                 Description Types
             </h1>
-            <div style="font-size: 0.85rem; color: var(--pdm-text-muted); margin-top: 2px;">Define structured description schemas with configurable value sets</div>
+            <div class="pdm-page-subtitle">Define structured description schemas with configurable value sets</div>
         </div>
         <FluentButton Appearance="Appearance.Accent"
                       IconStart="@(new Icons.Regular.Size16.Add())"
@@ -36,7 +37,7 @@
             <span>Loading description types…</span>
         </div>
     }
-    else if (!_descriptionTypes.Any())
+    else if (!_allDescriptionTypes.Any())
     {
         <div class="pdm-empty-state">
             <div class="pdm-empty-state__icon">
@@ -48,55 +49,111 @@
     }
     else
     {
-        <FluentStack Orientation="Orientation.Vertical" Style="gap: 16px;">
-            @foreach (var dt in _descriptionTypes)
-            {
-                <div class="pdm-section-card">
-                    <div class="pdm-section-card__header">
-                        <div class="pdm-section-card__body">
-                            <h3 class="pdm-section-card__title">@dt.Name</h3>
-                            @if (!string.IsNullOrEmpty(dt.Description))
-                            {
-                                <div class="pdm-section-card__description">@dt.Description</div>
-                            }
-                        </div>
-                        <div class="pdm-section-card__actions">
-                            <FluentButton Appearance="Appearance.Stealth" IconStart="@(new Icons.Regular.Size16.Edit())" Title="Edit" OnClick="@(() => OpenEditDialog(dt))" />
-                            <FluentButton Appearance="Appearance.Stealth" IconStart="@(new Icons.Regular.Size16.Delete())" Title="Delete" OnClick="@(() => ConfirmDelete(dt))" />
-                        </div>
-                    </div>
+        <FluentDataGrid Items="@GetFilteredItems()"
+                        Pagination="@_pagination"
+                        TGridItem="DescriptionTypeDto"
+                        GridTemplateColumns="1fr 1.2fr 0.6fr 1.2fr 1.2fr 80px">
 
-                    <div class="pdm-section-card__content">
-                        <div class="pdm-tags-container">
-                            @foreach (var value in dt.Values)
-                            {
-                                <span class="pdm-tag">
-                                    @value.Value
-                                    <button class="pdm-tag-remove" title="Remove value" @onclick="@(() => ConfirmDeleteValue(value.Id))">
-                                        <FluentIcon Value="@(new Icons.Regular.Size12.Dismiss())" Color="Color.Custom" CustomColor="currentColor" />
-                                    </button>
-                                </span>
-                            }
-                            @if (!dt.Values.Any())
-                            {
-                                <span class="pdm-no-items-text">No values defined yet.</span>
-                            }
-                        </div>
+            <PropertyColumn Property="@(dt => dt.Name)" Title="Name" Sortable="true">
+                <ColumnOptions>
+                    <FluentSearch @bind-Value="_nameFilter"
+                                  @oninput="ApplyFilters"
+                                  Placeholder="Filter by name…"
+                                  style="width: 100%;" />
+                </ColumnOptions>
+            </PropertyColumn>
 
-                            <div class="pdm-inline-form">
-                                <FluentTextField @bind-Value="_newValueText" Placeholder="New value..." Style="flex: 1;" />
-                                <FluentButton Appearance="Appearance.Outline" IconStart="@(new Icons.Regular.Size16.Add())" OnClick="@(() => HandleAddValue(dt.Id))">Add</FluentButton>
-                            </div>
+            <TemplateColumn Title="Description" Sortable="false">
+                <span class="dt-description-cell" title="@context.Description">
+                    @TruncateDescription(context.Description)
+                </span>
+            </TemplateColumn>
 
-                            @* Delete value buttons get confirm *@
-                    </div>
+            <TemplateColumn Title="Scope" Sortable="false">
+                @if (context.IsGlobal)
+                {
+                    <span class="dt-badge dt-badge--global">
+                        <FluentIcon Value="@(new Icons.Regular.Size12.Globe())" Color="Color.Custom" CustomColor="currentColor" />
+                        Global
+                    </span>
+                }
+                else
+                {
+                    <span class="dt-badge dt-badge--specialized">
+                        <FluentIcon Value="@(new Icons.Regular.Size12.Tag())" Color="Color.Custom" CustomColor="currentColor" />
+                        Specialized
+                    </span>
+                }
+            </TemplateColumn>
+
+            <TemplateColumn Title="Values" Sortable="false">
+                <div class="dt-tag-cloud">
+                    @foreach (var v in context.Values.Take(5))
+                    {
+                        <span class="dt-tag dt-tag--value">@v.Value</span>
+                    }
+                    @if (context.Values.Count > 5)
+                    {
+                        <span class="dt-tag dt-tag--more">+@(context.Values.Count - 5)</span>
+                    }
+                    @if (!context.Values.Any())
+                    {
+                        <span class="dt-no-items">No values</span>
+                    }
                 </div>
-            }
-        </FluentStack>
+            </TemplateColumn>
+
+            <TemplateColumn Title="Categories" Sortable="false">
+                @if (context.IsGlobal)
+                {
+                    <span class="dt-badge dt-badge--all-categories">
+                        <FluentIcon Value="@(new Icons.Regular.Size12.Globe())" Color="Color.Custom" CustomColor="currentColor" />
+                        All Categories
+                    </span>
+                }
+                else
+                {
+                    <div class="dt-tag-cloud">
+                        @foreach (var catId in context.CategoryIds.Take(5))
+                        {
+                            var catName = GetCategoryName(catId);
+                            <span class="dt-tag dt-tag--category" title="@catName">@catName</span>
+                        }
+                        @if (context.CategoryIds.Count > 5)
+                        {
+                            <span class="dt-tag dt-tag--more">+@(context.CategoryIds.Count - 5)</span>
+                        }
+                        @if (!context.CategoryIds.Any())
+                        {
+                            <span class="dt-no-items">No categories</span>
+                        }
+                    </div>
+                }
+            </TemplateColumn>
+
+            <TemplateColumn Title="" Sortable="false">
+                <div class="dt-actions">
+                    <FluentButton Appearance="Appearance.Stealth"
+                                  IconStart="@(new Icons.Regular.Size16.Edit())"
+                                  Title="Edit"
+                                  OnClick="@(() => OpenEditDialog(context))" />
+                    <FluentButton Appearance="Appearance.Stealth"
+                                  IconStart="@(new Icons.Regular.Size16.Delete())"
+                                  Title="Delete"
+                                  OnClick="@(() => ConfirmDelete(context))" />
+                </div>
+            </TemplateColumn>
+        </FluentDataGrid>
+        <FluentDataGridPaginator State="@_pagination" />
     }
 </div>
 
-<FluentDialog @bind-Hidden="@_dialogHidden" Modal="true" TrapFocus="true" PreventScroll="true">
+@* ── Create / Edit Dialog ── *@
+<FluentDialog @bind-Hidden="@_dialogHidden"
+              Modal="true"
+              TrapFocus="true"
+              PreventScroll="true"
+              style="--dialog-width: 680px;">
     <FluentDialogHeader>
         <div class="pdm-dialog-header">
             <FluentIcon Value="@(_editing is not null ? new Icons.Regular.Size20.Edit() : (Icon)new Icons.Regular.Size20.Add())"
@@ -104,24 +161,124 @@
             <h3>@(_editing is not null ? "Edit Description Type" : "New Description Type")</h3>
         </div>
         <div class="pdm-dialog-subtitle">
-            @(_editing is not null ? "Update the description type details" : "Define a new description type for products")
+            @(_editing is not null ? "Update the description type details and category associations" : "Define a new description type for products")
         </div>
     </FluentDialogHeader>
+
     <FluentDialogBody>
-        <FluentStack Orientation="Orientation.Vertical" Class="pdm-dialog-form">
-            <FluentTextField @bind-Value="_formName" Label="Name" Required="true" Style="width: 100%;" Placeholder="e.g. Technical Specs, Features..." />
-            <FluentTextArea @bind-Value="_formDescription" Label="Description" Rows="2" Style="width: 100%;" Placeholder="Optional description..." />
-        </FluentStack>
+        <div class="dt-dialog-form">
+
+            @* ── Metadata section ── *@
+            <FluentTextField @bind-Value="_form.Name"
+                             Label="Name"
+                             Required="true"
+                             style="width: 100%;"
+                             Placeholder="e.g. Technical Specs, Features…" />
+
+            <FluentTextArea @bind-Value="_form.Description"
+                            Label="Description"
+                            Rows="2"
+                            style="width: 100%;"
+                            Placeholder="Optional description of this type…" />
+
+            @* ── IsGlobal toggle ── *@
+            <div class="dt-toggle-row">
+                <div class="dt-toggle-label">
+                    <strong>Global</strong>
+                    <span class="dt-toggle-hint">When enabled, this type applies to every category automatically.</span>
+                </div>
+                <FluentSwitch @bind-Value="_form.IsGlobal" />
+            </div>
+
+            @* ── Category selection (only when not global) ── *@
+            @if (!_form.IsGlobal)
+            {
+                <div class="dt-section-divider">
+                    <span>Category Associations</span>
+                </div>
+
+                <FluentAutocomplete TOption="CategoryFlatDto"
+                                    AutoComplete="off"
+                                    Width="100%"
+                                    Label="Associated Categories"
+                                    Placeholder="Type to search and select categories…"
+                                    OnOptionsSearch="@OnSearchCategories"
+                                    MaximumSelectedOptions="200"
+                                    OptionText="@(c => c.Name)"
+                                    @bind-SelectedOptions="@_form.SelectedCategories" />
+            }
+
+            @* ── Values grid ── *@
+            <div class="dt-section-divider">
+                <span>Allowed Values</span>
+            </div>
+
+            <div class="dt-values-grid">
+                @if (_editing is not null)
+                {
+                    @foreach (var value in _editingValues)
+                    {
+                        <div class="dt-value-row">
+                            <span class="dt-value-text">@value.Value</span>
+                            <FluentButton Appearance="Appearance.Stealth"
+                                          IconStart="@(new Icons.Regular.Size16.Delete())"
+                                          Title="Remove value"
+                                          OnClick="@(() => ConfirmDeleteValue(value.Id))"
+                                          Loading="@(_deletingValueId == value.Id)" />
+                        </div>
+                    }
+                    @if (!_editingValues.Any())
+                    {
+                        <span class="dt-no-items">No values defined. Add one below.</span>
+                    }
+                }
+                else
+                {
+                    @foreach (var v in _form.PendingValues)
+                    {
+                        <div class="dt-value-row">
+                            <span class="dt-value-text">@v</span>
+                            <FluentButton Appearance="Appearance.Stealth"
+                                          IconStart="@(new Icons.Regular.Size16.Delete())"
+                                          Title="Remove"
+                                          OnClick="@(() => _form.PendingValues.Remove(v))" />
+                        </div>
+                    }
+                    @if (!_form.PendingValues.Any())
+                    {
+                        <span class="dt-no-items">No values yet. Add one below.</span>
+                    }
+                }
+
+                <div class="dt-add-value-row">
+                    <FluentTextField @bind-Value="_newValueText"
+                                     Placeholder="New value…"
+                                     style="flex: 1;"
+                                     @onkeydown="@OnValueKeyDown" />
+                    <FluentButton Appearance="Appearance.Outline"
+                                  IconStart="@(new Icons.Regular.Size16.Add())"
+                                  OnClick="HandleAddValueInDialog"
+                                  Loading="_addingValue">
+                        Add
+                    </FluentButton>
+                </div>
+            </div>
+
+        </div>
     </FluentDialogBody>
+
     <FluentDialogFooter>
-        <FluentButton Appearance="Appearance.Neutral" OnClick="@(() => _dialogHidden = true)">Cancel</FluentButton>
-        <FluentButton Appearance="Appearance.Accent" OnClick="HandleSave" Loading="_saving" IconStart="@(new Icons.Regular.Size16.Checkmark())">
+        <FluentButton Appearance="Appearance.Neutral" OnClick="CloseDialog">Cancel</FluentButton>
+        <FluentButton Appearance="Appearance.Accent"
+                      OnClick="HandleSave"
+                      Loading="_saving"
+                      IconStart="@(new Icons.Regular.Size16.Checkmark())">
             @(_editing is not null ? "Update" : "Create")
         </FluentButton>
     </FluentDialogFooter>
 </FluentDialog>
 
-@* Confirm Delete Type Dialog *@
+@* ── Confirm Delete Type ── *@
 <FluentDialog @bind-Hidden="@_confirmDeleteHidden" Modal="true" TrapFocus="true" PreventScroll="true">
     <FluentDialogHeader>
         <div class="pdm-dialog-header">
@@ -130,82 +287,191 @@
         </div>
     </FluentDialogHeader>
     <FluentDialogBody>
-        <p>Are you sure you want to delete the description type <strong>@_typeToDelete?.Name</strong>?</p>
-        <p style="font-size: 0.85rem; color: var(--pdm-text-muted);">This will also remove all associated values. This action cannot be undone.</p>
+        <p>Delete the description type <strong>@_typeToDelete?.Name</strong>?</p>
+        <p class="dt-warning-hint">All associated values will also be removed. This action cannot be undone.</p>
     </FluentDialogBody>
     <FluentDialogFooter>
         <FluentButton Appearance="Appearance.Neutral" OnClick="@(() => _confirmDeleteHidden = true)">Cancel</FluentButton>
-        <FluentButton Appearance="Appearance.Accent" Style="--accent-fill-rest: #ef4444; --accent-fill-hover: #dc2626;"
-                      OnClick="HandleDelete" Loading="_deleting"
+        <FluentButton Appearance="Appearance.Accent"
+                      style="--accent-fill-rest: #ef4444; --accent-fill-hover: #dc2626;"
+                      OnClick="HandleDelete"
+                      Loading="_deleting"
                       IconStart="@(new Icons.Regular.Size16.Delete())">
             Delete
         </FluentButton>
     </FluentDialogFooter>
 </FluentDialog>
 
-@* Confirm Delete Value Dialog *@
+@* ── Confirm Delete Value ── *@
 <FluentDialog @bind-Hidden="@_confirmDeleteValueHidden" Modal="true" TrapFocus="true" PreventScroll="true">
     <FluentDialogHeader>
         <div class="pdm-dialog-header">
             <FluentIcon Value="@(new Icons.Regular.Size20.Warning())" Color="Color.Custom" CustomColor="#ef4444" />
-            <h3>Confirm Value Deletion</h3>
+            <h3>Remove Value</h3>
         </div>
     </FluentDialogHeader>
     <FluentDialogBody>
-        <p>Are you sure you want to delete this description value?</p>
-        <p style="font-size: 0.85rem; color: var(--pdm-text-muted);">Products using this value will lose the association.</p>
+        <p>Remove this value from the description type?</p>
+        <p class="dt-warning-hint">Products using this value will lose the association.</p>
     </FluentDialogBody>
     <FluentDialogFooter>
         <FluentButton Appearance="Appearance.Neutral" OnClick="@(() => _confirmDeleteValueHidden = true)">Cancel</FluentButton>
-        <FluentButton Appearance="Appearance.Accent" Style="--accent-fill-rest: #ef4444; --accent-fill-hover: #dc2626;"
-                      OnClick="HandleDeleteValue" Loading="_deletingValue"
+        <FluentButton Appearance="Appearance.Accent"
+                      style="--accent-fill-rest: #ef4444; --accent-fill-hover: #dc2626;"
+                      OnClick="HandleDeleteValue"
+                      Loading="_deletingValue"
                       IconStart="@(new Icons.Regular.Size16.Delete())">
-            Delete
+            Remove
         </FluentButton>
     </FluentDialogFooter>
 </FluentDialog>
 
 @code {
-    private List<DescriptionTypeDto> _descriptionTypes = [];
-    private bool _loading = true;
-    private bool _dialogHidden = true;
-    private bool _saving;
-    private string _formName = string.Empty;
-    private string? _formDescription;
-    private string _newValueText = string.Empty;
-    private DescriptionTypeDto? _editing;
 
-    // Confirm delete type
-    private bool _confirmDeleteHidden = true;
-    private bool _deleting;
+    // ── State ──────────────────────────────────────────────────────────────
+
+    private List<DescriptionTypeDto>   _allDescriptionTypes = [];
+    private List<CategoryFlatDto>      _allCategories       = [];
+    private List<DescriptionValueDto>  _editingValues       = [];
+
+    private bool   _loading = true;
+    private string _nameFilter = string.Empty;
+
+    private PaginationState _pagination = new() { ItemsPerPage = 20 };
+
+    // ── Dialog state ───────────────────────────────────────────────────────
+
+    private bool             _dialogHidden = true;
+    private bool             _saving;
+    private DescriptionTypeDto? _editing;
+    private DescriptionTypeFormModel _form = new();
+
+    private string _newValueText  = string.Empty;
+    private bool   _addingValue;
+
+    // ── Confirm delete type ────────────────────────────────────────────────
+
+    private bool             _confirmDeleteHidden = true;
+    private bool             _deleting;
     private DescriptionTypeDto? _typeToDelete;
 
-    // Confirm delete value
-    private bool _confirmDeleteValueHidden = true;
-    private bool _deletingValue;
-    private Guid _valueToDeleteId;
+    // ── Confirm delete value ───────────────────────────────────────────────
 
-    protected override async Task OnInitializedAsync() => await LoadData();
+    private bool   _confirmDeleteValueHidden = true;
+    private bool   _deletingValue;
+    private Guid   _valueToDeleteId;
+    private Guid   _deletingValueId; // tracks per-row loading state in dialog
+
+    // ── Lifecycle ──────────────────────────────────────────────────────────
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Task.WhenAll(LoadData(), LoadCategories());
+    }
 
     private async Task LoadData()
     {
         _loading = true;
         var response = await DescriptionTypesClient.GetResponse<GetDescriptionTypesResult>(new GetDescriptionTypes());
-        _descriptionTypes = response.Message.DescriptionTypes;
+        _allDescriptionTypes = response.Message.DescriptionTypes;
         _loading = false;
     }
 
-    private void OpenCreateDialog() { _editing = null; _formName = string.Empty; _formDescription = null; _dialogHidden = false; }
+    private async Task LoadCategories()
+    {
+        var response = await CategoriesClient.GetResponse<GetAllCategoriesFlatResult>(new GetAllCategoriesFlat());
+        _allCategories = response.Message.Categories;
+    }
 
-    private void OpenEditDialog(DescriptionTypeDto dt) { _editing = dt; _formName = dt.Name; _formDescription = dt.Description; _dialogHidden = false; }
+    // ── Filtering ──────────────────────────────────────────────────────────
+
+    private void ApplyFilters() => StateHasChanged();
+
+    private IQueryable<DescriptionTypeDto> GetFilteredItems() =>
+        (string.IsNullOrWhiteSpace(_nameFilter)
+            ? _allDescriptionTypes
+            : _allDescriptionTypes.Where(dt =>
+                dt.Name.Contains(_nameFilter, StringComparison.OrdinalIgnoreCase)))
+        .AsQueryable();
+
+    // ── Helpers ────────────────────────────────────────────────────────────
+
+    private static string? TruncateDescription(string? desc) =>
+        desc is null ? null
+        : desc.Length > 80 ? desc[..77] + "…"
+        : desc;
+
+    private string GetCategoryName(Guid id) =>
+        _allCategories.FirstOrDefault(c => c.Id == id)?.Name ?? id.ToString()[..8];
+
+    private void OnSearchCategories(OptionsSearchEventArgs<CategoryFlatDto> e)
+    {
+        e.Items = string.IsNullOrWhiteSpace(e.Text)
+            ? _allCategories.Take(50)
+            : _allCategories
+                .Where(c => c.Name.Contains(e.Text, StringComparison.OrdinalIgnoreCase))
+                .Take(50);
+    }
+
+    // ── Dialog open/close ──────────────────────────────────────────────────
+
+    private void OpenCreateDialog()
+    {
+        _editing = null;
+        _editingValues = [];
+        _form = new DescriptionTypeFormModel();
+        _newValueText = string.Empty;
+        _dialogHidden = false;
+    }
+
+    private void OpenEditDialog(DescriptionTypeDto dt)
+    {
+        _editing = dt;
+        _editingValues = [.. dt.Values];
+        _form = new DescriptionTypeFormModel
+        {
+            Name        = dt.Name,
+            Description = dt.Description,
+            IsGlobal    = dt.IsGlobal,
+            SelectedCategories = _allCategories
+                .Where(c => dt.CategoryIds.Contains(c.Id))
+                .ToList()
+        };
+        _newValueText = string.Empty;
+        _dialogHidden = false;
+    }
+
+    private void CloseDialog()
+    {
+        _dialogHidden = true;
+        _editing = null;
+        _form = new DescriptionTypeFormModel();
+        _editingValues = [];
+        _newValueText = string.Empty;
+    }
+
+    // ── Save ───────────────────────────────────────────────────────────────
 
     private async Task HandleSave()
     {
-        if (string.IsNullOrWhiteSpace(_formName)) return;
+        if (string.IsNullOrWhiteSpace(_form.Name)) return;
+
         _saving = true;
+
+        var categoryIds = _form.IsGlobal
+            ? []
+            : _form.SelectedCategories.Select(c => c.Id).ToList();
+
         if (_editing is not null)
         {
-            var response = await UpdateClient.GetResponse<UpdateDescriptionTypeResult>(new UpdateDescriptionType(_editing.Id, _formName, _formDescription));
+            var cmd = new UpdateDescriptionType(
+                _editing.Id,
+                _form.Name,
+                _form.Description,
+                _form.IsGlobal,
+                categoryIds);
+
+            var response = await UpdateClient.GetResponse<UpdateDescriptionTypeResult>(cmd);
             if (response.Message.Success)
                 ToastService.ShowSuccess("Description type updated.");
             else
@@ -213,14 +479,75 @@
         }
         else
         {
-            var response = await CreateClient.GetResponse<CreateDescriptionTypeResult>(new CreateDescriptionType(_formName, _formDescription));
+            var cmd = new CreateDescriptionType(
+                _form.Name,
+                _form.Description,
+                _form.IsGlobal,
+                categoryIds);
+
+            var response = await CreateClient.GetResponse<CreateDescriptionTypeResult>(cmd);
+
             if (response.Message.Success)
+            {
+                // Add any pending values to the newly created type
+                foreach (var value in _form.PendingValues)
+                {
+                    await AddValueClient.GetResponse<AddDescriptionValueResult>(
+                        new AddDescriptionValue(response.Message.Id, value));
+                }
                 ToastService.ShowSuccess("Description type created.");
+            }
             else
+            {
                 ToastService.ShowError(response.Message.ErrorMessage ?? "Failed to create description type.");
+            }
         }
-        _saving = false; _dialogHidden = true; await LoadData();
+
+        _saving = false;
+        CloseDialog();
+        await LoadData();
     }
+
+    // ── Values ─────────────────────────────────────────────────────────────
+
+    private async Task OnValueKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") await HandleAddValueInDialog();
+    }
+
+    private async Task HandleAddValueInDialog()
+    {
+        if (string.IsNullOrWhiteSpace(_newValueText)) return;
+
+        if (_editing is not null)
+        {
+            // Immediate persistence when editing an existing type
+            _addingValue = true;
+            var response = await AddValueClient.GetResponse<AddDescriptionValueResult>(
+                new AddDescriptionValue(_editing.Id, _newValueText));
+
+            if (response.Message.Success)
+            {
+                _editingValues.Add(new DescriptionValueDto(response.Message.Id, _newValueText));
+                _newValueText = string.Empty;
+                await LoadData(); // refresh grid in background
+            }
+            else
+            {
+                ToastService.ShowError(response.Message.ErrorMessage ?? "Failed to add value.");
+            }
+            _addingValue = false;
+        }
+        else
+        {
+            // Buffer for new types — persisted on Create
+            if (!_form.PendingValues.Any(v => v.Equals(_newValueText, StringComparison.OrdinalIgnoreCase)))
+                _form.PendingValues.Add(_newValueText);
+            _newValueText = string.Empty;
+        }
+    }
+
+    // ── Delete type ────────────────────────────────────────────────────────
 
     private void ConfirmDelete(DescriptionTypeDto dt)
     {
@@ -232,7 +559,10 @@
     {
         if (_typeToDelete is null) return;
         _deleting = true;
-        var response = await DeleteClient.GetResponse<DeleteDescriptionTypeResult>(new DeleteDescriptionType(_typeToDelete.Id));
+
+        var response = await DeleteClient.GetResponse<DeleteDescriptionTypeResult>(
+            new DeleteDescriptionType(_typeToDelete.Id));
+
         if (response.Message.Success)
         {
             ToastService.ShowSuccess($"'{_typeToDelete.Name}' deleted.");
@@ -242,20 +572,12 @@
         {
             ToastService.ShowError(response.Message.ErrorMessage ?? "Cannot delete description type.");
         }
+
         _deleting = false;
         _confirmDeleteHidden = true;
     }
 
-    private async Task HandleAddValue(Guid descriptionTypeId)
-    {
-        if (string.IsNullOrWhiteSpace(_newValueText)) return;
-        var response = await AddValueClient.GetResponse<AddDescriptionValueResult>(new AddDescriptionValue(descriptionTypeId, _newValueText));
-        if (response.Message.Success)
-            ToastService.ShowSuccess("Value added.");
-        else
-            ToastService.ShowError(response.Message.ErrorMessage ?? "Failed to add value.");
-        _newValueText = string.Empty; await LoadData();
-    }
+    // ── Delete value ───────────────────────────────────────────────────────
 
     private void ConfirmDeleteValue(Guid valueId)
     {
@@ -266,17 +588,35 @@
     private async Task HandleDeleteValue()
     {
         _deletingValue = true;
-        var response = await DeleteValueClient.GetResponse<DeleteDescriptionValueResult>(new DeleteDescriptionValue(_valueToDeleteId));
+        _deletingValueId = _valueToDeleteId;
+
+        var response = await DeleteValueClient.GetResponse<DeleteDescriptionValueResult>(
+            new DeleteDescriptionValue(_valueToDeleteId));
+
         if (response.Message.Success)
         {
-            ToastService.ShowSuccess("Value deleted.");
+            _editingValues.RemoveAll(v => v.Id == _valueToDeleteId);
             await LoadData();
         }
         else
         {
             ToastService.ShowError(response.Message.ErrorMessage ?? "Cannot delete value — it may be used by products.");
         }
+
         _deletingValue = false;
+        _deletingValueId = Guid.Empty;
         _confirmDeleteValueHidden = true;
+    }
+
+    // ── Form model ─────────────────────────────────────────────────────────
+
+    private sealed class DescriptionTypeFormModel
+    {
+        public string  Name        { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public bool    IsGlobal    { get; set; }
+
+        public List<CategoryFlatDto> SelectedCategories { get; set; } = [];
+        public List<string>          PendingValues      { get; set; } = [];
     }
 }

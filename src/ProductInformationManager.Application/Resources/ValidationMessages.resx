@@ -37,6 +37,7 @@
   <data name="DescriptionTypeNotFound" xml:space="preserve"><value>Description type not found.</value></data>
   <data name="DescriptionTypeDeleteInUse" xml:space="preserve"><value>Cannot delete the description type because it is used by one or more products.</value></data>
   <data name="DescriptionTypeDescriptionMaxLength" xml:space="preserve"><value>Description type description cannot exceed 500 characters.</value></data>
+  <data name="DescriptionTypeCategoriesRequired" xml:space="preserve"><value>At least one category must be selected when the description type is not global.</value></data>
 
   <!-- DescriptionValue Validation -->
   <data name="DescriptionValueRequired" xml:space="preserve"><value>Description value cannot be empty.</value></data>

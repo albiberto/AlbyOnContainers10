@@ -9,55 +9,62 @@ public class DescriptionType : AuditableEntity
     private readonly List<DescriptionValue> _values = [];
     private readonly List<CategoryDescriptionRule> _categoryRules = [];
 
-    private DescriptionType() { } // Requisito di EF Core
+    private DescriptionType() { }
 
-    public DescriptionType(string name, string? description = null)
+    public DescriptionType(string name, string? description = null, bool isGlobal = false)
     {
-        if (string.IsNullOrWhiteSpace(name)) 
+        if (string.IsNullOrWhiteSpace(name))
             throw new DomainException("Il nome del tipo di descrizione è obbligatorio.");
 
         Id = DescriptionTypeId.New;
         Name = name;
         Description = description;
+        IsGlobal = isGlobal;
     }
 
     public DescriptionTypeId Id { get; private set; } = null!;
     public string Name { get; private set; } = null!;
     public string? Description { get; private set; }
+    public bool IsGlobal { get; private set; }
 
-    // Navigational properties protette
     public IReadOnlyCollection<DescriptionValue> Values => _values;
     public IReadOnlyCollection<CategoryDescriptionRule> CategoryRules => _categoryRules;
 
-    // --- Comportamenti ---
-
-    public void Rename(string newName, string? newDescription)
+    /// <summary>
+    /// Updates all mutable metadata. When IsGlobal transitions to true the
+    /// application layer is responsible for removing any existing
+    /// CategoryDescriptionRules (the domain signals the intent via the returned flag).
+    /// </summary>
+    public bool UpdateMetadata(string name, string? description, bool isGlobal)
     {
-        if (string.IsNullOrWhiteSpace(newName)) 
+        if (string.IsNullOrWhiteSpace(name))
             throw new DomainException("Il nome non può essere vuoto.");
-        
-        Name = newName;
-        Description = newDescription;
+
+        var wasSpecialized = !IsGlobal;
+        Name = name;
+        Description = description;
+        IsGlobal = isGlobal;
+
+        // Return true when the type just became Global so the consumer can
+        // purge the category rules (invariant).
+        return isGlobal && wasSpecialized;
     }
 
     public void AddValue(string value)
     {
-        if (string.IsNullOrWhiteSpace(value)) 
+        if (string.IsNullOrWhiteSpace(value))
             throw new DomainException("Il valore non può essere vuoto.");
-        
-        // Evitiamo duplicati case-insensitive (es. "Rosso" e "rosso")
-        if (_values.Any(v => v.Value.Equals(value, StringComparison.OrdinalIgnoreCase))) 
+
+        if (_values.Any(v => v.Value.Equals(value, StringComparison.OrdinalIgnoreCase)))
             return;
 
-        _values.Add(new DescriptionValue(value, this.Id));
+        _values.Add(new DescriptionValue(value, Id));
     }
 
     public void RemoveValue(DescriptionValueId valueId)
     {
-        var valueToRemove = _values.FirstOrDefault(v => v.Id == valueId);
-        if (valueToRemove != null)
-        {
-            _values.Remove(valueToRemove);
-        }
+        var toRemove = _values.FirstOrDefault(v => v.Id == valueId);
+        if (toRemove is not null)
+            _values.Remove(toRemove);
     }
 }

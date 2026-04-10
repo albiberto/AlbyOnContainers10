@@ -1,0 +1,195 @@
+.pdm-page-subtitle {
+    font-size: 0.85rem;
+    color: var(--pdm-text-muted);
+    margin-top: 2px;
+}
+
+/* ── Badges ── */
+.dt-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.dt-badge--global {
+    background: rgba(16, 185, 129, 0.12);
+    color: #10b981;
+}
+
+.dt-badge--specialized {
+    background: rgba(99, 102, 241, 0.12);
+    color: #6366f1;
+}
+
+.dt-badge--all-categories {
+    background: rgba(16, 185, 129, 0.10);
+    color: #10b981;
+    font-size: 0.75rem;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* ── Tags ── */
+.dt-tag-cloud {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-items: center;
+}
+
+.dt-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 9999px;
+    font-size: 0.72rem;
+    font-weight: 500;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dt-tag--value {
+    background: var(--neutral-fill-stealth-rest);
+    color: var(--neutral-foreground-rest);
+    border: 1px solid var(--neutral-stroke-rest);
+}
+
+.dt-tag--category {
+    background: rgba(99, 102, 241, 0.09);
+    color: #6366f1;
+    border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.dt-tag--more {
+    background: transparent;
+    color: var(--pdm-text-muted);
+    border: 1px dashed var(--neutral-stroke-rest);
+    font-size: 0.72rem;
+}
+
+.dt-no-items {
+    font-size: 0.8rem;
+    color: var(--pdm-text-muted);
+    font-style: italic;
+}
+
+.dt-description-cell {
+    font-size: 0.85rem;
+    color: var(--pdm-text-muted);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* ── Actions column ── */
+.dt-actions {
+    display: flex;
+    gap: 2px;
+    justify-content: flex-end;
+}
+
+/* ── Dialog form ── */
+.dt-dialog-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 4px 0;
+}
+
+.dt-toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+    border: 1px solid var(--neutral-stroke-rest);
+    border-radius: 6px;
+    background: var(--neutral-fill-stealth-rest);
+}
+
+.dt-toggle-label {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.dt-toggle-hint {
+    font-size: 0.8rem;
+    color: var(--pdm-text-muted);
+}
+
+.dt-section-divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--pdm-text-muted);
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 4px;
+}
+
+.dt-section-divider::before,
+.dt-section-divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--neutral-stroke-rest);
+}
+
+/* ── Values grid in dialog ── */
+.dt-values-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 200px;
+    overflow-y: auto;
+    padding: 4px;
+    border: 1px solid var(--neutral-stroke-rest);
+    border-radius: 6px;
+    background: var(--neutral-fill-stealth-rest);
+}
+
+.dt-value-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 8px;
+    border-radius: 4px;
+    background: var(--neutral-layer-1);
+    border: 1px solid var(--neutral-stroke-rest);
+}
+
+.dt-value-text {
+    font-size: 0.85rem;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dt-add-value-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    padding-top: 4px;
+    border-top: 1px solid var(--neutral-stroke-rest);
+}
+
+/* ── Warning hints in delete dialogs ── */
+.dt-warning-hint {
+    font-size: 0.85rem;
+    color: var(--pdm-text-muted);
+    margin-top: 4px;
+}

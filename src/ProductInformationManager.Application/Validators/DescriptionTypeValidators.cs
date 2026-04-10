@@ -15,11 +15,16 @@ public class CreateDescriptionTypeValidator : AbstractValidator<CreateDescriptio
             .NotEmpty().WithMessage(ValidationMessages.DescriptionTypeNameRequired)
             .MaximumLength(100).WithMessage(ValidationMessages.DescriptionTypeNameMaxLength)
             .MustAsync(async (name, ct) =>
-                !await db.DescriptionTypes.AnyAsync(d => d.Name == name, ct))
+                !await db.DescriptionTypes.AnyAsync(
+                    d => d.Name.ToLower() == name.ToLower(), ct))
             .WithMessage(ValidationMessages.DescriptionTypeNameDuplicate);
 
         RuleFor(x => x.Description)
             .MaximumLength(500).WithMessage(ValidationMessages.DescriptionTypeDescriptionMaxLength);
+
+        RuleFor(x => x.CategoryIds)
+            .Must((cmd, ids) => cmd.IsGlobal || (ids is not null && ids.Count > 0))
+            .WithMessage(ValidationMessages.DescriptionTypeCategoriesRequired);
     }
 }
 
@@ -31,11 +36,16 @@ public class UpdateDescriptionTypeValidator : AbstractValidator<UpdateDescriptio
             .NotEmpty().WithMessage(ValidationMessages.DescriptionTypeNameRequired)
             .MaximumLength(100).WithMessage(ValidationMessages.DescriptionTypeNameMaxLength)
             .MustAsync(async (cmd, name, ct) =>
-                !await db.DescriptionTypes.AnyAsync(d => d.Name == name && d.Id != new DescriptionTypeId(cmd.Id), ct))
+                !await db.DescriptionTypes.AnyAsync(
+                    d => d.Name.ToLower() == name.ToLower() && d.Id != new DescriptionTypeId(cmd.Id), ct))
             .WithMessage(ValidationMessages.DescriptionTypeNameDuplicate);
 
         RuleFor(x => x.Description)
             .MaximumLength(500).WithMessage(ValidationMessages.DescriptionTypeDescriptionMaxLength);
+
+        RuleFor(x => x.CategoryIds)
+            .Must((cmd, ids) => cmd.IsGlobal || (ids is not null && ids.Count > 0))
+            .WithMessage(ValidationMessages.DescriptionTypeCategoriesRequired);
     }
 }
 

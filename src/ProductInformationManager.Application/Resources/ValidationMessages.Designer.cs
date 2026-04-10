@@ -48,6 +48,7 @@ public static class ValidationMessages
     public static string DescriptionTypeNotFound => GetString(nameof(DescriptionTypeNotFound));
     public static string DescriptionTypeDeleteInUse => GetString(nameof(DescriptionTypeDeleteInUse));
     public static string DescriptionTypeDescriptionMaxLength => GetString(nameof(DescriptionTypeDescriptionMaxLength));
+    public static string DescriptionTypeCategoriesRequired => GetString(nameof(DescriptionTypeCategoriesRequired));
 
     // -- DescriptionValue --
     public static string DescriptionValueRequired => GetString(nameof(DescriptionValueRequired));
