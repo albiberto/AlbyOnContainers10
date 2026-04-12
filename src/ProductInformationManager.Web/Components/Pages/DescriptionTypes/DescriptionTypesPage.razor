@@ -190,24 +190,24 @@
                 <FluentSwitch @bind-Value="_form.IsGlobal" />
             </div>
 
-            @* ── Category selection (only when not global) ── *@
-            @if (!_form.IsGlobal)
-            {
-                <div class="dt-section-divider">
-                    <span>Category Associations</span>
-                </div>
+            @* ── Category selection (always visible, disabled when global) ── *@
+            <div class="dt-section-divider">
+                <span>Category Associations</span>
+            </div>
 
+            <div class="@(_form.IsGlobal ? "dt-field-disabled-wrapper" : "")">
                 <FluentAutocomplete TOption="CategoryFlatDto"
                                     AutoComplete="off"
                                     Width="100%"
                                     Label="Associated Categories"
-                                    Placeholder="Type to search and select categories…"
+                                    Placeholder="@(_form.IsGlobal ? "Not applicable — type is global" : "Type to search and select categories…")"
                                     OnOptionsSearch="@OnSearchCategories"
                                     MaximumSelectedOptions="200"
                                     OptionText="@(c => c.Name)"
+                                    Disabled="@_form.IsGlobal"
                                     SelectedOptions="@_form.SelectedCategories"
                                     SelectedOptionsChanged="@(vals => _form.SelectedCategories = vals.ToList())" />
-            }
+            </div>
 
             @* ── Values grid ── *@
             <div class="dt-section-divider">

@@ -187,6 +187,13 @@
     border-top: 1px solid var(--neutral-stroke-rest);
 }
 
+/* ── Disabled field wrapper ── */
+.dt-field-disabled-wrapper {
+    opacity: 0.45;
+    pointer-events: none;
+    cursor: not-allowed;
+}
+
 /* ── Warning hints in delete dialogs ── */
 .dt-warning-hint {
     font-size: 0.85rem;
