@@ -48,6 +48,27 @@ The app runs via the "Start application" workflow:
 - EF Core migrations applied automatically on startup via `MigrationHostedService`
 - Connection string in `src/ProductInformationManager.Web/appsettings.Development.json`
 
+## Description Types — IsGlobal Feature
+
+The Description Types module was refactored to support:
+
+- **IsGlobal flag**: When `true`, the type applies to every category automatically (no category rules needed). When `false` ("Specialized"), explicit `CategoryDescriptionRule` rows link it to one or more categories.
+- **Category multi-select**: The edit/create dialog uses `FluentAutocomplete` backed by the `GetAllCategoriesFlat` query.
+- **FluentDataGrid UI**: 6 columns — Name, Description, Scope badge (Global/Specialized), Values tag cloud, Categories tag cloud, Actions.
+- **Validation**: `DescriptionTypeCategoriesRequired` enforces at least one category when `IsGlobal = false`.
+- **Migration `20260410120000_AddIsGlobalToDescriptionTypes`**: Added `IsGlobal boolean NOT NULL DEFAULT false` to `DescriptionTypes` table. Applied manually via SQL (Designer.cs created for tooling).
+
+### Key files changed
+- `src/ProductInformationManager.Domain/DescriptionType.cs` — `IsGlobal` property + `UpdateMetadata()` returning invariant signal
+- `src/ProductInformationManager.Messages/DescriptionTypeMessages.cs` — updated commands/DTOs
+- `src/ProductInformationManager.Application/DescriptionTypes.Commands.cs` — diff-based sync of category associations
+- `src/ProductInformationManager.Application/DescriptionTypes.Queries.cs` — includes `IsGlobal` and `CategoryIds`
+- `src/ProductInformationManager.Application/Validators/DescriptionTypeValidators.cs` — category requirement rule
+- `src/ProductInformationManager.Application/Resources/ValidationMessages.*` — new `DescriptionTypeCategoriesRequired` key
+- `src/ProductInformationManager.Infrastructure/Migrations/20260410120000_*` — new migration + designer
+- `src/ProductInformationManager.Web/Components/Pages/DescriptionTypes/DescriptionTypesPage.razor` — full UI rewrite
+- `src/ProductInformationManager.Web/Components/Pages/DescriptionTypes/DescriptionTypesPage.razor.css` — new CSS
+
 ## Important Notes
 
 ### Case Sensitivity Fix

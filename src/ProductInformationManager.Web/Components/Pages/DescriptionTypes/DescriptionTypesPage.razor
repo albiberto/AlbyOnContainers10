@@ -80,7 +80,7 @@
                 else
                 {
                     <span class="dt-badge dt-badge--specialized">
-                        <FluentIcon Value="@(new Icons.Regular.Size12.Tag())" Color="Color.Custom" CustomColor="currentColor" />
+                        <FluentIcon Value="@(new Icons.Regular.Size12.Circle())" Color="Color.Custom" CustomColor="currentColor" />
                         Specialized
                     </span>
                 }
@@ -144,7 +144,7 @@
                 </div>
             </TemplateColumn>
         </FluentDataGrid>
-        <FluentDataGridPaginator State="@_pagination" />
+        <FluentPaginator State="@_pagination" />
     }
 </div>
 
@@ -205,7 +205,8 @@
                                     OnOptionsSearch="@OnSearchCategories"
                                     MaximumSelectedOptions="200"
                                     OptionText="@(c => c.Name)"
-                                    @bind-SelectedOptions="@_form.SelectedCategories" />
+                                    SelectedOptions="@_form.SelectedCategories"
+                                    SelectedOptionsChanged="@(vals => _form.SelectedCategories = vals.ToList())" />
             }
 
             @* ── Values grid ── *@
@@ -366,7 +367,8 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await Task.WhenAll(LoadData(), LoadCategories());
+        await LoadData();
+        await LoadCategories();
     }
 
     private async Task LoadData()
