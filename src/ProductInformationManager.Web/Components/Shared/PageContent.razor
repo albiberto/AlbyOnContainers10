@@ -1,0 +1,24 @@
+﻿<div class="pdm-data-panel">
+    @if (IsLoading)
+    {
+        <LoadingState Text="@LoadingText" />
+    }
+    else if (IsEmpty)
+    {
+        <EmptyState Text="@EmptyText" />
+    }
+    else
+    {
+        @ChildContent
+    }
+</div>
+
+@code {
+    [Parameter] public required bool IsLoading { get; set; }
+    [Parameter] public string? LoadingText { get; set; } = "Caricamento in corso...";
+
+    [Parameter] public required bool IsEmpty { get; set; }
+    [Parameter] public string? EmptyText { get; set; } = "Nessun elemento trovato.";
+    
+    [Parameter, EditorRequired] public required RenderFragment ChildContent { get; set; } = null!;
+}

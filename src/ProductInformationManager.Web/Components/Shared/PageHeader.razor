@@ -1,0 +1,40 @@
+﻿@using Microsoft.FluentUI.AspNetCore.Components
+
+<div class="pdm-page-header">
+    <div>
+        <h1>
+            @if (Icon is not null)
+            {
+                <span class="pdm-page-header-icon">
+                    <FluentIcon Value="@Icon" Color="Color.Accent" /> 
+                </span>
+            }
+            @Title
+        </h1>
+        @if (!string.IsNullOrWhiteSpace(Description))
+        {
+            <div class="pdm-page-subtitle">@Description</div>
+        }
+    </div>
+    
+    @if (ChildContent is not null)
+    {
+        <div class="pdm-page-header-actions">
+            @ChildContent
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] 
+    public string Title { get; set; } = string.Empty;
+
+    [Parameter] 
+    public string? Description { get; set; }
+
+    [Parameter] 
+    public Icon? Icon { get; set; }
+
+    [Parameter] 
+    public RenderFragment? ChildContent { get; set; }
+}

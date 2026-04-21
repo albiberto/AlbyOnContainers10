@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Reference Include="Microsoft.Extensions.Logging.Abstractions">
+            <HintPath>..\..\..\scoop\apps\dotnet-sdk\current\shared\Microsoft.AspNetCore.App\10.0.1\Microsoft.Extensions.Logging.Abstractions.dll</HintPath>
+        </Reference>
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="FluentValidation" Version="12.1.1"/>
+        <PackageReference Include="MassTransit" Version="8.5.9"/>
+        <PackageReference Include="MassTransit.Abstractions" Version="8.5.9" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\AlbyOnContainers.Shared.Domain\AlbyOnContainers.Shared.Domain.csproj" />
+        <ProjectReference Include="..\src\AlbyOnContainers.Shared.Domain\AlbyOnContainers.Shared.Domain.csproj"/>
+    </ItemGroup>
+
+</Project>

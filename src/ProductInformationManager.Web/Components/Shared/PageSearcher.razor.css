@@ -1,0 +1,16 @@
+﻿.pdm-search-container {
+    margin-bottom: 1.5rem;
+    padding: 2px;
+}
+
+::deep fluent-search {
+    --control-corner-radius: var(--pdm-radius-md);
+    background-color: var(--pdm-bg-surface);
+    border-radius: var(--pdm-radius-md);
+    transition: all var(--pdm-transition-fast);
+}
+
+::deep fluent-search:focus-within {
+    background-color: var(--pdm-bg-input);
+    box-shadow: var(--pdm-shadow-md);
+}

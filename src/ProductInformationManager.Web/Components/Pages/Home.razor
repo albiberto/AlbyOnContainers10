@@ -1,0 +1,68 @@
+@page "/"
+
+<PageTitle>Product Data Manager</PageTitle>
+
+<div class="pdm-animate-in">
+    <div class="pdm-hero">
+        <div class="pdm-hero-icon">
+            <FluentIcon Value="@(new Icons.Regular.Size32.Box())" Color="Color.Custom" CustomColor="#fff"/>
+        </div>
+        <h1>Product Data Manager</h1>
+        <p>
+            Your centralized hub for managing the e-commerce product catalog.
+            Organize categories, manage products, and configure attributes with ease.
+        </p>
+    </div>
+
+    <div class="pdm-dashboard-grid">
+        <a href="/categories" class="pdm-dashboard-card" style="--card-accent: #6366f1;">
+            <div class="pdm-card-icon pdm-card-icon--indigo">
+                <FluentIcon Value="@(new Icons.Regular.Size24.FolderMultiple())" Color="Color.Custom"
+                            CustomColor="currentColor"/>
+            </div>
+            <div>
+                <h3 class="pdm-card-title">Categories</h3>
+                <p class="pdm-card-description">Organize products into a hierarchical tree structure with unlimited
+                    nesting depth.</p>
+            </div>
+            <span class="pdm-card-link">Manage categories →</span>
+        </a>
+
+        <a href="/products" class="pdm-dashboard-card" style="--card-accent: #06b6d4;">
+            <div class="pdm-card-icon pdm-card-icon--cyan">
+                <FluentIcon Value="@(new Icons.Regular.Size24.Box())" Color="Color.Custom" CustomColor="currentColor"/>
+            </div>
+            <div>
+                <h3 class="pdm-card-title">Products</h3>
+                <p class="pdm-card-description">Create and manage your product catalog with SKUs, pricing, and category
+                    assignments.</p>
+            </div>
+            <span class="pdm-card-link">Manage products →</span>
+        </a>
+
+        <a href="/description-types" class="pdm-dashboard-card" style="--card-accent: #10b981;">
+            <div class="pdm-card-icon pdm-card-icon--emerald">
+                <FluentIcon Value="@(new Icons.Regular.Size24.TextDescription())" Color="Color.Custom"
+                            CustomColor="currentColor"/>
+            </div>
+            <div>
+                <h3 class="pdm-card-title">Description Types</h3>
+                <p class="pdm-card-description">Define structured description schemas with configurable value sets for
+                    product details.</p>
+            </div>
+            <span class="pdm-card-link">Manage descriptions →</span>
+        </a>
+
+        <a href="/attribute-types" class="pdm-dashboard-card" style="--card-accent: #f59e0b;">
+            <div class="pdm-card-icon pdm-card-icon--amber">
+                <FluentIcon Value="@(new Icons.Regular.Size24.Tag())" Color="Color.Custom" CustomColor="currentColor"/>
+            </div>
+            <div>
+                <h3 class="pdm-card-title">Attribute Types</h3>
+                <p class="pdm-card-description">Configure custom attribute schemas with key-value pairs for product
+                    specifications.</p>
+            </div>
+            <span class="pdm-card-link">Manage attributes →</span>
+        </a>
+    </div>
+</div>

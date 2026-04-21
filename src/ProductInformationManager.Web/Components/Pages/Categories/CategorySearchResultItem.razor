@@ -1,0 +1,19 @@
+﻿<FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center" Style="padding: 6px 0; border-bottom: 1px solid var(--neutral-stroke-rest);">
+    <div style="flex: 1;">
+        <div style="font-weight: 500;">@Item.Name</div>
+        <div style="font-size: 0.78rem; color: var(--pdm-text-muted);">@FormatPath(Item.Path)</div>
+    </div>
+    <FluentStack Orientation="Orientation.Horizontal" Style="gap: 2px;">
+        <FluentButton Appearance="Appearance.Stealth" 
+                      IconStart="@(new Icons.Regular.Size16.Add())" 
+                      OnClick="@(() => OnAddChild.InvokeAsync(Item.Id))" 
+                      Title="Add Child" />
+    </FluentStack>
+</FluentStack>
+
+@code {
+    [Parameter, EditorRequired] public required CategoryFlatDto Item { get; set; }
+    [Parameter] public EventCallback<Guid> OnAddChild { get; set; }
+
+    private static string FormatPath(string path) => string.Join(" › ", path.Split('.').Select(s => s.Replace('_', ' ')));
+}

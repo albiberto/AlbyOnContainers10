@@ -1,0 +1,26 @@
+﻿.pdm-empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--pdm-text-muted);
+}
+
+.pdm-empty-state__icon {
+    width: 56px;
+    height: 56px;
+    margin: 0 auto 16px;
+    background: var(--pdm-bg-subtle);
+    border-radius: var(--pdm-radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.6;
+}
+
+.pdm-empty-state p {
+    margin: 0;
+}
+
+.pdm-empty-state p + p {
+    font-size: 0.8rem;
+    margin-top: 4px;
+}

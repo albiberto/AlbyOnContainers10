@@ -1,0 +1,18 @@
+﻿.pdm-data-panel {
+    background: var(--pdm-bg-card);
+    border: 1px solid var(--pdm-border);
+    border-radius: var(--pdm-radius-lg);
+    overflow: hidden;
+    box-shadow: var(--pdm-shadow-sm);
+    transition: background-color var(--pdm-transition-base), border-color var(--pdm-transition-base);
+    padding: 16px;
+}
+
+.pdm-data-panel__grid-wrapper {
+    padding: 4px;
+}
+
+.pdm-data-panel__footer {
+    padding: 10px 16px;
+    border-top: 1px solid var(--pdm-border);
+}

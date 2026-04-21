@@ -1,0 +1,81 @@
+@using AlbyOnContainers.Shared.Domain
+@using FluentValidation
+@using MassTransit
+@using MassTransit.Mediator
+@using Microsoft.Extensions.Localization
+@implements IDialogContentComponent<CategoryEditDialogInput>
+
+@inject IMediator Mediator
+@inject IToastService ToastService
+@inject IStringLocalizer<SharedResources> Loc
+
+<FluentDialogBody>
+    <FluentStack Orientation="Orientation.Vertical" Style="min-width: 300px; gap: 16px;">
+        <FluentTextField @bind-Value="_formName" Label="@Loc["CategoryEdit_NameLabel"]" Required="true" Style="width: 100%;" />
+        <FluentTextArea @bind-Value="_formDescription" Label="@Loc["CategoryEdit_DescLabel"]" Rows="3" Style="width: 100%;" />
+    </FluentStack>
+</FluentDialogBody>
+<FluentDialogFooter>
+    <FluentButton Appearance="Appearance.Neutral" OnClick="@(() => Dialog!.CancelAsync())">@Loc["Dialog_Cancel"]</FluentButton>
+    <FluentButton Appearance="Appearance.Accent" OnClick="@HandleSave" Loading="_saving">@Loc["Dialog_Save"]</FluentButton>
+</FluentDialogFooter>
+
+@code {
+    [CascadingParameter] public FluentDialog? Dialog { get; set; }
+    [Parameter] public CategoryEditDialogInput Content { get; set; } = null!;
+
+    private bool _saving;
+    private string _formName = string.Empty;
+    private string? _formDescription;
+
+    protected override void OnInitialized()
+    {
+        _formName = Content.CategoryToEdit?.Name ?? string.Empty;
+        _formDescription = Content.CategoryToEdit?.Description;
+    }
+
+    private async Task HandleSave()
+    {
+        if (string.IsNullOrWhiteSpace(_formName)) return;
+        _saving = true;
+
+        try
+        {
+            if (Content.CategoryToEdit is not null)
+            {
+                await Mediator.Send(new UpdateCategory(Content.CategoryToEdit.Id, _formName, _formDescription));
+            }
+            else
+            {
+                await Mediator.Send(new CreateCategory(_formName, _formDescription, Content.ParentIdForCreate));
+            }
+            
+            await Dialog!.CloseAsync(true);
+        }
+        catch (Exception ex) 
+        { 
+            HandleException(ex); 
+        }
+        finally 
+        { 
+            _saving = false; 
+        }
+    }
+
+    private void HandleException(Exception exception)
+    {
+        var actual = exception.GetBaseException();
+
+        switch (actual)
+        {
+            case ValidationException or DomainException:
+                var cleanMessage = actual.Message.Replace("Validation failed: ", "").Trim();
+                ToastService.ShowWarning(cleanMessage);
+                break;
+
+            default:
+                ToastService.ShowError(Loc["Toast_Error"].Value);
+                break;
+        }
+    }
+}

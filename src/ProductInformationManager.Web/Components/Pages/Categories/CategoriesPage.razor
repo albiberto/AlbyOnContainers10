@@ -1,0 +1,232 @@
+@page "/categories"
+@using MassTransit.Mediator
+@using ProductInformationManager.Web.Notifiers
+@using Microsoft.Extensions.Localization
+@using ProductInformationManager.Web.Components.Pages.Categories.Dialogs
+@implements IAsyncDisposable
+
+@inject IStringLocalizer<SharedResources> Loc
+@inject IDialogService DialogService
+@inject IMediator Mediator
+@inject IToastService ToastService
+@inject CategoryNotifier CategoryNotifier
+@inject LockNotifier LockNotifier
+
+<PageTitle>Categorie — Product Data Manager</PageTitle>
+
+<div class="pdm-animate-in">
+    <PageHeader 
+        Title="@Loc["Categories_Title"]" 
+        Description="@Loc["Categories_Subtitle"]" 
+        Icon="@(new Icons.Regular.Size20.FolderMultiple())">
+    
+        <FluentButton Appearance="Appearance.Accent"
+                      IconStart="@(new Icons.Regular.Size16.Add())"
+                      OnClick="@OpenCreateRootDialog">
+            @Loc["Categories_NewRootBtn"]
+        </FluentButton>
+    </PageHeader>
+
+    <PageSearcher Placeholder="@Loc["Categories_SearchPlaceholder"]" OnSearch="OnSearchInput" Value="@_query" />
+    
+    <PageContent 
+        IsLoading="_loading"
+        IsEmpty="IsEmpty"
+        LoadingText="@Loc["Categories_Loading"]"
+        EmptyText="@Loc["Categories_Empty"]" >
+
+        @if (IsSearching)
+        {
+            @foreach (var item in _searchResults) 
+            {
+                <CategorySearchResultItem Item="item" OnAddChild="OpenCreateChildDialog" />
+            }
+        }
+        else
+        {
+            <FluentTreeView>
+                @foreach (var category in _treeManager.Roots) {
+                    <CategoryTreeItem Category="category" 
+                                      OnExpand="LoadChildrenAsync"
+                                      OnEdit="OpenEditDialog"
+                                      OnDelete="ConfirmDelete"
+                                      OnAddChild="OpenCreateChildDialog" />
+                }
+            </FluentTreeView>
+        }
+    </PageContent>
+</div>
+
+@code {
+    private readonly CancellationTokenSource _cancellationTokenSource = new();
+    private readonly CategoryTreeManager _treeManager = new();
+    
+    private IReadOnlyList<CategoryFlatDto> _searchResults = [];
+    
+    private bool _loading = true;
+    private string _query = string.Empty;
+
+    private bool IsSearching => _query.Trim().Length > 3;
+    private bool IsEmpty => IsSearching ? !_searchResults.Any() : _treeManager.IsEmpty;
+
+    private IDisposable? _categoriesSubscription;
+    private IDisposable? _lockSubscription;
+    
+    protected override async Task OnInitializedAsync() 
+    {
+        await LoadRootCategoriesAsync();
+
+        _categoriesSubscription = CategoryNotifier.Changes
+            .Subscribe(change => InvokeAsync(() => HandleCategoryChange(change)));
+
+        _lockSubscription = LockNotifier.Changes
+            .Subscribe(_ => InvokeAsync(StateHasChanged));
+    }
+
+    private async Task LoadRootCategoriesAsync() 
+    {
+        _loading = true;
+        try 
+        {
+            var client = Mediator.CreateRequestClient<GetRootCategories>();
+            var response = await client.GetResponse<GetCategoriesResult>(new());
+            _treeManager.Initialize(response.Message.Categories);
+        }
+        catch (Exception) { ToastService.ShowError(Loc["Toast_Error"].Value); }
+        finally 
+        {
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadChildrenAsync(CategoryTreeNode node) 
+    {
+        if (node.HasLoadedChildren || node.IsLoading) return;
+        
+        node.IsLoading = true; 
+        StateHasChanged();
+        try 
+        {
+            var client = Mediator.CreateRequestClient<GetChildCategories>();
+            var response = await client.GetResponse<GetCategoriesResult>(new(node.Category.Id));
+            _treeManager.SetChildren(node.Category.Id, response.Message.Categories);
+        }
+        finally 
+        {
+            node.IsLoading = false;
+            StateHasChanged(); 
+        }
+    }
+
+    private async Task OnSearchInput(string? value) 
+    {
+        _query = value ?? string.Empty;
+        var token = _cancellationTokenSource.Token;
+
+        if (!IsSearching) 
+        {
+            _searchResults = [];
+            return;
+        }
+        _loading = true;
+        try 
+        {
+            await Task.Delay(400, token);
+            var client = Mediator.CreateRequestClient<SearchCategories>();
+            var response = await client.GetResponse<SearchCategoriesResult>(new(_query), token);
+            _searchResults = response.Message.Categories;
+        }
+        catch (TaskCanceledException) { }
+        finally 
+        {
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+    
+    private async Task OpenCreateRootDialog() 
+    {
+        var content = new CategoryEditDialogInput { ParentIdForCreate = null };
+        var dialog = await DialogService.ShowDialogAsync<CategoryEditDialog>(content, new() { Title = Loc["CategoryEdit_NewRootTitle"].Value, PreventScroll = true });
+        
+        await dialog.Result; 
+    }
+
+    private async Task OpenCreateChildDialog(Guid parentId) 
+    {
+        var parentNode = _treeManager.FindNode(parentId);
+        var content = new CategoryEditDialogInput { ParentIdForCreate = parentId, ParentName = parentNode?.Category.Name };
+        var dialog = await DialogService.ShowDialogAsync<CategoryEditDialog>(content, new() { Title = string.Format(Loc["CategoryEdit_NewChildTitle"].Value, parentNode?.Category.Name ?? ""), PreventScroll = true });
+        
+        await dialog.Result;
+    }
+
+    private async Task OpenEditDialog(CategoryDto category)
+    {
+        var content = new CategoryEditDialogInput { CategoryToEdit = category };
+        var dialog = await DialogService.ShowDialogAsync<CategoryEditDialog>(content, new() { Title = string.Format(Loc["CategoryEdit_EditTitle"].Value, category.Name), PreventScroll = true });
+        
+        await dialog.Result;
+    }
+    
+    private async Task ConfirmDelete(CategoryDto category)
+    {
+        var dialog = await DialogService.ShowDialogAsync<ConfirmDeleteDialog>(
+            new ConfirmDeleteContent(category.Name), 
+            new() { Title = Loc["Dialog_Delete_Title"].Value, PreventScroll = true });
+            
+        var result = await dialog.Result;
+        if (result is { Cancelled: false, Data: true })
+        {
+            try
+            {
+                await Mediator.Send(new DeleteCategory(category.Id));
+            }
+            catch (Exception ex) 
+            { 
+                var message = ex.InnerException?.Message ?? Loc["Toast_Error"].Value;
+                ToastService.ShowError(message); 
+            }
+        }
+    }
+
+    private void HandleCategoryChange(CategoryChangeNotification change)
+    {
+        switch (change)
+        {
+            case CategoryCreated created: 
+                if (_treeManager.AddNode(created.ToDto()))
+                {
+                    ToastService.ShowSuccess(string.Format(Loc["Toast_CategoryCreated"].Value, created.Name));
+                    StateHasChanged();
+                }
+                break;
+            
+            case CategoryUpdated updated:
+                if (_treeManager.UpdateNode(updated.ToDto()))
+                {
+                    ToastService.ShowSuccess(string.Format(Loc["Toast_CategoryUpdated"].Value, updated.Name));
+                    StateHasChanged();
+                }
+                break;
+
+            case CategoryDeleted deleted:
+                var (removed, name) = _treeManager.RemoveNode(deleted.Id);
+                if (removed)
+                {
+                    ToastService.ShowSuccess(string.Format(Loc["Toast_CategoryDeleted"].Value, name));
+                    StateHasChanged();
+                }
+                break;
+        }
+    }
+
+    public async ValueTask DisposeAsync() 
+    {
+        _categoriesSubscription?.Dispose();
+        _lockSubscription?.Dispose();
+        await _cancellationTokenSource.CancelAsync();
+        _cancellationTokenSource.Dispose();
+    }
+}

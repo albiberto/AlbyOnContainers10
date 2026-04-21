@@ -1,0 +1,9 @@
+﻿<div class="pdm-empty-state">
+    <FluentIcon Value="@Icon" /> 
+    <p>@Text</p>
+</div>
+
+@code {
+    [Parameter] public Icon Icon { get; set; } = new Icons.Regular.Size24.Search();
+    [Parameter] public string Text { get; set; } = "No items found.";
+}

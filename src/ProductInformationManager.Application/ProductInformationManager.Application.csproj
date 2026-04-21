@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="FluentValidation" Version="12.1.1" />
+        <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.6" />
+        <PackageReference Include="Microsoft.Extensions.Localization" Version="10.*" />
+        <PackageReference Include="MassTransit" Version="8.5.9" />
+        <PackageReference Include="Scrutor" Version="7.0.0" />
+        <PackageReference Include="ZiggyCreatures.FusionCache" Version="2.6.0" />
+        <PackageReference Include="Aspire.StackExchange.Redis" Version="13.2.2" />
+        <PackageReference Include="ZiggyCreatures.FusionCache.Backplane.StackExchangeRedis" Version="2.6.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\AlbyOnContainers.Shared.Application\AlbyOnContainers.Shared.Application.csproj" />
+        <ProjectReference Include="..\AlbyOnContainers.Shared.Contracts\AlbyOnContainers.Shared.Contracts.csproj" />
+        <ProjectReference Include="..\ProductInformationManager.Domain\ProductInformationManager.Domain.csproj" />
+        <ProjectReference Include="..\ProductInformationManager.Infrastructure\ProductInformationManager.Infrastructure.csproj" />
+        <ProjectReference Include="..\ProductInformationManager.Messages\ProductInformationManager.Messages.csproj" />
+        <ProjectReference Include="..\AlbyOnContainers.Shared.Domain\AlbyOnContainers.Shared.Domain.csproj" />
+    </ItemGroup>
+
+
+</Project>

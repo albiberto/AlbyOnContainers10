@@ -1,0 +1,79 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AlbyOnContainers.AppHost", "src\AlbyOnContainers.AppHost\AlbyOnContainers.AppHost.csproj", "{A1B2C3D4-0001-0001-0001-000000000001}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AlbyOnContainers.ServiceDefaults", "src\AlbyOnContainers.ServiceDefaults\AlbyOnContainers.ServiceDefaults.csproj", "{A1B2C3D4-0002-0002-0002-000000000002}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AlbyOnContainers.Shared.Security", "src\AlbyOnContainers.Shared.Security\AlbyOnContainers.Shared.Security.csproj", "{A1B2C3D4-0003-0003-0003-000000000003}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProductInformationManager.Domain", "src\ProductInformationManager.Domain\ProductInformationManager.Domain.csproj", "{A1B2C3D4-0004-0004-0004-000000000004}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProductInformationManager.Infrastructure", "src\ProductInformationManager.Infrastructure\ProductInformationManager.Infrastructure.csproj", "{A1B2C3D4-0005-0005-0005-000000000005}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProductInformationManager.Web", "src\ProductInformationManager.Web\ProductInformationManager.Web.csproj", "{A1B2C3D4-0006-0006-0006-000000000006}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProductInformationManager.Messages", "src\ProductInformationManager.Messages\ProductInformationManager.Messages.csproj", "{E4F6C86E-1737-4247-8BA6-591A32352A69}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AlbyOnContainers.Shared.Contracts", "src\AlbyOnContainers.Shared.Contracts\AlbyOnContainers.Shared.Contracts.csproj", "{F2CA2EDB-5C9E-4894-AED7-712AF23BB3E2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AlbyOnContainers.Shared.Domain", "src\AlbyOnContainers.Shared.Domain\AlbyOnContainers.Shared.Domain.csproj", "{6EB5A79B-DA7D-47A4-BCE6-9FDE6E3A10E7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProductInformationManager.Application", "src\ProductInformationManager.Application\ProductInformationManager.Application.csproj", "{385FF6F9-F5A4-4C46-9BBE-1718DC060222}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AlbyOnContainers.Shared.Application", "src\AlbyOnContainers.Shared.Application\AlbyOnContainers.Shared.Application.csproj", "{B2C55023-820F-4317-BCE3-C3ACC8B7E510}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A1B2C3D4-0001-0001-0001-000000000001}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A1B2C3D4-0001-0001-0001-000000000001}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A1B2C3D4-0001-0001-0001-000000000001}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A1B2C3D4-0001-0001-0001-000000000001}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A1B2C3D4-0002-0002-0002-000000000002}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A1B2C3D4-0002-0002-0002-000000000002}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A1B2C3D4-0002-0002-0002-000000000002}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A1B2C3D4-0002-0002-0002-000000000002}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A1B2C3D4-0003-0003-0003-000000000003}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A1B2C3D4-0003-0003-0003-000000000003}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A1B2C3D4-0003-0003-0003-000000000003}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A1B2C3D4-0003-0003-0003-000000000003}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A1B2C3D4-0004-0004-0004-000000000004}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A1B2C3D4-0004-0004-0004-000000000004}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A1B2C3D4-0004-0004-0004-000000000004}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A1B2C3D4-0004-0004-0004-000000000004}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A1B2C3D4-0005-0005-0005-000000000005}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A1B2C3D4-0005-0005-0005-000000000005}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A1B2C3D4-0005-0005-0005-000000000005}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A1B2C3D4-0005-0005-0005-000000000005}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A1B2C3D4-0006-0006-0006-000000000006}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A1B2C3D4-0006-0006-0006-000000000006}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A1B2C3D4-0006-0006-0006-000000000006}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A1B2C3D4-0006-0006-0006-000000000006}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E4F6C86E-1737-4247-8BA6-591A32352A69}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E4F6C86E-1737-4247-8BA6-591A32352A69}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E4F6C86E-1737-4247-8BA6-591A32352A69}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E4F6C86E-1737-4247-8BA6-591A32352A69}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F2CA2EDB-5C9E-4894-AED7-712AF23BB3E2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F2CA2EDB-5C9E-4894-AED7-712AF23BB3E2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F2CA2EDB-5C9E-4894-AED7-712AF23BB3E2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F2CA2EDB-5C9E-4894-AED7-712AF23BB3E2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6EB5A79B-DA7D-47A4-BCE6-9FDE6E3A10E7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6EB5A79B-DA7D-47A4-BCE6-9FDE6E3A10E7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6EB5A79B-DA7D-47A4-BCE6-9FDE6E3A10E7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6EB5A79B-DA7D-47A4-BCE6-9FDE6E3A10E7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{385FF6F9-F5A4-4C46-9BBE-1718DC060222}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{385FF6F9-F5A4-4C46-9BBE-1718DC060222}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{385FF6F9-F5A4-4C46-9BBE-1718DC060222}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{385FF6F9-F5A4-4C46-9BBE-1718DC060222}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B2C55023-820F-4317-BCE3-C3ACC8B7E510}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B2C55023-820F-4317-BCE3-C3ACC8B7E510}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B2C55023-820F-4317-BCE3-C3ACC8B7E510}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B2C55023-820F-4317-BCE3-C3ACC8B7E510}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

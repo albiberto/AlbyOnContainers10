@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <data name="Categories_Title" xml:space="preserve">
+    <value>Categorie</value>
+  </data>
+  <data name="Categories_Subtitle" xml:space="preserve">
+    <value>Gestione gerarchica del catalogo prodotti</value>
+  </data>
+  <data name="Categories_NewRootBtn" xml:space="preserve">
+    <value>Nuova Categoria Radice</value>
+  </data>
+  <data name="Categories_SearchPlaceholder" xml:space="preserve">
+    <value>Cerca tra le categorie...</value>
+  </data>
+  <data name="Categories_Loading" xml:space="preserve">
+    <value>Caricamento categorie...</value>
+  </data>
+  <data name="Categories_Empty" xml:space="preserve">
+    <value>Nessuna categoria trovata.</value>
+  </data>
+  <data name="Dialog_Cancel" xml:space="preserve">
+    <value>Annulla</value>
+  </data>
+  <data name="Dialog_Save" xml:space="preserve">
+    <value>Salva</value>
+  </data>
+  <data name="CategoryEdit_NewRootTitle" xml:space="preserve">
+    <value>Nuova Categoria Radice</value>
+  </data>
+  <data name="CategoryEdit_NewChildTitle" xml:space="preserve">
+    <value>Nuova Sottocategoria in '{0}'</value>
+  </data>
+  <data name="CategoryEdit_EditTitle" xml:space="preserve">
+    <value>Modifica: {0}</value>
+  </data>
+  <data name="CategoryEdit_NameLabel" xml:space="preserve">
+    <value>Nome</value>
+  </data>
+  <data name="CategoryEdit_DescLabel" xml:space="preserve">
+    <value>Descrizione</value>
+  </data>
+  <data name="Toast_CategoryCreated" xml:space="preserve">
+    <value>La categoria '{0}' è stata creata con successo.</value>
+  </data>
+  <data name="Toast_ChildCategoryCreated" xml:space="preserve">
+    <value>La sottocategoria '{0}' è stata aggiunta con successo sotto '{1}'.</value>
+  </data>
+  <data name="Toast_CategoryUpdated" xml:space="preserve">
+    <value>La categoria '{0}' è stata aggiornata con successo.</value>
+  </data>
+  <data name="Toast_CategoryDeleted" xml:space="preserve">
+    <value>La categoria '{0}' è stata eliminata.</value>
+  </data>
+  <data name="Toast_Error" xml:space="preserve">
+    <value>Si è verificato un errore durante l'operazione.</value>
+  </data>
+  <data name="Dialog_Delete_Title" xml:space="preserve">
+    <value>Elimina Categoria</value>
+  </data>
+</root>

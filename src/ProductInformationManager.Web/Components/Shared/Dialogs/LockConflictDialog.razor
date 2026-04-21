@@ -1,0 +1,17 @@
+@implements IDialogContentComponent<LockConflictDialogContent>
+
+<FluentDialogBody>
+    <p>Non è possibile modificare la categoria in questo momento.</p>
+    <p>L'elemento è attualmente in fase di modifica da parte di: <strong>@Content.LockedBy</strong></p>
+    <p style="font-size: 0.85rem; color: var(--pdm-text-muted);">
+        Potrai riprovare non appena l'utente avrà terminato o il lock sarà scaduto.
+    </p>
+</FluentDialogBody>
+<FluentDialogFooter>
+    <FluentButton Appearance="Appearance.Accent" OnClick="@(() => Dialog!.CloseAsync())">Ho capito</FluentButton>
+</FluentDialogFooter>
+
+@code {
+    [Parameter] public required LockConflictDialogContent Content { get; set; }
+    [CascadingParameter] public FluentDialog? Dialog { get; set; }
+}

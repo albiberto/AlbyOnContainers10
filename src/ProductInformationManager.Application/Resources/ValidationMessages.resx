@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+    <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" id="root"
+                xmlns="">
+        <xsd:element name="root" msdata:IsDataSet="true">
+            <xsd:complexType>
+                <xsd:choice maxOccurs="unbounded">
+                    <xsd:element name="data">
+                        <xsd:complexType>
+                            <xsd:sequence>
+                                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
+                                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2"/>
+                            </xsd:sequence>
+                            <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="0"/>
+                        </xsd:complexType>
+                    </xsd:element>
+                </xsd:choice>
+            </xsd:complexType>
+        </xsd:element>
+    </xsd:schema>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>2.0</value>
+    </resheader>
+
+    <!-- Category Validation -->
+    <data name="CategoryNameRequired" xml:space="preserve"><value>Category name is required.</value></data>
+    <data name="CategoryNameMaxLength" xml:space="preserve"><value>Category name cannot exceed 100 characters.</value></data>
+    <data name="CategoryNameDuplicate" xml:space="preserve"><value>A category with this name already exists.</value></data>
+    <data name="CategoryNotFound" xml:space="preserve"><value>Category not found.</value></data>
+    <data name="CategoryDeleteHasChildren" xml:space="preserve"><value>Cannot delete the category because it contains subcategories.</value></data>
+    <data name="CategoryDeleteHasProducts" xml:space="preserve"><value>Cannot delete the category because it contains associated products.</value></data>
+    <data name="CategoryDeleteHasDescriptions" xml:space="preserve"><value>Cannot delete the category because it has associated descriptions.</value></data>
+    <data name="CategoryDescriptionMaxLength" xml:space="preserve"><value>Category description cannot exceed 500 characters.</value></data>
+
+    <!-- DescriptionType Validation -->
+    <data name="DescriptionTypeNameRequired" xml:space="preserve"><value>Description type name is required.</value></data>
+    <data name="DescriptionTypeNameMaxLength" xml:space="preserve"><value>Description type name cannot exceed 100 characters.</value></data>
+    <data name="DescriptionTypeNameDuplicate" xml:space="preserve"><value>A description type with this name already exists.</value></data>
+    <data name="DescriptionTypeNotFound" xml:space="preserve"><value>Description type not found.</value></data>
+    <data name="DescriptionTypeDeleteInUse" xml:space="preserve"><value>Cannot delete the description type because it is used by one or more products.</value></data>
+    <data name="DescriptionTypeDescriptionMaxLength" xml:space="preserve"><value>Description type description cannot exceed 500 characters.</value></data>
+
+    <!-- DescriptionValue Validation -->
+    <data name="DescriptionValueRequired" xml:space="preserve"><value>Description value cannot be empty.</value></data>
+    <data name="DescriptionValueMaxLength" xml:space="preserve"><value>Description value cannot exceed 500 characters.</value></data>
+    <data name="DescriptionValueDeleteInUse" xml:space="preserve"><value>Cannot delete the value because it is associated with one or more products.</value></data>
+
+    <!-- AttributeType Validation -->
+    <data name="AttributeTypeNameRequired" xml:space="preserve"><value>Attribute type name is required.</value></data>
+    <data name="AttributeTypeNameMaxLength" xml:space="preserve"><value>Attribute type name cannot exceed 100 characters.</value></data>
+    <data name="AttributeTypeNameDuplicate" xml:space="preserve"><value>An attribute type with this name already exists.</value></data>
+    <data name="AttributeTypeNotFound" xml:space="preserve"><value>Attribute type not found.</value></data>
+    <data name="AttributeTypeDeleteInUse" xml:space="preserve"><value>Cannot delete the attribute type because its attributes are used by one or more products.</value></data>
+    <data name="AttributeTypeDescriptionMaxLength" xml:space="preserve"><value>Attribute type description cannot exceed 500 characters.</value></data>
+
+    <!-- Attribute Validation -->
+    <data name="AttributeNameRequired" xml:space="preserve"><value>Attribute name is required.</value></data>
+    <data name="AttributeValueRequired" xml:space="preserve"><value>Attribute value is required.</value></data>
+    <data name="AttributeDeleteInUse" xml:space="preserve"><value>Cannot delete the attribute because it is used by one or more products.</value></data>
+
+    <!-- Product Validation -->
+    <data name="ProductNameRequired" xml:space="preserve"><value>Product name is required.</value></data>
+    <data name="ProductNameMaxLength" xml:space="preserve"><value>Product name cannot exceed 200 characters.</value></data>
+    <data name="ProductSkuRequired" xml:space="preserve"><value>Product SKU is required.</value></data>
+    <data name="ProductSkuMaxLength" xml:space="preserve"><value>Product SKU cannot exceed 50 characters.</value></data>
+    <data name="ProductSkuDuplicate" xml:space="preserve"><value>A product with this SKU already exists.</value></data>
+    <data name="ProductCategoryRequired" xml:space="preserve"><value>Product must be assigned to a category.</value></data>
+    <data name="ProductCategoryNotFound" xml:space="preserve"><value>The selected category does not exist.</value></data>
+    <data name="ProductNotFound" xml:space="preserve"><value>Product not found.</value></data>
+    <data name="ProductMandatoryDescriptionMissing" xml:space="preserve"><value>Mandatory description '{0}' must be provided.</value></data>
+
+    <!-- CategoryDescriptionRule Validation -->
+    <data name="CategoryDescriptionRuleAlreadyExists" xml:space="preserve"><value>This description type is already associated with this category.</value></data>
+    <data name="CategoryDescriptionRuleNotFound" xml:space="preserve"><value>The description rule was not found for this category.</value></data>
+    <data name="CategoryDescriptionRuleDeleteInUse" xml:space="preserve"><value>Cannot remove the description rule because products in this category have values assigned for it.</value></data>
+</root>

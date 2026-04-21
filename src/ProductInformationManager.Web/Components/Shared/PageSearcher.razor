@@ -1,0 +1,25 @@
+﻿<div class="pdm-search-container">
+    <FluentSearch 
+        Value="@Value" 
+        ValueChanged="@HandleInput" 
+        Placeholder="@Placeholder" 
+        Immediate="true"
+        Width="100%" />
+</div>
+
+@code {
+    [Parameter]
+    public string? Value { get; set; }
+
+    [Parameter]
+    public string Placeholder { get; set; } = "Cerca...";
+
+    [Parameter]
+    public EventCallback<string> OnSearch { get; set; }
+
+    private async Task HandleInput(string? newValue)
+    {
+        Value = newValue;
+        await OnSearch.InvokeAsync(newValue);
+    }
+}

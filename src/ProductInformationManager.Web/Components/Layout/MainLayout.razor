@@ -1,0 +1,155 @@
+@inherits LayoutComponentBase
+@inject IJSRuntime JS
+
+<FluentDesignTheme Mode="@(_isDark ? DesignThemeModes.Dark : DesignThemeModes.Light)" />
+
+<div class="pdm-header">
+    <a href="/" class="pdm-header-brand">
+        <div class="pdm-header-brand-icon">
+            <FluentIcon Value="@(new Icons.Regular.Size20.Box())" Color="Color.Custom" CustomColor="#fff"/>
+        </div>
+        <div>
+            <div class="pdm-header-brand-title">Product Data Manager</div>
+            <div class="pdm-header-brand-subtitle">E-Commerce Catalog</div>
+        </div>
+    </a>
+    <FluentSpacer/>
+    <div class="pdm-header-actions">
+        <button class="pdm-theme-toggle" @onclick="ToggleTheme"
+                title="@(_isDark ? "Switch to light mode" : "Switch to dark mode")">
+            @if (_isDark) {
+                <FluentIcon Value="@(new Icons.Regular.Size16.WeatherSunny())" Color="Color.Custom"
+                            CustomColor="currentColor"/>
+            } else {
+                <FluentIcon Value="@(new Icons.Regular.Size16.WeatherMoon())" Color="Color.Custom"
+                            CustomColor="currentColor"/>
+            }
+        </button>
+        <AuthorizeView>
+            <Authorized>
+                <div
+                    style="display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: var(--pdm-radius-md);">
+                    <FluentPersona Name="@context.User.Identity?.Name"
+                                   ImageSize="28px"/>
+                </div>
+            </Authorized>
+            <NotAuthorized>
+                <FluentButton Href="/login" Appearance="Appearance.Stealth"
+                              IconStart="@(new Icons.Regular.Size16.Person())">
+                    Login
+                </FluentButton>
+            </NotAuthorized>
+        </AuthorizeView>
+    </div>
+</div>
+
+<div class="pdm-content-wrapper">
+    <nav class="pdm-sidebar">
+        <div class="pdm-sidebar-section">
+            <div class="pdm-sidebar-label">Navigation</div>
+
+            <NavLink class="pdm-nav-item" href="/" Match="NavLinkMatch.All">
+                <span class="pdm-nav-icon">
+                    <FluentIcon Value="@(new Icons.Regular.Size20.Home())" Color="Color.Custom"
+                                CustomColor="currentColor"/>
+                </span>
+                Dashboard
+            </NavLink>
+        </div>
+
+        <div class="pdm-sidebar-section">
+            <div class="pdm-sidebar-label">Catalog</div>
+
+            <NavLink class="pdm-nav-item" href="/categories">
+                <span class="pdm-nav-icon">
+                    <FluentIcon Value="@(new Icons.Regular.Size20.FolderMultiple())" Color="Color.Custom"
+                                CustomColor="currentColor"/>
+                </span>
+                Categories
+            </NavLink>
+
+            <NavLink class="pdm-nav-item" href="/products">
+                <span class="pdm-nav-icon">
+                    <FluentIcon Value="@(new Icons.Regular.Size20.Box())" Color="Color.Custom"
+                                CustomColor="currentColor"/>
+                </span>
+                Products
+            </NavLink>
+        </div>
+
+        <div class="pdm-sidebar-section">
+            <div class="pdm-sidebar-label">Configuration</div>
+
+            <NavLink class="pdm-nav-item" href="/description-types">
+                <span class="pdm-nav-icon">
+                    <FluentIcon Value="@(new Icons.Regular.Size20.TextDescription())" Color="Color.Custom"
+                                CustomColor="currentColor"/>
+                </span>
+                Description Types
+            </NavLink>
+
+            <NavLink class="pdm-nav-item" href="/attribute-types">
+                <span class="pdm-nav-icon">
+                    <FluentIcon Value="@(new Icons.Regular.Size20.Tag())" Color="Color.Custom"
+                                CustomColor="currentColor"/>
+                </span>
+                Attribute Types
+            </NavLink>
+        </div>
+    </nav>
+
+    <main class="pdm-main-content">
+        <ErrorBoundary @ref="_errorBoundary">
+            <ChildContent>
+                @Body
+            </ChildContent>
+            <ErrorContent Context="exception">
+                <div class="pdm-empty-state" style="margin-top: 10vh;">
+                    <div class="pdm-empty-state__icon">
+                        <FluentIcon Value="@(new Icons.Regular.Size24.ErrorCircle())" Color="Color.Error" />
+                    </div>
+                    <h3>Qualcosa è andato storto</h3>
+                    <p style="margin-bottom: 16px;">C'è stato un problema di comunicazione col server o un errore imprevisto.</p>
+                    <FluentButton Appearance="Appearance.Accent" IconStart="@(new Icons.Regular.Size16.ArrowClockwise())" OnClick="Recover">
+                        Ricarica pagina
+                    </FluentButton>
+                    <div style="margin-top: 24px; padding: 16px; background: var(--pdm-bg-subtle); border-radius: var(--pdm-radius-md); font-family: monospace; font-size: 0.75rem; text-align: left; overflow: auto; max-height: 200px;">
+                        @exception.Message
+                    </div>
+                </div>
+            </ErrorContent>
+        </ErrorBoundary>
+    </main>
+</div>
+
+<FluentToastProvider/>
+<FluentDialogProvider/>
+<FluentMessageBarProvider/>
+
+@code {
+    private bool _isDark;
+    private ErrorBoundary? _errorBoundary;
+
+    protected override void OnParametersSet()
+    {
+        _errorBoundary?.Recover();
+    }
+
+    private void Recover()
+    {
+        _errorBoundary?.Recover();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender) {
+        if (firstRender) {
+            var theme = await JS.InvokeAsync<string>("pdmTheme.get");
+            _isDark = theme == "dark";
+            StateHasChanged();
+        }
+    }
+
+    private async Task ToggleTheme() {
+        var next = await JS.InvokeAsync<string>("pdmTheme.toggle");
+        _isDark = next == "dark";
+    }
+}

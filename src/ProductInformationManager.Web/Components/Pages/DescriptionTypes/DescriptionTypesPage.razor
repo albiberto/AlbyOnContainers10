@@ -1,0 +1,166 @@
+@page "/description-types"
+@using MassTransit
+
+@inject IRequestClient<GetDescriptionTypes> DescriptionTypesClient
+@inject IRequestClient<CreateDescriptionType> CreateClient
+@inject IRequestClient<DeleteDescriptionType> DeleteClient
+@inject IToastService ToastService
+@inject NavigationManager NavManager
+
+<PageTitle>Description Types — Product Data Manager</PageTitle>
+
+<div class="pdm-animate-in">
+    <div class="pdm-page-header">
+        <div>
+            <h1>
+                <span class="pdm-page-header-icon" style="background: var(--pdm-success-bg);">
+                    <FluentIcon Value="@(new Icons.Regular.Size20.TextDescription())" Color="Color.Custom"
+                                CustomColor="var(--pdm-success)"/>
+                </span>
+                Description Types
+            </h1>
+            <div style="font-size: 0.85rem; color: var(--pdm-text-muted); margin-top: 2px;">Define structured
+                description schemas with configurable value sets
+            </div>
+        </div>
+        <FluentButton Appearance="Appearance.Accent"
+                      IconStart="@(new Icons.Regular.Size16.Add())"
+                      OnClick="OpenCreateDialog">
+            Add Description Type
+        </FluentButton>
+    </div>
+
+    @if (_loading) {
+        <div class="pdm-loading-state"
+             style="background: var(--pdm-bg-surface); padding: 40px; border-radius: var(--pdm-radius); border: 1px solid var(--pdm-border);">
+            <FluentProgressRing/>
+            <span>Loading description types…</span>
+        </div>
+    } else if (!_descriptionTypes.Any()) {
+        <div class="pdm-empty-state"
+             style="background: var(--pdm-bg-surface); padding: 40px; border-radius: var(--pdm-radius); border: 1px solid var(--pdm-border);">
+            <div class="pdm-empty-state__icon">
+                <FluentIcon Value="@(new Icons.Regular.Size24.TextDescription())" Color="Color.Custom"
+                            CustomColor="var(--pdm-text-muted)"/>
+            </div>
+            <p>No description types yet.</p>
+            <p>Click "Add Description Type" to start defining product descriptions.</p>
+        </div>
+    } else {
+        <div
+            style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; align-items: flex-start;">
+            @foreach (var dt in _descriptionTypes) {
+                <div class="pdm-section-card" style="padding: 16px; border-radius: 12px;">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; min-height: 32px;">
+                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                            <h3 style="margin: 0; font-size: 1rem; font-weight: 600; color: var(--pdm-text);">@dt.Name</h3>
+                            @if (dt.IsGlobal) {
+                                <span
+                                    style="background: var(--pdm-success-bg); color: var(--pdm-success); border: 1px solid var(--pdm-success-bg); padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 500;">Globale</span>
+                            } else if (!string.IsNullOrEmpty(dt.CategoryName)) {
+                                <span
+                                    style="background: var(--pdm-primary-glow); color: var(--pdm-primary); border: 1px solid var(--pdm-border-accent); padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 500;">@dt.CategoryName</span>
+                            }
+                        </div>
+                        <div style="display: flex; gap: 4px;">
+                            <FluentButton Appearance="Appearance.Stealth" IconStart="@(new Icons.Regular.Size16.Edit())"
+                                          Title="Edit" OnClick="@(() => EditType(dt.Id))"/>
+                            <FluentButton Appearance="Appearance.Stealth"
+                                          IconStart="@(new Icons.Regular.Size16.Delete())" Title="Delete"
+                                          OnClick="@(() => ConfirmDelete(dt))"/>
+                        </div>
+                    </div>
+
+                    <div style="height: 1px; background: var(--pdm-border); margin: 0 -16px 16px -16px;"></div>
+
+                    <div class="pdm-tags-container" style="gap: 8px; flex-wrap: wrap;">
+                        @foreach (var value in dt.Values.Take(10)) {
+                            <span class="pdm-tag"
+                                  style="padding: 4px 12px; border-radius: 16px; font-size: 0.75rem; background: var(--pdm-bg-body); border: 1px solid var(--pdm-border); color: var(--pdm-text-muted);">
+                                @value.Value
+                            </span>
+                        }
+                        @if (dt.Values.Count > 10) {
+                            <span
+                                style="font-size: 0.75rem; color: var(--pdm-text-muted); padding: 4px;">+@(dt.Values.Count - 10) additional</span>
+                        } else if (dt.Values.Count == 0) {
+                            <span class="pdm-no-items-text" style="font-size: 0.8rem; padding: 4px 0;">Nessun valore definito</span>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<FluentDialog @bind-Hidden="@_confirmDeleteHidden" Modal="true" TrapFocus="true" PreventScroll="true">
+    <FluentDialogHeader>
+        <div class="pdm-dialog-header">
+            <FluentIcon Value="@(new Icons.Regular.Size20.Warning())" Color="Color.Custom" CustomColor="var(--pdm-danger)"/>
+            <h3>Confirm Deletion</h3>
+        </div>
+    </FluentDialogHeader>
+    <FluentDialogBody>
+        <p>Are you sure you want to delete the description type <strong>@_typeToDelete?.Name</strong>?</p>
+        <p style="font-size: 0.85rem; color: var(--pdm-text-muted);">This will also remove all associated values. This
+            action cannot be undone.</p>
+    </FluentDialogBody>
+    <FluentDialogFooter>
+        <FluentButton Appearance="Appearance.Neutral" OnClick="@(() => _confirmDeleteHidden = true)">Cancel
+        </FluentButton>
+        <FluentButton Appearance="Appearance.Accent" Style="--accent-fill-rest: #ef4444; --accent-fill-hover: #dc2626;"
+                      OnClick="HandleDelete" Loading="_deleting"
+                      IconStart="@(new Icons.Regular.Size16.Delete())">
+            Delete
+        </FluentButton>
+    </FluentDialogFooter>
+</FluentDialog>
+
+@code {
+    private List<DescriptionTypeDto> _descriptionTypes = [];
+    private PaginationState _pagination = new() { ItemsPerPage = 20 };
+    private bool _loading = true;
+
+    // Confirm delete type
+    private bool _confirmDeleteHidden = true;
+    private bool _deleting;
+    private DescriptionTypeDto? _typeToDelete;
+
+    protected override async Task OnInitializedAsync() => await LoadData();
+
+    private async Task LoadData() {
+        _loading = true;
+        var response = await DescriptionTypesClient.GetResponse<GetDescriptionTypesResult>(new GetDescriptionTypes());
+        _descriptionTypes = response.Message.DescriptionTypes;
+        _loading = false;
+    }
+
+    private void OpenCreateDialog() {
+        NavManager.NavigateTo("/description-types/edit");
+    }
+
+    private void EditType(Guid id) {
+        NavManager.NavigateTo($"/description-types/edit?id={id}");
+    }
+
+    private void ConfirmDelete(DescriptionTypeDto dt) {
+        _typeToDelete = dt;
+        _confirmDeleteHidden = false;
+    }
+
+    private async Task HandleDelete() {
+        if (_typeToDelete is null) return;
+        _deleting = true;
+        var response = await DeleteClient.GetResponse<DeleteDescriptionTypeResult>(new DeleteDescriptionType(_typeToDelete.Id));
+        if (response.Message.Success) {
+            ToastService.ShowSuccess($"'{_typeToDelete.Name}' deleted.");
+            await LoadData();
+        } else {
+            ToastService.ShowError(response.Message.ErrorMessage ?? "Cannot delete description type.");
+        }
+
+        _deleting = false;
+        _confirmDeleteHidden = true;
+    }
+}

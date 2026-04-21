@@ -1,0 +1,14 @@
+@implements IDialogContentComponent<ConfirmDeleteContent>
+
+<FluentDialogBody>
+    <p>Vuoi davvero eliminare <strong>@Content.EntityName</strong>? Questa operazione non può essere annullata.</p>
+</FluentDialogBody>
+<FluentDialogFooter>
+    <FluentButton Appearance="Appearance.Neutral" OnClick="@(() => Dialog!.CancelAsync())">Annulla</FluentButton>
+    <FluentButton Appearance="Appearance.Accent" Style="--accent-fill-rest: #ef4444;" OnClick="@(() => Dialog!.CloseAsync(true))">Elimina</FluentButton>
+</FluentDialogFooter>
+
+@code {
+    [Parameter] public required ConfirmDeleteContent Content { get; set; }
+    [CascadingParameter] public FluentDialog? Dialog { get; set; }
+}
