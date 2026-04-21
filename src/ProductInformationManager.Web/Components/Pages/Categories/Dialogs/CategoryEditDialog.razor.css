@@ -1,0 +1,9 @@
+/* ── CategoryEditDialog — CSS Isolation ──── */
+
+::deep .pdm-category-form {
+    min-width: 300px;
+}
+
+::deep .pdm-category-form__field {
+    width: 100%;
+}

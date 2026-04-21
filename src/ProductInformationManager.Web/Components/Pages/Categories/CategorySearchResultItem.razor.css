@@ -1,0 +1,20 @@
+/* ── CategorySearchResultItem — CSS Isolation ── */
+
+::deep .pdm-search-result {
+    padding: var(--pdm-space-2) 0;
+    border-bottom: 1px solid var(--pdm-border);
+}
+
+::deep .pdm-search-result__body {
+    flex: 1;
+    min-width: 0;
+}
+
+::deep .pdm-search-result__name {
+    font-weight: 500;
+}
+
+::deep .pdm-search-result__path {
+    font-size: 0.78rem;
+    color: var(--pdm-text-muted);
+}

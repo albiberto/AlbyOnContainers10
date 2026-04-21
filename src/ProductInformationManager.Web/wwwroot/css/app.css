@@ -1,10 +1,11 @@
 /* ============================================
-   Product Data Manager — Design System
-   Light + Dark Theme with CSS Custom Properties
+   Product Data Manager — Global Stylesheet
+   ──────────────────────────────────────────
+   SOLO: Reset, Shell Layout, Fluent Overrides,
+   Animazioni base e Responsive.
+   I token vivono in theme.css.
+   Gli stili di pagina vivono in *.razor.css.
    ============================================ */
-
-/* ── Light Theme (default) ───────────────── */
-
 
 /* ── Global Reset ────────────────────────── */
 *, *::before, *::after {
@@ -34,13 +35,8 @@ h1, h2, h3, h4 {
     color: var(--pdm-text-primary);
 }
 
-h1 {
-    font-size: 1.65rem;
-}
-
-h3 {
-    font-size: 1.1rem;
-}
+h1 { font-size: 1.65rem; }
+h3 { font-size: 1.1rem; }
 
 a {
     color: var(--pdm-primary);
@@ -70,15 +66,18 @@ a:hover {
     background: var(--pdm-scrollbar-thumb-hover);
 }
 
-/* ── Layout — Header ────────────────────── */
+
+/* ══════════════════════════════════════════
+   Shell Layout — Header
+   ══════════════════════════════════════════ */
 .pdm-header {
     height: var(--pdm-header-height);
     background: var(--pdm-bg-elevated);
     border-bottom: 1px solid var(--pdm-border);
     display: flex;
     align-items: center;
-    padding: 0 20px;
-    gap: 12px;
+    padding: 0 var(--pdm-space-5);
+    gap: var(--pdm-space-3);
     position: sticky;
     top: 0;
     z-index: 100;
@@ -121,7 +120,15 @@ a:hover {
 .pdm-header-actions {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: var(--pdm-space-1);
+}
+
+.pdm-header-user {
+    display: flex;
+    align-items: center;
+    gap: var(--pdm-space-2);
+    padding: 6px var(--pdm-space-3);
+    border-radius: var(--pdm-radius-md);
 }
 
 /* Theme toggle button */
@@ -146,14 +153,20 @@ a:hover {
     color: var(--pdm-text-primary);
 }
 
-/* ── Layout — Content Wrapper ────────────── */
+
+/* ══════════════════════════════════════════
+   Shell Layout — Content Wrapper
+   ══════════════════════════════════════════ */
 .pdm-content-wrapper {
     display: flex;
     height: calc(100vh - var(--pdm-header-height));
     overflow: hidden;
 }
 
-/* ── Layout — Sidebar ────────────────────── */
+
+/* ══════════════════════════════════════════
+   Shell Layout — Sidebar
+   ══════════════════════════════════════════ */
 .pdm-sidebar {
     width: var(--pdm-sidebar-width);
     min-width: var(--pdm-sidebar-width);
@@ -166,7 +179,7 @@ a:hover {
 }
 
 .pdm-sidebar-section {
-    padding: 12px 8px;
+    padding: var(--pdm-space-3) var(--pdm-space-2);
 }
 
 .pdm-sidebar-label {
@@ -175,7 +188,7 @@ a:hover {
     text-transform: uppercase;
     letter-spacing: 0.1em;
     color: var(--pdm-text-muted);
-    padding: 8px 16px;
+    padding: var(--pdm-space-2) var(--pdm-space-4);
     margin-bottom: 2px;
 }
 
@@ -184,7 +197,7 @@ a:hover {
     align-items: center;
     gap: 10px;
     padding: 9px 14px;
-    margin: 1px 8px;
+    margin: 1px var(--pdm-space-2);
     border-radius: var(--pdm-radius-md);
     color: var(--pdm-text-secondary);
     text-decoration: none;
@@ -234,210 +247,117 @@ a:hover {
     opacity: 1;
 }
 
-/* ── Layout — Main Content ───────────────── */
+
+/* ══════════════════════════════════════════
+   Shell Layout — Main Content
+   ══════════════════════════════════════════ */
 .pdm-main-content {
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: 28px 32px;
+    padding: var(--pdm-space-8) var(--pdm-space-8);
     min-width: 0;
 }
 
-/* ── Hero (Home) ─────────────────────────── */
-.pdm-hero {
+
+/* ══════════════════════════════════════════
+   Global Utilities
+   ══════════════════════════════════════════ */
+
+/* Error boundary */
+.pdm-error-state {
     text-align: center;
-    padding: 40px 0 28px;
-    position: relative;
+    margin-top: 10vh;
 }
 
-.pdm-hero::before {
-    content: '';
-    position: absolute;
-    top: -40px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 400px;
-    height: 400px;
-    background: radial-gradient(circle, var(--pdm-primary-glow), transparent 70%);
-    pointer-events: none;
+.pdm-error-detail {
+    margin-top: var(--pdm-space-6);
+    padding: var(--pdm-space-4);
+    background: var(--pdm-bg-subtle);
+    border-radius: var(--pdm-radius-md);
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 0.75rem;
+    text-align: left;
+    overflow: auto;
+    max-height: 200px;
 }
 
-.pdm-hero-icon {
-    width: 68px;
-    height: 68px;
-    margin: 0 auto 20px;
-    background: linear-gradient(135deg, var(--pdm-primary), var(--pdm-accent));
-    border-radius: var(--pdm-radius-xl);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 8px 24px rgba(79, 70, 229, 0.2);
-    position: relative;
-    z-index: 1;
+/* Entry animation */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
-.pdm-hero h1 {
-    font-size: 1.85rem;
-    margin: 0 0 8px;
-    position: relative;
-    z-index: 1;
+.pdm-animate-in {
+    animation: fadeIn 350ms ease-out;
 }
 
-.pdm-hero p {
-    color: var(--pdm-text-muted);
-    max-width: 480px;
-    margin: 0 auto;
-    position: relative;
-    z-index: 1;
-    font-size: 0.95rem;
-}
 
-/* ── Dashboard Cards ─────────────────────── */
-.pdm-dashboard-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 20px;
-    margin-top: 28px;
-}
+/* ══════════════════════════════════════════
+   Shared Component Patterns
+   ──────────────────────────────────────────
+   Classi usate da più pagine/componenti.
+   Se una classe è usata da un SOLO componente,
+   va nel suo .razor.css.
+   ══════════════════════════════════════════ */
 
-.pdm-dashboard-card {
+/* Section Card — usato da DescriptionTypes, AttributeTypes, etc. */
+.pdm-section-card {
     background: var(--pdm-bg-card);
     border: 1px solid var(--pdm-border);
     border-radius: var(--pdm-radius-lg);
-    padding: 24px;
-    text-decoration: none;
-    color: inherit;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    transition: all var(--pdm-transition-base);
-    position: relative;
-    overflow: hidden;
+    padding: var(--pdm-space-6);
     box-shadow: var(--pdm-shadow-sm);
+    transition: background-color var(--pdm-transition-base), border-color var(--pdm-transition-base);
 }
 
-.pdm-dashboard-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: linear-gradient(90deg, var(--card-accent, var(--pdm-primary)), transparent);
-    opacity: 0;
-    transition: opacity var(--pdm-transition-base);
-}
-
-.pdm-dashboard-card:hover {
-    border-color: var(--pdm-border-accent);
-    box-shadow: var(--pdm-shadow-md);
-    transform: translateY(-2px);
-}
-
-.pdm-dashboard-card:hover::before {
-    opacity: 1;
-}
-
-.pdm-card-icon {
-    width: 44px;
-    height: 44px;
-    border-radius: var(--pdm-radius-md);
+.pdm-section-card__header {
     display: flex;
-    align-items: center;
-    justify-content: center;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--pdm-space-4);
+}
+
+.pdm-section-card__body {
+    flex: 1;
+    min-width: 0;
+}
+
+.pdm-section-card__title {
+    margin: 0;
+    font-size: 1.05rem;
+}
+
+.pdm-section-card__description {
+    font-size: 0.825rem;
+    color: var(--pdm-text-secondary);
+    margin-top: var(--pdm-space-1);
+}
+
+.pdm-section-card__actions {
+    display: flex;
+    gap: 2px;
     flex-shrink: 0;
 }
 
-.pdm-card-icon--indigo {
-    background: rgba(79, 70, 229, 0.08);
-    color: var(--pdm-primary);
+.pdm-section-card__content {
+    margin-top: var(--pdm-space-4);
+    padding-top: var(--pdm-space-4);
+    border-top: 1px solid var(--pdm-border);
 }
 
-.pdm-card-icon--cyan {
-    background: rgba(8, 145, 178, 0.08);
-    color: var(--pdm-accent);
-}
-
-.pdm-card-icon--emerald {
-    background: rgba(5, 150, 105, 0.08);
-    color: var(--pdm-success);
-}
-
-.pdm-card-icon--amber {
-    background: rgba(217, 119, 6, 0.08);
-    color: var(--pdm-warning);
-}
-
-[data-theme="dark"] .pdm-card-icon--indigo {
-    background: rgba(129, 140, 248, 0.10);
-}
-
-[data-theme="dark"] .pdm-card-icon--cyan {
-    background: rgba(34, 211, 238, 0.10);
-}
-
-[data-theme="dark"] .pdm-card-icon--emerald {
-    background: rgba(52, 211, 153, 0.10);
-}
-
-[data-theme="dark"] .pdm-card-icon--amber {
-    background: rgba(251, 191, 36, 0.10);
-}
-
-.pdm-card-title {
-    margin: 0;
-    font-size: 1.05rem;
-    font-weight: 600;
-}
-
-.pdm-card-description {
-    margin: 0;
-    font-size: 0.825rem;
-    color: var(--pdm-text-secondary);
-    line-height: 1.5;
-}
-
-.pdm-card-link {
-    font-size: 0.8rem;
-    font-weight: 500;
-    color: var(--pdm-primary);
-    margin-top: auto;
-}
-
-/* ── Status Badge ────────────────────────── */
-.pdm-status-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 3px 10px;
-    border-radius: 100px;
-    font-size: 0.75rem;
-    font-weight: 500;
-}
-
-.pdm-status-badge--active {
-    background: var(--pdm-success-bg);
-    color: var(--pdm-success);
-}
-
-.pdm-status-badge--inactive {
-    background: var(--pdm-bg-subtle);
-    color: var(--pdm-text-muted);
-}
-
-.pdm-status-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: currentColor;
-}
-
-/* ── Tags (Description Type values) ──────── */
+/* Tags — usati da DescriptionTypes e AttributeTypes */
 .pdm-tag {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 4px 12px;
+    padding: var(--pdm-space-1) var(--pdm-space-3);
     border-radius: 100px;
     font-size: 0.78rem;
     font-weight: 500;
@@ -468,69 +388,52 @@ a:hover {
     color: var(--pdm-danger);
 }
 
-/* ── Section Card (Desc/Attr types list) ─── */
-.pdm-section-card {
-    background: var(--pdm-bg-card);
-    border: 1px solid var(--pdm-border);
-    border-radius: var(--pdm-radius-lg);
-    padding: 24px;
-    box-shadow: var(--pdm-shadow-sm);
-    transition: background-color var(--pdm-transition-base), border-color var(--pdm-transition-base);
-}
-
-.pdm-section-card__header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 16px;
-}
-
-.pdm-section-card__body {
-    flex: 1;
-    min-width: 0;
-}
-
-.pdm-section-card__title {
-    margin: 0;
-    font-size: 1.05rem;
-}
-
-.pdm-section-card__description {
-    font-size: 0.825rem;
-    color: var(--pdm-text-secondary);
-    margin-top: 4px;
-}
-
-.pdm-section-card__actions {
-    display: flex;
-    gap: 2px;
-    flex-shrink: 0;
-}
-
-.pdm-section-card__content {
-    margin-top: 16px;
-    padding-top: 16px;
-    border-top: 1px solid var(--pdm-border);
-}
-
 .pdm-tags-container {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: var(--pdm-space-2);
     align-items: center;
 }
 
 .pdm-no-items-text {
     font-size: 0.825rem;
     color: var(--pdm-text-muted);
-    padding: 4px 0;
+    padding: var(--pdm-space-1) 0;
 }
 
-/* ── Inline Form (dashed add-row) ────────── */
+/* Status Badge — usato da più contesti */
+.pdm-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    border-radius: 100px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.pdm-status-badge--active {
+    background: var(--pdm-success-bg);
+    color: var(--pdm-success);
+}
+
+.pdm-status-badge--inactive {
+    background: var(--pdm-bg-subtle);
+    color: var(--pdm-text-muted);
+}
+
+.pdm-status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+/* Inline Form — usato da DescriptionTypes e AttributeTypes */
 .pdm-inline-form {
     display: flex;
     align-items: flex-end;
-    gap: 8px;
+    gap: var(--pdm-space-2);
     padding: 14px;
     margin-top: 14px;
     background: var(--pdm-bg-surface);
@@ -546,51 +449,20 @@ a:hover {
     box-shadow: var(--pdm-shadow-glow);
 }
 
-/* ── Dialog Utilities ────────────────────── */
-.pdm-dialog-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 4px;
-}
-
-.pdm-dialog-header h3 {
-    margin: 0;
-}
-
-.pdm-dialog-subtitle {
-    font-size: 0.825rem;
-    color: var(--pdm-text-muted);
-    margin-bottom: 16px;
-}
-
+/* Dialog form sizing */
 .pdm-dialog-form {
-    gap: 16px;
+    gap: var(--pdm-space-4);
     width: 100%;
     max-width: 480px;
     min-width: min(420px, calc(100vw - 64px));
 }
 
-/* ── Animation ───────────────────────────── */
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(8px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.pdm-animate-in {
-    animation: fadeIn 350ms ease-out;
-}
 
 /* ══════════════════════════════════════════
-   Fluent UI Overrides — Input Containment
+   Fluent UI Overrides
    ══════════════════════════════════════════ */
 
+/* Input containment — impedisce overflow */
 fluent-text-field,
 fluent-text-area,
 fluent-number-field,
@@ -620,24 +492,16 @@ fluent-number-field::part(control) {
     text-overflow: ellipsis;
 }
 
-/* ── Fluent UI Theme Integration ─────────── */
-fluent-design-system-provider, body {
-    --neutral-fill-rest: var(--pdm-bg-input);
-    --neutral-fill-hover: var(--pdm-bg-card-hover);
-    --accent-fill-rest: var(--pdm-primary);
-    --accent-fill-hover: var(--pdm-primary-dark);
-    --neutral-stroke-rest: var(--pdm-border-input);
-    --neutral-stroke-hover: var(--pdm-border-hover);
-}
-
+/* Card integration */
 fluent-card, .fluent-card {
-    background: var(--pdm-bg-card) !important;
-    border: 1px solid var(--pdm-border) !important;
-    border-radius: var(--pdm-radius-lg) !important;
-    box-shadow: var(--pdm-shadow-sm) !important;
-    transition: background-color var(--pdm-transition-base), border-color var(--pdm-transition-base) !important;
+    background: var(--pdm-bg-card);
+    border: 1px solid var(--pdm-border);
+    border-radius: var(--pdm-radius-lg);
+    box-shadow: var(--pdm-shadow-sm);
+    transition: background-color var(--pdm-transition-base), border-color var(--pdm-transition-base);
 }
 
+/* Data grid */
 fluent-data-grid {
     width: 100%;
     max-width: 100%;
@@ -645,12 +509,12 @@ fluent-data-grid {
 }
 
 fluent-data-grid-row {
-    border-bottom-color: var(--pdm-border) !important;
-    transition: background-color var(--pdm-transition-fast) !important;
+    border-bottom-color: var(--pdm-border);
+    transition: background-color var(--pdm-transition-fast);
 }
 
 fluent-data-grid-row:hover {
-    background: var(--pdm-bg-card-hover) !important;
+    background: var(--pdm-bg-card-hover);
 }
 
 fluent-data-grid-cell {
@@ -658,15 +522,17 @@ fluent-data-grid-cell {
     text-overflow: ellipsis;
 }
 
+/* Stealth button hover */
 fluent-button[appearance="stealth"]:hover {
     background: var(--pdm-primary-surface);
 }
 
+/* Dialog */
 fluent-dialog::part(control) {
-    background: var(--pdm-bg-card) !important;
-    border: 1px solid var(--pdm-border) !important;
-    border-radius: var(--pdm-radius-xl) !important;
-    box-shadow: var(--pdm-shadow-lg) !important;
+    background: var(--pdm-bg-card);
+    border: 1px solid var(--pdm-border);
+    border-radius: var(--pdm-radius-xl);
+    box-shadow: var(--pdm-shadow-lg);
     max-width: calc(100vw - 32px);
     max-height: calc(100vh - 32px);
 }
@@ -681,9 +547,10 @@ fluent-dialog::part(overlay) {
 }
 
 fluent-divider {
-    border-color: var(--pdm-border) !important;
+    border-color: var(--pdm-border);
 }
 
+/* Tree */
 fluent-tree-item {
     margin: 1px 0;
 }
@@ -696,24 +563,29 @@ fluent-tree-item:hover::part(positioning-region) {
     background: var(--pdm-primary-surface);
 }
 
+/* Progress ring */
 fluent-progress-ring {
     --accent-fill-rest: var(--pdm-primary);
 }
 
+/* Dialog stack containment */
 fluent-dialog .fluent-stack {
     max-width: 100%;
     min-width: 0;
 }
 
-/* ── Responsive ──────────────────────────── */
+
+/* ══════════════════════════════════════════
+   Responsive
+   ══════════════════════════════════════════ */
 @media (max-width: 600px) {
     fluent-dialog::part(control) {
         max-width: calc(100vw - 16px);
-        min-width: 0 !important;
+        min-width: 0;
     }
 
     .pdm-dialog-form {
-        min-width: 0 !important;
+        min-width: 0;
     }
 
     .pdm-sidebar {
@@ -721,6 +593,6 @@ fluent-dialog .fluent-stack {
     }
 
     .pdm-main-content {
-        padding: 16px;
+        padding: var(--pdm-space-4);
     }
 }

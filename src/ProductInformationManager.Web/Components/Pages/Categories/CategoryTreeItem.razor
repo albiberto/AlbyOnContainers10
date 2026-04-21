@@ -1,6 +1,6 @@
 <FluentTreeItem Text="@Category.Category.Name" Expanded="@Category.IsExpanded" ExpandedChanged="HandleExpandedChanged">
 
-    <FluentStack HorizontalAlignment="HorizontalAlignment.End" Orientation="Orientation.Horizontal" Style="gap: 2px; margin-left: auto;" Class="pdm-tree-actions">
+    <FluentStack HorizontalAlignment="HorizontalAlignment.End" Orientation="Orientation.Horizontal" Gap="2" Class="pdm-tree-actions">
         <FluentButton Appearance="Appearance.Stealth" IconStart="@(new Icons.Regular.Size16.Add())" Title="Aggiungi sottocategoria" OnClick="@(() => OnAddChild.InvokeAsync(Category.Category.Id))" OnClick:stopPropagation="true" />
         <FluentButton Appearance="Appearance.Stealth" IconStart="@(new Icons.Regular.Size16.Edit())" Title="Modifica" OnClick="@(() => OnEdit.InvokeAsync(Category.Category))" OnClick:stopPropagation="true" />
         <FluentButton Appearance="Appearance.Stealth" IconStart="@(new Icons.Regular.Size16.Delete())" Title="Elimina" OnClick="@(() => OnDelete.InvokeAsync(Category.Category))" OnClick:stopPropagation="true" />
@@ -9,7 +9,7 @@
     @if (Category.IsLoading)
     {
         <FluentTreeItem>
-            <FluentProgressRing Style="width: 14px; height: 14px; margin-right: 8px;" /> 
+            <FluentProgressRing Class="pdm-tree-loading-ring" />
             Caricamento...
         </FluentTreeItem>
     }
@@ -31,7 +31,7 @@
             }
             case { HasLoadedChildren: false, Category.HasChildren: true }:
                 /* HACK: Nodo "fantasma" invisibile per mostrare la freccia di espansione (necessario per FluentUI). */
-                <FluentTreeItem Style="display: none;" />
+                <FluentTreeItem Class="pdm-tree-ghost-node" />
                 break;
         }
 </FluentTreeItem>

@@ -14,7 +14,7 @@
 
 <PageTitle>Categorie — Product Data Manager</PageTitle>
 
-<div class="pdm-animate-in">
+<FluentStack Orientation="Orientation.Vertical" Class="pdm-categories-page pdm-animate-in">
     <PageHeader 
         Title="@Loc["Categories_Title"]" 
         Description="@Loc["Categories_Subtitle"]" 
@@ -55,7 +55,7 @@
             </FluentTreeView>
         }
     </PageContent>
-</div>
+</FluentStack>
 
 @code {
     private readonly CancellationTokenSource _cancellationTokenSource = new();

@@ -10,9 +10,9 @@
 @inject IStringLocalizer<SharedResources> Loc
 
 <FluentDialogBody>
-    <FluentStack Orientation="Orientation.Vertical" Style="min-width: 300px; gap: 16px;">
-        <FluentTextField @bind-Value="_formName" Label="@Loc["CategoryEdit_NameLabel"]" Required="true" Style="width: 100%;" />
-        <FluentTextArea @bind-Value="_formDescription" Label="@Loc["CategoryEdit_DescLabel"]" Rows="3" Style="width: 100%;" />
+    <FluentStack Orientation="Orientation.Vertical" Gap="16" Class="pdm-category-form">
+        <FluentTextField @bind-Value="_formName" Label="@Loc["CategoryEdit_NameLabel"]" Required="true" Class="pdm-category-form__field" />
+        <FluentTextArea @bind-Value="_formDescription" Label="@Loc["CategoryEdit_DescLabel"]" Rows="3" Class="pdm-category-form__field" />
     </FluentStack>
 </FluentDialogBody>
 <FluentDialogFooter>

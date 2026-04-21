@@ -1,0 +1,15 @@
+/* ── CategoryTreeItem — CSS Isolation ──────────── */
+
+::deep .pdm-tree-actions {
+    margin-left: auto;
+}
+
+::deep .pdm-tree-loading-ring {
+    width: 14px;
+    height: 14px;
+    margin-right: 8px;
+}
+
+::deep .pdm-tree-ghost-node {
+    display: none;
+}
