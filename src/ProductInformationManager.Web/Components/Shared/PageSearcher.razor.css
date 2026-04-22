@@ -4,7 +4,7 @@
 }
 
 ::deep fluent-search {
-    --control-corner-radius: var(--pdm-radius-md);
+    --control-corner-radius: var(--pdm-radius-md-raw);
     background-color: var(--pdm-bg-surface);
     border-radius: var(--pdm-radius-md);
     transition: all var(--pdm-transition-fast);

@@ -28,33 +28,47 @@
     </PageHeader>
 
     <PageSearcher Placeholder="@Loc["Categories_SearchPlaceholder"]" OnSearch="OnSearchInput" Value="@_query" />
-    
-    <PageContent 
-        IsLoading="_loading"
-        IsEmpty="IsEmpty"
-        LoadingText="@Loc["Categories_Loading"]"
-        EmptyText="@Loc["Categories_Empty"]" >
 
-        @if (IsSearching)
-        {
-            @foreach (var item in _searchResults) 
-            {
-                <CategorySearchResultItem Item="item" OnAddChild="OpenCreateChildDialog" />
-            }
-        }
-        else
-        {
-            <FluentTreeView>
-                @foreach (var category in _treeManager.Roots) {
-                    <CategoryTreeItem Category="category" 
-                                      OnExpand="LoadChildrenAsync"
-                                      OnEdit="OpenEditDialog"
-                                      OnDelete="ConfirmDelete"
-                                      OnAddChild="OpenCreateChildDialog" />
+    <FluentGrid Spacing="3" Class="pdm-categories-layout">
+        <FluentGridItem xs="12" md="5">
+            <PageContent 
+                IsLoading="_loading"
+                IsEmpty="IsEmpty"
+                LoadingText="@Loc["Categories_Loading"]"
+                EmptyText="@Loc["Categories_Empty"]" >
+
+                @if (IsSearching)
+                {
+                    @foreach (var item in _searchResults) 
+                    {
+                        <CategorySearchResultItem Item="item" OnAddChild="OpenCreateChildDialog" />
+                    }
                 }
-            </FluentTreeView>
-        }
-    </PageContent>
+                else
+                {
+                    <FluentTreeView>
+                        @foreach (var category in _treeManager.Roots) {
+                            <CategoryTreeItem Category="category" 
+                                              OnExpand="LoadChildrenAsync"
+                                              OnEdit="OpenEditDialog"
+                                              OnDelete="ConfirmDelete"
+                                              OnAddChild="OpenCreateChildDialog" />
+                        }
+                    </FluentTreeView>
+                }
+            </PageContent>
+        </FluentGridItem>
+
+        <FluentGridItem xs="12" md="7">
+            <FluentStack Orientation="Orientation.Vertical"
+                         HorizontalAlignment="HorizontalAlignment.Center"
+                         VerticalAlignment="VerticalAlignment.Center"
+                         Class="pdm-categories-detail">
+                <EmptyState Icon="@(new Icons.Regular.Size24.DocumentBulletListMultiple())"
+                            Text="@Loc["Categories_Detail_EmptyText"]" />
+            </FluentStack>
+        </FluentGridItem>
+    </FluentGrid>
 </FluentStack>
 
 @code {

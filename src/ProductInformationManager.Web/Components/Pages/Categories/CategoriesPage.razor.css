@@ -1,3 +1,25 @@
 ::deep .pdm-categories-page {
-    /* Scoped styles for CategoriesPage can go here if needed */
+    width: 100%;
+}
+
+/* Master-Detail layout — la FluentGrid si allarga all'intera area di contenuto
+   e distribuisce lo spazio tra albero (Master) e dettaglio (Detail). */
+::deep .pdm-categories-layout {
+    width: 100%;
+    align-items: stretch;
+}
+
+/* Detail pane — placeholder elegante in attesa della selezione di una categoria.
+   Usa gli stessi token del Master (PageContent) per mantenere coerenza visiva. */
+::deep .pdm-categories-detail {
+    width: 100%;
+    min-height: 320px;
+    height: 100%;
+    background: var(--pdm-bg-card);
+    border: 1px dashed var(--pdm-border);
+    border-radius: var(--pdm-radius-lg);
+    padding: var(--pdm-space-6);
+    box-shadow: var(--pdm-shadow-sm);
+    transition: background-color var(--pdm-transition-base),
+                border-color var(--pdm-transition-base);
 }

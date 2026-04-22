@@ -56,6 +56,11 @@
     --pdm-radius-lg: 12px;
     --pdm-radius-xl: 16px;
 
+    /* Radii — unitless (Fluent UI multiplies per 1px internamente) */
+    --pdm-radius-sm-raw: 6;
+    --pdm-radius-md-raw: 8;
+    --pdm-radius-lg-raw: 12;
+
     /* Motion */
     --pdm-transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
     --pdm-transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -156,8 +161,12 @@ fluent-design-system-provider, body {
     --neutral-foreground-rest: var(--pdm-text-primary);
     --neutral-foreground-hint: var(--pdm-text-muted);
 
-    /* Bordi e Arrotondamenti */
+    /* Bordi e Arrotondamenti
+       Fluent UI usa calc(var(--*-corner-radius) * 1px), quindi i valori DEVONO
+       essere numeri unitless: assegnando un valore in px si ottengono angoli a 0. */
     --neutral-stroke-rest: var(--pdm-border-input);
     --neutral-stroke-hover: var(--pdm-border-hover);
-    --control-corner-radius: var(--pdm-radius-md);
+    --control-corner-radius: var(--pdm-radius-md-raw);
+    --layer-corner-radius: var(--pdm-radius-lg-raw);
+    --elevation-corner-radius: var(--pdm-radius-lg-raw);
 }

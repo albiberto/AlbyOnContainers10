@@ -18,6 +18,9 @@
   <data name="Categories_Empty" xml:space="preserve">
     <value>No categories found.</value>
   </data>
+  <data name="Categories_Detail_EmptyText" xml:space="preserve">
+    <value>Select a category from the tree to view or edit its details.</value>
+  </data>
   <data name="Dialog_Cancel" xml:space="preserve">
     <value>Cancel</value>
   </data>
