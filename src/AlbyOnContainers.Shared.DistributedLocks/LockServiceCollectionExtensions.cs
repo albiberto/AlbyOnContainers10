@@ -13,14 +13,14 @@ public static class LockServiceCollectionExtensions
 {
     extension(IServiceCollection services)
     {
-        public IServiceCollection AddBlazorDistributedLocks(Action<DistributedLockOptions> configureOptions)
+        public IServiceCollection AddBlazorDistributedLocks(IConfiguration configuration, Action<DistributedLockOptions> configureOptions)
         {
             services.AddOptions<DistributedLockOptions>()
                 .Configure(configureOptions)
                 .ValidateDataAnnotations()
                 .ValidateOnStart();
 
-            return services.AddCoreDistributedLocks();
+            return services.AddCoreDistributedLocks(configuration);
         }
 
         public IServiceCollection AddBlazorDistributedLocks(IConfiguration configuration, string sectionName = "DistributedLock")
@@ -30,19 +30,10 @@ public static class LockServiceCollectionExtensions
                 .ValidateDataAnnotations()
                 .ValidateOnStart();
 
-            return services.AddCoreDistributedLocks();
+            return services.AddCoreDistributedLocks(configuration);
         }
 
-        public IServiceCollection AddBlazorDistributedLocks()
-        {
-            services.AddOptions<DistributedLockOptions>()
-                .ValidateDataAnnotations()
-                .ValidateOnStart();
-
-            return services.AddCoreDistributedLocks();
-        }
-
-        private IServiceCollection AddCoreDistributedLocks()
+        private IServiceCollection AddCoreDistributedLocks(IConfiguration configuration)
         {
             services.PostConfigure<DistributedLockOptions>(options =>
             {
@@ -50,6 +41,10 @@ public static class LockServiceCollectionExtensions
                 var projectName = Assembly.GetEntryAssembly()?.GetName().Name ?? "default-app";
                 options.RedisChannel = $"{projectName}-locks".ToLowerInvariant();
             });
+            
+            var redisConnection = configuration.GetConnectionString("cache") ?? throw new InvalidOperationException("Connection string 'cache' not found.");
+
+            services.AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(redisConnection));
 
             services.AddSingleton<IDistributedLockProvider>(sp =>
             {
