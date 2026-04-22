@@ -5,15 +5,18 @@ namespace AlbyOnContainers.Shared.Application.Infrastructure;
 
 public static class SharedInfrastructureExtensions
 {
-    public static void ConfigureMediator(this IMediatorRegistrationConfigurator configurator)
+    public static void ConfigurePimMediatorPipeline(this IMediatorRegistrationConfigurator configurator)
     {
         configurator.ConfigureMediator((context, cfg) =>
         {
-            // 1. OUTER LAYER: Exception Handling and Telemetry
-            cfg.UseConsumeFilter(typeof(GlobalExceptionFilter<>), context);
-
-            // 2. INNER LAYER: Command Validation
-            cfg.UseConsumeFilter(typeof(ValidationFilter<>), context);
+            cfg.ConfigurePimConsumePipeline(context);
         });
+    }
+
+    public static void ConfigurePimConsumePipeline(this IConsumePipeConfigurator configurator, IRegistrationContext context)
+    {
+        configurator.UseConsumeFilter(typeof(ConsumeTelemetryFilter<>), context);
+        configurator.UseConsumeFilter(typeof(GlobalExceptionFilter<>), context);
+        configurator.UseConsumeFilter(typeof(ValidationFilter<>), context);
     }
 }

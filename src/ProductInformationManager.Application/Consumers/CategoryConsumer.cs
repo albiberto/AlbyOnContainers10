@@ -1,20 +1,30 @@
-﻿using AlbyOnContainers.Shared.Contracts;
+using AlbyOnContainers.Shared.Contracts;
 using MassTransit;
+using Microsoft.Extensions.Logging;
 using ProductInformationManager.Application.Cache;
 
 namespace ProductInformationManager.Application.Consumers;
 
-public class CategoryConsumer(CategoryCache cache) :
+public class CategoryConsumer(CategoryCache cache, ILogger<CategoryConsumer> logger) :
     IConsumer<CategoryCreatedEvent>,
     IConsumer<CategoryUpdatedEvent>,
     IConsumer<CategoryDeletedEvent>
 {
-    public async Task Consume(ConsumeContext<CategoryCreatedEvent> context) =>
+    public async Task Consume(ConsumeContext<CategoryCreatedEvent> context)
+    {
         await cache.InvalidateAsync(context.CancellationToken);
+        logger.LogInformation("PIM category cache invalidated after CategoryCreatedEvent {CategoryId}", context.Message.Id);
+    }
 
-    public async Task Consume(ConsumeContext<CategoryUpdatedEvent> context) =>
+    public async Task Consume(ConsumeContext<CategoryUpdatedEvent> context)
+    {
         await cache.InvalidateAsync(context.CancellationToken);
+        logger.LogInformation("PIM category cache invalidated after CategoryUpdatedEvent {CategoryId}", context.Message.Id);
+    }
 
-    public async Task Consume(ConsumeContext<CategoryDeletedEvent> context) =>
+    public async Task Consume(ConsumeContext<CategoryDeletedEvent> context)
+    {
         await cache.InvalidateAsync(context.CancellationToken);
+        logger.LogInformation("PIM category cache invalidated after CategoryDeletedEvent {CategoryId}", context.Message.Id);
+    }
 }

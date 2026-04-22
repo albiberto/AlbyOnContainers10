@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using ProductInformationManager.Domain;
 using ProductInformationManager.Domain.ValueObjects;
@@ -7,9 +6,7 @@ using Attribute = ProductInformationManager.Domain.Attribute;
 
 namespace ProductInformationManager.Infrastructure;
 
-public class ProductContext(
-    DbContextOptions<ProductContext> options, 
-    IEnumerable<IInterceptor> interceptors) : DbContext(options), IUnitOfWork
+public class ProductContext(DbContextOptions<ProductContext> options) : DbContext(options), IUnitOfWork
 {
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<DescriptionType> DescriptionTypes => Set<DescriptionType>();
@@ -17,13 +14,6 @@ public class ProductContext(
     public DbSet<AttributeType> AttributeTypes => Set<AttributeType>();
     public DbSet<Attribute> Attributes => Set<Attribute>();
     public DbSet<Product> Products => Set<Product>();
-
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
-        // Aggiungiamo l'interceptor per l'AuditableEntity che mi hai passato
-        optionsBuilder.AddInterceptors(interceptors);
-        base.OnConfiguring(optionsBuilder);
-    }
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {

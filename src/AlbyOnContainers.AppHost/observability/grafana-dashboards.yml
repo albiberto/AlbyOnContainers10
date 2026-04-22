@@ -1,0 +1,12 @@
+apiVersion: 1
+
+providers:
+  - name: PIM Dashboards
+    orgId: 1
+    folder: PIM
+    type: file
+    disableDeletion: false
+    editable: false
+    allowUiUpdates: false
+    options:
+      path: /var/lib/grafana/dashboards

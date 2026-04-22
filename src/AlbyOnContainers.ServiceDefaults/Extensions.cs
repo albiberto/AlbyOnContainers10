@@ -12,6 +12,12 @@ namespace AlbyOnContainers.ServiceDefaults;
 
 public static class Extensions
 {
+    private const string MassTransitSourceName = "MassTransit";
+    private const string MassTransitMeterName = "MassTransit";
+    private const string EfCoreMeterName = "Microsoft.EntityFrameworkCore";
+    private const string PimApplicationMeterName = "ProductInformationManager.Application";
+    private const string PimInfrastructureMeterName = "ProductInformationManager.Infrastructure";
+
     public static TBuilder AddServiceDefaults<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
     {
         builder.ConfigureOpenTelemetry();
@@ -32,6 +38,7 @@ public static class Extensions
         {
             logging.IncludeFormattedMessage = true;
             logging.IncludeScopes = true;
+            logging.ParseStateValues = true;
         });
 
         builder.Services.AddOpenTelemetry()
@@ -39,11 +46,17 @@ public static class Extensions
             {
                 metrics.AddAspNetCoreInstrumentation()
                     .AddHttpClientInstrumentation()
-                    .AddRuntimeInstrumentation();
+                    .AddRuntimeInstrumentation()
+                    .AddMeter(
+                        MassTransitMeterName,
+                        EfCoreMeterName,
+                        PimApplicationMeterName,
+                        PimInfrastructureMeterName);
             })
             .WithTracing(tracing =>
             {
                 tracing.AddSource(builder.Environment.ApplicationName)
+                    .AddSource(MassTransitSourceName)
                     .AddAspNetCoreInstrumentation()
                     .AddHttpClientInstrumentation();
             });

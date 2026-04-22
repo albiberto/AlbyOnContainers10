@@ -18,12 +18,22 @@ public class GlobalExceptionFilter<T>(ILogger<GlobalExceptionFilter<T>> logger) 
         }
         catch (DomainException ex)
         {
-            logger.LogWarning("Domain rule violated in {MessageType}: {Message}", typeof(T).Name, ex.Message);
+            logger.LogWarning(
+                "PIM MassTransit domain rule violated in {MessageType}. MessageId: {MessageId}. CorrelationId: {CorrelationId}. Error: {Message}",
+                typeof(T).Name,
+                context.MessageId,
+                context.CorrelationId,
+                ex.Message);
             throw;
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Technical failure processing {MessageType}. MessageId: {MessageId}. CorrelationId: {CorrelationId}", typeof(T).Name, context.MessageId, context.CorrelationId);
+            logger.LogError(
+                ex,
+                "PIM MassTransit technical failure processing {MessageType}. MessageId: {MessageId}. CorrelationId: {CorrelationId}",
+                typeof(T).Name,
+                context.MessageId,
+                context.CorrelationId);
             throw; 
         }
     }

@@ -1,9 +1,10 @@
 using FluentValidation;
 using MassTransit;
+using Microsoft.Extensions.Logging;
 
 namespace AlbyOnContainers.Shared.Application.Infrastructure.Filters;
 
-public class ValidationFilter<T>(IValidator<T>? validator = null) : IFilter<ConsumeContext<T>> where T : class
+public class ValidationFilter<T>(ILogger<ValidationFilter<T>> logger, IValidator<T>? validator = null) : IFilter<ConsumeContext<T>> where T : class
 {
     public async Task Send(ConsumeContext<T> context, IPipe<ConsumeContext<T>> next)
     {
@@ -13,6 +14,11 @@ public class ValidationFilter<T>(IValidator<T>? validator = null) : IFilter<Cons
 
             if (!validationResult.IsValid)
             {
+                logger.LogWarning(
+                    "PIM MassTransit validation failed for {MessageType}. MessageId: {MessageId}. Errors: {Errors}",
+                    typeof(T).Name,
+                    context.MessageId,
+                    validationResult.Errors.Select(error => $"{error.PropertyName}: {error.ErrorMessage}").ToArray());
                 throw new ValidationException(validationResult.Errors);
             }
         }

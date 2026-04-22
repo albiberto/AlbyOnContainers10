@@ -1,3 +1,4 @@
+using AlbyOnContainers.Shared.Application.Infrastructure;
 using FluentValidation;
 using MassTransit;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,7 +16,7 @@ public static class ApplicationServiceExtensions
         services.AddMediator(configurator =>
         {
             configurator.AddConsumers(typeof(ApplicationServiceExtensions).Assembly);
-            configurator.ConfigureMediator((context, cfg) => { });
+            configurator.ConfigurePimMediatorPipeline();
         });
 
         var fusionCacheBuilder = services.AddFusionCache()

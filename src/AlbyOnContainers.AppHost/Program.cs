@@ -48,10 +48,15 @@ builder.AddContainer("grafana", "grafana/grafana", "latest")
     .WithBindMount(
         "./observability/grafana-datasources.yml",
         "/etc/grafana/provisioning/datasources/datasources.yml")
+    .WithBindMount(
+        "./observability/grafana-dashboards.yml",
+        "/etc/grafana/provisioning/dashboards/dashboards.yml")
+    .WithBindMount("./observability/dashboards", "/var/lib/grafana/dashboards")
     .WithEnvironment("GF_SECURITY_ADMIN_USER", "admin")
     .WithEnvironment("GF_SECURITY_ADMIN_PASSWORD", "admin")
     .WithEnvironment("GF_AUTH_ANONYMOUS_ENABLED", "true")
-    .WithEnvironment("GF_AUTH_ANONYMOUS_ORG_ROLE", "Viewer");
+    .WithEnvironment("GF_AUTH_ANONYMOUS_ORG_ROLE", "Viewer")
+    .WithEnvironment("GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH", "/var/lib/grafana/dashboards/pim-overview.json");
 
 var collector = builder.AddContainer("otel-collector", "otel/opentelemetry-collector-contrib", "latest")
     .WithEndpoint(port: 4317, targetPort: 4317, name: "grpc", scheme: "http")
@@ -78,7 +83,7 @@ builder.AddProject<Projects.ProductInformationManager_Web>("productdatamanager")
     .WithEnvironment("OTEL_SERVICE_NAME", otelServiceName)
     .WithEnvironment(
         "OTEL_RESOURCE_ATTRIBUTES",
-        $"service.namespace={otelNamespace},deployment.environment={otelEnvironment}")
+        $"service.namespace={otelNamespace},deployment.environment={otelEnvironment},deployment.environment.name={otelEnvironment}")
     .WithExternalHttpEndpoints();
 
 builder.Build().Run();

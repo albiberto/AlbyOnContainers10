@@ -1,4 +1,5 @@
 using AlbyOnContainers.ServiceDefaults;
+using AlbyOnContainers.Shared.Application.Infrastructure;
 using AlbyOnContainers.Shared.Security;
 using MassTransit;
 using Microsoft.FluentUI.AspNetCore.Components;
@@ -24,6 +25,9 @@ builder.Services.Scan(scan => scan
 
 builder.Services.AddMassTransit(x =>
 {
+    x.DisableUsageTelemetry();
+    x.SetKebabCaseEndpointNameFormatter();
+
     // Aggiunge i consumer del progetto Web (quelli della UI)
     x.AddConsumers(typeof(Program).Assembly);
 
@@ -32,6 +36,7 @@ builder.Services.AddMassTransit(x =>
         var connectionString = builder.Configuration.GetConnectionString("messaging") 
             ?? throw new InvalidOperationException("Connection string 'messaging' not found.");
         cfg.Host(connectionString);
+        cfg.ConfigurePimConsumePipeline(context);
         cfg.ConfigureEndpoints(context);
     });
 });
@@ -40,8 +45,7 @@ builder.Services.AddMassTransit(x =>
 builder.Services.AddApplication(builder.Configuration);
 
 // Infrastructure (EF Core)
-var connection = builder.Configuration.GetConnectionString("productdb") ?? throw new InvalidOperationException("Connection string 'productdb' not found.");
-builder.Services.AddInfrastructure(connection);
+builder.Services.AddInfrastructure(builder.Configuration);
 
 // Fluent UI Blazor
 builder.Services.AddFluentUIComponents();
