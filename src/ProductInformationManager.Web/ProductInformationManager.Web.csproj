@@ -7,15 +7,15 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="MassTransit.RabbitMQ" Version="8.5.9" />
-        <PackageReference Include="Microsoft.FluentUI.AspNetCore.Components" Version="4.14.0"/>
-        <PackageReference Include="Microsoft.FluentUI.AspNetCore.Components.Icons" Version="4.14.0"/>
-        <PackageReference Include="MassTransit" Version="8.5.9"/>
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.6">
+        <PackageReference Include="MassTransit.RabbitMQ" />
+        <PackageReference Include="Microsoft.FluentUI.AspNetCore.Components"/>
+        <PackageReference Include="Microsoft.FluentUI.AspNetCore.Components.Icons"/>
+        <PackageReference Include="MassTransit"/>
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
-        <PackageReference Include="System.Reactive" Version="6.1.0"/>
+        <PackageReference Include="System.Reactive"/>
     </ItemGroup>
 
     <ItemGroup>

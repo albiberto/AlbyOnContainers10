@@ -13,9 +13,9 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="FluentValidation" Version="12.1.1"/>
-        <PackageReference Include="MassTransit" Version="8.5.9"/>
-        <PackageReference Include="MassTransit.Abstractions" Version="8.5.9" />
+        <PackageReference Include="FluentValidation"/>
+        <PackageReference Include="MassTransit"/>
+        <PackageReference Include="MassTransit.Abstractions" />
     </ItemGroup>
 
     <ItemGroup>
