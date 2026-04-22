@@ -1,0 +1,53 @@
+# ============================================
+# OpenTelemetry Collector — Configuration
+# ──────────────────────────────────────────
+# Riceve OTLP (gRPC + HTTP) dall'applicazione.
+# Fan-out verso Prometheus, Loki e Tempo.
+# ============================================
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+    timeout: 5s
+    send_batch_size: 1024
+
+exporters:
+  # Metrics → Prometheus (remote write)
+  prometheusremotewrite:
+    endpoint: http://prometheus:9090/api/v1/write
+
+  # Logs → Loki (via HTTP/JSON)
+  otlphttp/loki:
+    endpoint: http://loki:3100/otlp
+
+  # Traces → Tempo (via gRPC)
+  otlp/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+
+  # Debug — utile in sviluppo, rimuovere in produzione
+  debug:
+    verbosity: basic
+
+service:
+  pipelines:
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [prometheusremotewrite, debug]
+    logs:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlphttp/loki, debug]
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp/tempo, debug]
