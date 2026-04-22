@@ -15,6 +15,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\AlbyOnContainers.Shared.Application\AlbyOnContainers.Shared.Application.csproj" />
         <ProjectReference Include="..\AlbyOnContainers.Shared.Domain\AlbyOnContainers.Shared.Domain.csproj"/>
         <ProjectReference Include="..\ProductInformationManager.Domain\ProductInformationManager.Domain.csproj"/>
     </ItemGroup>

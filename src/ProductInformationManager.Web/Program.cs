@@ -1,10 +1,12 @@
 using AlbyOnContainers.ServiceDefaults;
+using AlbyOnContainers.Shared.Application.Abstract;
 using AlbyOnContainers.Shared.Application.Infrastructure;
 using AlbyOnContainers.Shared.Security;
 using MassTransit;
 using Microsoft.FluentUI.AspNetCore.Components;
 using ProductInformationManager.Application;
 using ProductInformationManager.Infrastructure;
+using ProductInformationManager.Web.DevSpace;
 using ProductInformationManager.Web.Notifiers;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -23,20 +25,26 @@ builder.Services.Scan(scan => scan
     .WithSingletonLifetime()
 );
 
+builder.Services.AddScoped<ICurrentUserService, StubCurrentUserService>();
+
 builder.Services.AddMassTransit(x =>
 {
     x.DisableUsageTelemetry();
     x.SetKebabCaseEndpointNameFormatter();
 
-    // Aggiunge i consumer del progetto Web (quelli della UI)
     x.AddConsumers(typeof(Program).Assembly);
+
+    x.AddEntityFrameworkOutbox<ProductContext>(o =>
+    {
+        o.UsePostgres();
+        o.UseBusOutbox(); 
+    });
 
     x.UsingRabbitMq((context, cfg) =>
     {
-        var connectionString = builder.Configuration.GetConnectionString("messaging") 
-            ?? throw new InvalidOperationException("Connection string 'messaging' not found.");
+        var connectionString = builder.Configuration.GetConnectionString("messaging") ?? throw new InvalidOperationException("Connection string 'messaging' not found.");
         cfg.Host(connectionString);
-        cfg.ConfigurePimConsumePipeline(context);
+        cfg.ConfigureConsumePipeline(context);
         cfg.ConfigureEndpoints(context);
     });
 });
@@ -51,7 +59,7 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddFluentUIComponents();
 
 // Distributed Lock
-builder.Services.AddBlazorDistributedLocks(builder.Configuration);
+builder.Services.AddDistributedLocks(builder.Configuration);
 
 // Blazor
 builder.Services.AddRazorComponents()

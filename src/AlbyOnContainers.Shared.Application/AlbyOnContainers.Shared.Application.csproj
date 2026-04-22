@@ -16,6 +16,7 @@
         <PackageReference Include="FluentValidation"/>
         <PackageReference Include="MassTransit"/>
         <PackageReference Include="MassTransit.Abstractions" />
+        <PackageReference Include="ZiggyCreatures.FusionCache" />
     </ItemGroup>
 
     <ItemGroup>

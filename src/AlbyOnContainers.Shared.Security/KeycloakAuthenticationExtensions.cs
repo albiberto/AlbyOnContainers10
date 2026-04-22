@@ -13,8 +13,8 @@ public static class KeycloakAuthenticationExtensions
     {
         var keycloakSection = configuration.GetSection("Keycloak");
 
-        var authority = keycloakSection["Authority"] ?? "http://localhost:8080/realms/productdatamanager";
-        var clientId = keycloakSection["ClientId"] ?? "productdatamanager-web";
+        var authority = keycloakSection["Authority"] ?? throw new InvalidOperationException("Keycloak Authority is missing.");
+        var clientId = keycloakSection["ClientId"] ?? throw new InvalidOperationException("Keycloak ClientId is missing.");
         var clientSecret = keycloakSection["ClientSecret"] ?? "secret";
 
         services.AddAuthentication(options =>

@@ -1,4 +1,5 @@
 ﻿using AlbyOnContainers.Shared.Domain;
+using FluentValidation;
 using MassTransit;
 using Microsoft.Extensions.Logging;
 
@@ -12,28 +13,23 @@ public class GlobalExceptionFilter<T>(ILogger<GlobalExceptionFilter<T>> logger) 
         {
             await next.Send(context);
         }
-        catch (FluentValidation.ValidationException)
+        catch (ValidationException)
         {
             throw; 
         }
         catch (DomainException ex)
         {
-            logger.LogWarning(
-                "PIM MassTransit domain rule violated in {MessageType}. MessageId: {MessageId}. CorrelationId: {CorrelationId}. Error: {Message}",
-                typeof(T).Name,
-                context.MessageId,
-                context.CorrelationId,
-                ex.Message);
+            logger.LogWarning("Domain rule violated in {MessageType}. Error: {Message}", typeof(T).Name, ex.Message);
             throw;
         }
         catch (Exception ex)
         {
-            logger.LogError(
-                ex,
-                "PIM MassTransit technical failure processing {MessageType}. MessageId: {MessageId}. CorrelationId: {CorrelationId}",
-                typeof(T).Name,
-                context.MessageId,
-                context.CorrelationId);
+            using var errorScope = logger.BeginScope(new Dictionary<string, object?>
+            {
+                ["ErrorType"] = ex.GetType().Name
+            });
+
+            logger.LogError(ex, "Technical failure processing {MessageType}", typeof(T).Name);
             throw; 
         }
     }

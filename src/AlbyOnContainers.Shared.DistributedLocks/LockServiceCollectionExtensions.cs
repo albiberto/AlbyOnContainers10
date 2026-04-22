@@ -13,7 +13,7 @@ public static class LockServiceCollectionExtensions
 {
     extension(IServiceCollection services)
     {
-        public IServiceCollection AddBlazorDistributedLocks(IConfiguration configuration, Action<DistributedLockOptions> configureOptions)
+        public IServiceCollection AddDistributedLocks(IConfiguration configuration, Action<DistributedLockOptions> configureOptions)
         {
             services.AddOptions<DistributedLockOptions>()
                 .Configure(configureOptions)
@@ -23,7 +23,7 @@ public static class LockServiceCollectionExtensions
             return services.AddCoreDistributedLocks(configuration);
         }
 
-        public IServiceCollection AddBlazorDistributedLocks(IConfiguration configuration, string sectionName = "DistributedLock")
+        public IServiceCollection AddDistributedLocks(IConfiguration configuration, string sectionName = "DistributedLock")
         {
             services.AddOptions<DistributedLockOptions>()
                 .Bind(configuration.GetSection(sectionName))

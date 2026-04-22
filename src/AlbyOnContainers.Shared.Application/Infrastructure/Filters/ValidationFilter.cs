@@ -14,11 +14,10 @@ public class ValidationFilter<T>(ILogger<ValidationFilter<T>> logger, IValidator
 
             if (!validationResult.IsValid)
             {
-                logger.LogWarning(
-                    "PIM MassTransit validation failed for {MessageType}. MessageId: {MessageId}. Errors: {Errors}",
-                    typeof(T).Name,
-                    context.MessageId,
-                    validationResult.Errors.Select(error => $"{error.PropertyName}: {error.ErrorMessage}").ToArray());
+                var errors = validationResult.Errors.Select(error => $"{error.PropertyName}: {error.ErrorMessage}").ToArray();
+
+                logger.LogWarning("Validation failed for {MessageType}. Errors: {@ValidationErrors}", typeof(T).Name, errors);
+                
                 throw new ValidationException(validationResult.Errors);
             }
         }

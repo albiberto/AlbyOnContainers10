@@ -35,7 +35,6 @@ public static class InfrastructureServiceExtensions
             }
         });
 
-        // Registra l'operatore di migrazione automatica come Background Service
         services.AddHostedService<MigrationHostedService>();
 
         return services;

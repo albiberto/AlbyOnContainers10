@@ -10,8 +10,4 @@
         <ProjectReference Include="..\AlbyOnContainers.Shared.Domain\AlbyOnContainers.Shared.Domain.csproj"/>
     </ItemGroup>
 
-    <ItemGroup>
-        <Folder Include="Exceptions\"/>
-    </ItemGroup>
-
 </Project>

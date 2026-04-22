@@ -18,6 +18,93 @@
   <data name="Categories_Empty" xml:space="preserve">
     <value>No categories found.</value>
   </data>
+  <data name="Categories_HeroEyebrow_Browse" xml:space="preserve">
+    <value>Catalog Navigator</value>
+  </data>
+  <data name="Categories_HeroEyebrow_Search" xml:space="preserve">
+    <value>Search Explorer</value>
+  </data>
+  <data name="Categories_HeroTitle_Browse" xml:space="preserve">
+    <value>Shape the catalog with a sharper visual hierarchy</value>
+  </data>
+  <data name="Categories_HeroTitle_Search" xml:space="preserve">
+    <value>Review every match with full path context</value>
+  </data>
+  <data name="Categories_HeroDesc_Browse" xml:space="preserve">
+    <value>Expand the tree, inspect branching depth, and operate on the taxonomy from a single workspace.</value>
+  </data>
+  <data name="Categories_HeroDesc_Search" xml:space="preserve">
+    <value>Search switches the page into a focused review mode built for fast path reading and next actions.</value>
+  </data>
+  <data name="Categories_Stat_Roots" xml:space="preserve">
+    <value>Root nodes</value>
+  </data>
+  <data name="Categories_Stat_Visible" xml:space="preserve">
+    <value>Visible nodes</value>
+  </data>
+  <data name="Categories_Stat_Expanded" xml:space="preserve">
+    <value>Expanded branches</value>
+  </data>
+  <data name="Categories_Stat_Depth" xml:space="preserve">
+    <value>Max depth</value>
+  </data>
+  <data name="Categories_Stat_Locked" xml:space="preserve">
+    <value>Locked nodes</value>
+  </data>
+  <data name="Categories_Stat_Results" xml:space="preserve">
+    <value>Results</value>
+  </data>
+  <data name="Categories_WorkspaceTitle_Browse" xml:space="preserve">
+    <value>Category tree</value>
+  </data>
+  <data name="Categories_WorkspaceTitle_Search" xml:space="preserve">
+    <value>Search results</value>
+  </data>
+  <data name="Categories_WorkspaceDesc_Browse" xml:space="preserve">
+    <value>Explore branches, inspect depth and manage child categories with one click.</value>
+  </data>
+  <data name="Categories_WorkspaceDesc_Search" xml:space="preserve">
+    <value>Every match keeps the full breadcrumb visible so the information architecture stays readable.</value>
+  </data>
+  <data name="Categories_RailTitle" xml:space="preserve">
+    <value>Operational cues</value>
+  </data>
+  <data name="Categories_RailHint_Search" xml:space="preserve">
+    <value>Search activates from 4 characters and keeps the full taxonomy path in view.</value>
+  </data>
+  <data name="Categories_RailHint_Lock" xml:space="preserve">
+    <value>Locks show concurrent edits before you open create or edit dialogs.</value>
+  </data>
+  <data name="Categories_RailHint_Reactive" xml:space="preserve">
+    <value>Tree updates arrive reactively after commands, without page reloads.</value>
+  </data>
+  <data name="Categories_BrowseTreeBtn" xml:space="preserve">
+    <value>Browse tree</value>
+  </data>
+  <data name="Categories_Action_AddChild" xml:space="preserve">
+    <value>Add child</value>
+  </data>
+  <data name="Categories_Action_Edit" xml:space="preserve">
+    <value>Edit</value>
+  </data>
+  <data name="Categories_Action_Delete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="Categories_Node_ChildrenLoaded" xml:space="preserve">
+    <value>{0} loaded</value>
+  </data>
+  <data name="Categories_Node_BranchReady" xml:space="preserve">
+    <value>Branch ready</value>
+  </data>
+  <data name="Categories_Node_LeafNode" xml:space="preserve">
+    <value>Leaf node</value>
+  </data>
+  <data name="Categories_LockConflictWarning" xml:space="preserve">
+    <value>This item is currently being modified by {0}.</value>
+  </data>
+  <data name="Categories_UnknownUser" xml:space="preserve">
+    <value>another user</value>
+  </data>
   <data name="Dialog_Cancel" xml:space="preserve">
     <value>Cancel</value>
   </data>

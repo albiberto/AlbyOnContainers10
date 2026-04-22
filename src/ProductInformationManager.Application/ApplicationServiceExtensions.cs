@@ -11,44 +11,55 @@ namespace ProductInformationManager.Application;
 
 public static class ApplicationServiceExtensions
 {
-    public static IServiceCollection AddApplication(this IServiceCollection services, IConfiguration configuration)
+    extension(IServiceCollection services)
     {
-        services.AddMediator(configurator =>
+        public IServiceCollection AddApplication(IConfiguration configuration)
         {
-            configurator.AddConsumers(typeof(ApplicationServiceExtensions).Assembly);
-            configurator.ConfigurePimMediatorPipeline();
-        });
+            services.AddMediators();
+            services.AddFusionCache(configuration);
 
-        var fusionCacheBuilder = services.AddFusionCache()
-            .WithDefaultEntryOptions(new FusionCacheEntryOptions
+            services.Scan(scan => scan
+                .FromAssemblyOf<CategoryCache>()
+                .AddClasses(classes => classes.InNamespaceOf<CategoryCache>())
+                .AsSelf()
+                .WithSingletonLifetime()
+            );
+
+            services.AddValidatorsFromAssembly(typeof(ApplicationServiceExtensions).Assembly);
+            services.AddLocalization();
+
+            return services;
+        }
+
+        private void AddMediators()
+        {
+            services.AddMediator(configurator =>
             {
-                Duration = TimeSpan.FromMinutes(30),
-                IsFailSafeEnabled = true,
-                FailSafeMaxDuration = TimeSpan.FromHours(2)
+                configurator.AddConsumers(typeof(ApplicationServiceExtensions).Assembly);
+                configurator.ConfigureMediatorPipeline(); 
             });
+        }
 
-        var redisConnectionString = configuration.GetConnectionString("cache");
-
-        if (!string.IsNullOrEmpty(redisConnectionString))
+        private void AddFusionCache(IConfiguration configuration)
         {
+            var fusionCacheBuilder = services.AddFusionCache()
+                .WithCacheKeyPrefix("pim:")
+                .WithDefaultEntryOptions(new FusionCacheEntryOptions
+                {
+                    Duration = TimeSpan.FromMinutes(30),
+                    IsFailSafeEnabled = true,
+                    FailSafeMaxDuration = TimeSpan.FromHours(2)
+                });
+
+            var redisConnectionString = configuration.GetConnectionString("cache");
+
+            if (string.IsNullOrEmpty(redisConnectionString)) return;
+            
             var options = new RedisBackplaneOptions
             {
                 Configuration = redisConnectionString
             };
             fusionCacheBuilder.WithBackplane(new RedisBackplane(options));
         }
-
-        services.Scan(scan => scan
-            .FromAssemblyOf<CategoryCache>()
-            .AddClasses(classes => classes.InNamespaceOf<CategoryCache>())
-            .AsSelf()
-            .WithSingletonLifetime()
-        );
-
-        services.AddValidatorsFromAssembly(typeof(ApplicationServiceExtensions).Assembly);
-        services.AddLocalization();
-
-        return services;
     }
 }
-

@@ -18,6 +18,93 @@
   <data name="Categories_Empty" xml:space="preserve">
     <value>Nessuna categoria trovata.</value>
   </data>
+  <data name="Categories_HeroEyebrow_Browse" xml:space="preserve">
+    <value>Navigatore catalogo</value>
+  </data>
+  <data name="Categories_HeroEyebrow_Search" xml:space="preserve">
+    <value>Esploratore ricerca</value>
+  </data>
+  <data name="Categories_HeroTitle_Browse" xml:space="preserve">
+    <value>Dai forma al catalogo con una gerarchia visiva piu nitida</value>
+  </data>
+  <data name="Categories_HeroTitle_Search" xml:space="preserve">
+    <value>Analizza ogni risultato con il contesto completo del path</value>
+  </data>
+  <data name="Categories_HeroDesc_Browse" xml:space="preserve">
+    <value>Espandi l'albero, valuta profondita e ramificazioni e governa la tassonomia da un solo workspace.</value>
+  </data>
+  <data name="Categories_HeroDesc_Search" xml:space="preserve">
+    <value>La ricerca trasforma la pagina in una modalita di revisione veloce pensata per leggere il path e agire subito.</value>
+  </data>
+  <data name="Categories_Stat_Roots" xml:space="preserve">
+    <value>Nodi radice</value>
+  </data>
+  <data name="Categories_Stat_Visible" xml:space="preserve">
+    <value>Nodi visibili</value>
+  </data>
+  <data name="Categories_Stat_Expanded" xml:space="preserve">
+    <value>Rami espansi</value>
+  </data>
+  <data name="Categories_Stat_Depth" xml:space="preserve">
+    <value>Profondita max</value>
+  </data>
+  <data name="Categories_Stat_Locked" xml:space="preserve">
+    <value>Nodi bloccati</value>
+  </data>
+  <data name="Categories_Stat_Results" xml:space="preserve">
+    <value>Risultati</value>
+  </data>
+  <data name="Categories_WorkspaceTitle_Browse" xml:space="preserve">
+    <value>Albero categorie</value>
+  </data>
+  <data name="Categories_WorkspaceTitle_Search" xml:space="preserve">
+    <value>Risultati ricerca</value>
+  </data>
+  <data name="Categories_WorkspaceDesc_Browse" xml:space="preserve">
+    <value>Esplora i rami, leggi la profondita e gestisci le sottocategorie con un clic.</value>
+  </data>
+  <data name="Categories_WorkspaceDesc_Search" xml:space="preserve">
+    <value>Ogni risultato mantiene il breadcrumb completo visibile per rendere leggibile l'architettura informativa.</value>
+  </data>
+  <data name="Categories_RailTitle" xml:space="preserve">
+    <value>Segnali operativi</value>
+  </data>
+  <data name="Categories_RailHint_Search" xml:space="preserve">
+    <value>La ricerca si attiva da 4 caratteri e mantiene visibile il path completo della tassonomia.</value>
+  </data>
+  <data name="Categories_RailHint_Lock" xml:space="preserve">
+    <value>I lock mostrano le modifiche concorrenti prima di aprire creazione o modifica.</value>
+  </data>
+  <data name="Categories_RailHint_Reactive" xml:space="preserve">
+    <value>L'albero si aggiorna in modo reattivo dopo i comandi, senza ricaricare la pagina.</value>
+  </data>
+  <data name="Categories_BrowseTreeBtn" xml:space="preserve">
+    <value>Torna all'albero</value>
+  </data>
+  <data name="Categories_Action_AddChild" xml:space="preserve">
+    <value>Aggiungi sottocategoria</value>
+  </data>
+  <data name="Categories_Action_Edit" xml:space="preserve">
+    <value>Modifica</value>
+  </data>
+  <data name="Categories_Action_Delete" xml:space="preserve">
+    <value>Elimina</value>
+  </data>
+  <data name="Categories_Node_ChildrenLoaded" xml:space="preserve">
+    <value>{0} nodi caricati</value>
+  </data>
+  <data name="Categories_Node_BranchReady" xml:space="preserve">
+    <value>Ramo pronto</value>
+  </data>
+  <data name="Categories_Node_LeafNode" xml:space="preserve">
+    <value>Nodo foglia</value>
+  </data>
+  <data name="Categories_LockConflictWarning" xml:space="preserve">
+    <value>Questo elemento e' in modifica da parte di {0}.</value>
+  </data>
+  <data name="Categories_UnknownUser" xml:space="preserve">
+    <value>un altro utente</value>
+  </data>
   <data name="Dialog_Cancel" xml:space="preserve">
     <value>Annulla</value>
   </data>
