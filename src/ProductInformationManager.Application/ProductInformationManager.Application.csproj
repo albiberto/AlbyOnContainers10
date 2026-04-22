@@ -9,7 +9,7 @@
     <ItemGroup>
         <PackageReference Include="FluentValidation" Version="12.1.1" />
         <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
-        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.6" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.7" />
         <PackageReference Include="Microsoft.Extensions.Localization" Version="10.*" />
         <PackageReference Include="MassTransit" Version="8.5.9" />
         <PackageReference Include="Scrutor" Version="7.0.0" />
@@ -19,7 +19,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\..\AlbyOnContainers.Shared.Application\AlbyOnContainers.Shared.Application.csproj" />
+        <ProjectReference Include="..\AlbyOnContainers.Shared.Application\AlbyOnContainers.Shared.Application.csproj" />
         <ProjectReference Include="..\AlbyOnContainers.Shared.Contracts\AlbyOnContainers.Shared.Contracts.csproj" />
         <ProjectReference Include="..\ProductInformationManager.Domain\ProductInformationManager.Domain.csproj" />
         <ProjectReference Include="..\ProductInformationManager.Infrastructure\ProductInformationManager.Infrastructure.csproj" />
