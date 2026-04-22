@@ -1,11 +1,25 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 512
+    spike_limit_mib: 128
+  batch:
+    timeout: 5s
+    send_batch_size: 1024
+
 exporters:
   prometheusremotewrite:
-    # FIX: in Aspire/Podman i container comunicano via host IP
-    # oppure usa il nome generato da Aspire se stai su Docker networking
     endpoint: http://prometheus:9090/api/v1/write
     tls:
       insecure: true
-    # FIX: aggiungi retry per robustezza enterprise
     retry_on_failure:
       enabled: true
       initial_interval: 5s
@@ -29,29 +43,17 @@ exporters:
   debug:
     verbosity: basic
 
-processors:
-  batch:
-    timeout: 5s
-    send_batch_size: 1024
-  # FIX: aggiungi memory_limiter per stabilità in cluster
-  memory_limiter:
-    check_interval: 1s
-    limit_mib: 512
-    spike_limit_mib: 128
-
 service:
   pipelines:
-    metrics:
-      receivers: [ otlp ]
-      processors: [ memory_limiter, batch ]
-      exporters: [ prometheusremotewrite, debug ]
-    logs:
-      receivers: [ otlp ]
-      processors: [ memory_limiter, batch ]
-      exporters: [ otlphttp/loki, debug ]
     traces:
-      receivers: [ otlp ]
-      processors: [ memory_limiter, batch ]
-      exporters: [ otlp/tempo, debug ]
-
-file_format:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlp/tempo, debug]
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [prometheusremotewrite, debug]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlphttp/loki, debug]

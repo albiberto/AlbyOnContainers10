@@ -7,6 +7,8 @@ distributor:
       protocols:
         grpc:
           endpoint: 0.0.0.0:4317
+        http:
+          endpoint: 0.0.0.0:4318
 
 storage:
   trace:
@@ -22,11 +24,11 @@ metrics_generator:
       source: tempo
       cluster: local
   storage:
-    path: /var/tempo/metrics
+    path: /var/tempo/generator/wal
     remote_write:
       - url: http://prometheus:9090/api/v1/write
         send_exemplars: true
-  processors:
+  processor:
     service_graphs:
       dimensions:
         - http.method
@@ -39,4 +41,6 @@ metrics_generator:
 overrides:
   defaults:
     metrics_generator:
-      processors: [service-graphs, span-metrics]
+      processors:
+        - service-graphs
+        - span-metrics
