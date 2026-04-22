@@ -1,10 +1,3 @@
-# ============================================
-# Tempo — Configuration
-# ──────────────────────────────────────────
-# Riceve tracce OTLP/gRPC dal Collector.
-# Storage locale su filesystem.
-# ============================================
-
 server:
   http_listen_port: 3200
 
@@ -24,7 +17,26 @@ storage:
       path: /var/tempo/wal
 
 metrics_generator:
+  registry:
+    external_labels:
+      source: tempo
+      cluster: local
   storage:
     path: /var/tempo/metrics
-  traces_storage:
-    path: /var/tempo/traces
+    remote_write:
+      - url: http://prometheus:9090/api/v1/write
+        send_exemplars: true
+  processors:
+    service_graphs:
+      dimensions:
+        - http.method
+        - http.status_code
+    span_metrics:
+      dimensions:
+        - service.name
+        - span.kind
+
+overrides:
+  defaults:
+    metrics_generator:
+      processors: [service-graphs, span-metrics]

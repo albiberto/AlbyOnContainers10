@@ -1,53 +1,57 @@
-# ============================================
-# OpenTelemetry Collector — Configuration
-# ──────────────────────────────────────────
-# Riceve OTLP (gRPC + HTTP) dall'applicazione.
-# Fan-out verso Prometheus, Loki e Tempo.
-# ============================================
+exporters:
+  prometheusremotewrite:
+    # FIX: in Aspire/Podman i container comunicano via host IP
+    # oppure usa il nome generato da Aspire se stai su Docker networking
+    endpoint: http://prometheus:9090/api/v1/write
+    tls:
+      insecure: true
+    # FIX: aggiungi retry per robustezza enterprise
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+      max_elapsed_time: 120s
 
-receivers:
-  otlp:
-    protocols:
-      grpc:
-        endpoint: 0.0.0.0:4317
-      http:
-        endpoint: 0.0.0.0:4318
+  otlphttp/loki:
+    endpoint: http://loki:3100/otlp
+    tls:
+      insecure: true
+    retry_on_failure:
+      enabled: true
+
+  otlp/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+    retry_on_failure:
+      enabled: true
+
+  debug:
+    verbosity: basic
 
 processors:
   batch:
     timeout: 5s
     send_batch_size: 1024
-
-exporters:
-  # Metrics → Prometheus (remote write)
-  prometheusremotewrite:
-    endpoint: http://prometheus:9090/api/v1/write
-
-  # Logs → Loki (via HTTP/JSON)
-  otlphttp/loki:
-    endpoint: http://loki:3100/otlp
-
-  # Traces → Tempo (via gRPC)
-  otlp/tempo:
-    endpoint: tempo:4317
-    tls:
-      insecure: true
-
-  # Debug — utile in sviluppo, rimuovere in produzione
-  debug:
-    verbosity: basic
+  # FIX: aggiungi memory_limiter per stabilità in cluster
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 512
+    spike_limit_mib: 128
 
 service:
   pipelines:
     metrics:
-      receivers: [otlp]
-      processors: [batch]
-      exporters: [prometheusremotewrite, debug]
+      receivers: [ otlp ]
+      processors: [ memory_limiter, batch ]
+      exporters: [ prometheusremotewrite, debug ]
     logs:
-      receivers: [otlp]
-      processors: [batch]
-      exporters: [otlphttp/loki, debug]
+      receivers: [ otlp ]
+      processors: [ memory_limiter, batch ]
+      exporters: [ otlphttp/loki, debug ]
     traces:
-      receivers: [otlp]
-      processors: [batch]
-      exporters: [otlp/tempo, debug]
+      receivers: [ otlp ]
+      processors: [ memory_limiter, batch ]
+      exporters: [ otlp/tempo, debug ]
+
+file_format:
