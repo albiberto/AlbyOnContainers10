@@ -20,6 +20,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\AlbyOnContainers.ServiceDefaults\AlbyOnContainers.ServiceDefaults.csproj"/>
+        <ProjectReference Include="..\AlbyOnContainers.Shared.DistributedLocks\AlbyOnContainers.Shared.DistributedLocks.csproj" />
         <ProjectReference Include="..\AlbyOnContainers.Shared.Security\AlbyOnContainers.Shared.Security.csproj"/>
         <ProjectReference Include="..\ProductInformationManager.Application\ProductInformationManager.Application.csproj"/>
         <ProjectReference Include="..\ProductInformationManager.Infrastructure\ProductInformationManager.Infrastructure.csproj"/>

@@ -25,6 +25,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProductInformationManager.A
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AlbyOnContainers.Shared.Application", "src\AlbyOnContainers.Shared.Application\AlbyOnContainers.Shared.Application.csproj", "{B2C55023-820F-4317-BCE3-C3ACC8B7E510}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AlbyOnContainers.Shared.DistributedLocks", "src\AlbyOnContainers.Shared.DistributedLocks\AlbyOnContainers.Shared.DistributedLocks.csproj", "{7105B056-A2F2-4F7B-B718-6A0EEB1A4EE5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -75,5 +77,9 @@ Global
 		{B2C55023-820F-4317-BCE3-C3ACC8B7E510}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B2C55023-820F-4317-BCE3-C3ACC8B7E510}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B2C55023-820F-4317-BCE3-C3ACC8B7E510}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7105B056-A2F2-4F7B-B718-6A0EEB1A4EE5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7105B056-A2F2-4F7B-B718-6A0EEB1A4EE5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7105B056-A2F2-4F7B-B718-6A0EEB1A4EE5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7105B056-A2F2-4F7B-B718-6A0EEB1A4EE5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

@@ -4,9 +4,7 @@ using MassTransit;
 using Microsoft.FluentUI.AspNetCore.Components;
 using ProductInformationManager.Application;
 using ProductInformationManager.Infrastructure;
-using ProductInformationManager.Messages;
 using ProductInformationManager.Web.Notifiers;
-using ProductInformationManager.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -48,8 +46,8 @@ builder.Services.AddInfrastructure(connection);
 // Fluent UI Blazor
 builder.Services.AddFluentUIComponents();
 
-// LockService
-builder.Services.AddSingleton<EntityLockService>();
+// Distributed Lock
+builder.Services.AddBlazorDistributedLocks(builder.Configuration);
 
 // Blazor
 builder.Services.AddRazorComponents()

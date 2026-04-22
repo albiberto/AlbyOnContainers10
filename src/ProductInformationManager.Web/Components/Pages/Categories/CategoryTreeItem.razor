@@ -1,9 +1,22 @@
+@using AlbyOnContainers.Shared.DistributedLocks
+@inject LockNotifier<CategoryDto> CategoryLocks
+
+@{
+    var isLocked = CategoryLocks.IsLockedBy(Category.Category.Id.ToString(), out var lockedBy);
+}
+
 <FluentTreeItem Text="@Category.Category.Name" Expanded="@Category.IsExpanded" ExpandedChanged="HandleExpandedChanged">
 
     <FluentStack HorizontalAlignment="HorizontalAlignment.End" Orientation="Orientation.Horizontal" Gap="2" Class="pdm-tree-actions">
-        <FluentButton Appearance="Appearance.Stealth" IconStart="@(new Icons.Regular.Size16.Add())" Title="Aggiungi sottocategoria" OnClick="@(() => OnAddChild.InvokeAsync(Category.Category.Id))" OnClick:stopPropagation="true" />
-        <FluentButton Appearance="Appearance.Stealth" IconStart="@(new Icons.Regular.Size16.Edit())" Title="Modifica" OnClick="@(() => OnEdit.InvokeAsync(Category.Category))" OnClick:stopPropagation="true" />
-        <FluentButton Appearance="Appearance.Stealth" IconStart="@(new Icons.Regular.Size16.Delete())" Title="Elimina" OnClick="@(() => OnDelete.InvokeAsync(Category.Category))" OnClick:stopPropagation="true" />
+        
+        @if (isLocked)
+        {
+            <FluentIcon Value="@(new Icons.Regular.Size16.LockClosed())" Color="Color.Warning" Title="@($"Modificato da {lockedBy}")" />
+        }
+
+        <FluentButton Appearance="Appearance.Stealth" Disabled="@isLocked" IconStart="@(new Icons.Regular.Size16.Add())" Title="Aggiungi sottocategoria" OnClick="@(() => OnAddChild.InvokeAsync(Category.Category.Id))" OnClick:stopPropagation="true" />
+        <FluentButton Appearance="Appearance.Stealth" Disabled="@isLocked" IconStart="@(new Icons.Regular.Size16.Edit())" Title="Modifica" OnClick="@(() => OnEdit.InvokeAsync(Category.Category))" OnClick:stopPropagation="true" />
+        <FluentButton Appearance="Appearance.Stealth" Disabled="@isLocked" IconStart="@(new Icons.Regular.Size16.Delete())" Title="Elimina" OnClick="@(() => OnDelete.InvokeAsync(Category.Category))" OnClick:stopPropagation="true" />
     </FluentStack>
 
     @if (Category.IsLoading)
@@ -30,7 +43,6 @@
                 break;
             }
             case { HasLoadedChildren: false, Category.HasChildren: true }:
-                /* HACK: Nodo "fantasma" invisibile per mostrare la freccia di espansione (necessario per FluentUI). */
                 <FluentTreeItem Class="pdm-tree-ghost-node" />
                 break;
         }

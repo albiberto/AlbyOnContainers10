@@ -1,4 +1,5 @@
 @page "/categories"
+@using AlbyOnContainers.Shared.DistributedLocks
 @using MassTransit.Mediator
 @using ProductInformationManager.Web.Notifiers
 @using Microsoft.Extensions.Localization
@@ -10,9 +11,9 @@
 @inject IMediator Mediator
 @inject IToastService ToastService
 @inject CategoryNotifier CategoryNotifier
-@inject LockNotifier LockNotifier
+@inject LockNotifier<CategoryDto> LockNotifier
 
-<PageTitle>Categorie — Product Data Manager</PageTitle>
+<PageTitle>Categorie — Product Information Manager</PageTitle>
 
 <FluentStack Orientation="Orientation.Vertical" Class="pdm-categories-page pdm-animate-in">
     <PageHeader 
@@ -63,6 +64,8 @@
     
     private IReadOnlyList<CategoryFlatDto> _searchResults = [];
     
+    private readonly string _currentUserId = Guid.NewGuid().ToString();
+    
     private bool _loading = true;
     private string _query = string.Empty;
 
@@ -76,10 +79,12 @@
     {
         await LoadRootCategoriesAsync();
 
-        _categoriesSubscription = CategoryNotifier.Changes
+        _categoriesSubscription = CategoryNotifier
+            .Changes
             .Subscribe(change => InvokeAsync(() => HandleCategoryChange(change)));
 
-        _lockSubscription = LockNotifier.Changes
+        _lockSubscription = LockNotifier
+            .Changes
             .Subscribe(_ => InvokeAsync(StateHasChanged));
     }
 
@@ -147,48 +152,111 @@
     
     private async Task OpenCreateRootDialog() 
     {
-        var content = new CategoryEditDialogInput { ParentIdForCreate = null };
-        var dialog = await DialogService.ShowDialogAsync<CategoryEditDialog>(content, new() { Title = Loc["CategoryEdit_NewRootTitle"].Value, PreventScroll = true });
-        
-        await dialog.Result; 
-    }
+        const string lockId = "ROOT";
 
+        if (await LockNotifier.TryAcquireLockAsync(lockId, _currentUserId))
+        {
+            try
+            {
+                var content = new CategoryEditDialogInput { ParentIdForCreate = null };
+                var dialog = await DialogService.ShowDialogAsync<CategoryEditDialog>(content, new() { Title = Loc["CategoryEdit_NewRootTitle"].Value, PreventScroll = true });
+                
+                await dialog.Result; 
+            }
+            finally
+            {
+                await LockNotifier.ReleaseLockAsync(lockId);
+            }
+        }
+        else
+        {
+            ShowLockConflictWarning(lockId);
+        }
+    }
+    
     private async Task OpenCreateChildDialog(Guid parentId) 
     {
-        var parentNode = _treeManager.FindNode(parentId);
-        var content = new CategoryEditDialogInput { ParentIdForCreate = parentId, ParentName = parentNode?.Category.Name };
-        var dialog = await DialogService.ShowDialogAsync<CategoryEditDialog>(content, new() { Title = string.Format(Loc["CategoryEdit_NewChildTitle"].Value, parentNode?.Category.Name ?? ""), PreventScroll = true });
+        var lockId = parentId.ToString();
         
-        await dialog.Result;
+        if (await LockNotifier.TryAcquireLockAsync(lockId, _currentUserId))
+        {
+            try
+            {
+                var parentNode = _treeManager.FindNode(parentId);
+                var content = new CategoryEditDialogInput { ParentIdForCreate = parentId, ParentName = parentNode?.Category.Name };
+                var dialog = await DialogService.ShowDialogAsync<CategoryEditDialog>(content, new() { Title = string.Format(Loc["CategoryEdit_NewChildTitle"].Value, parentNode?.Category.Name ?? ""), PreventScroll = true });
+                
+                await dialog.Result;
+            }
+            finally
+            {
+                await LockNotifier.ReleaseLockAsync(lockId);
+            }
+        }
+        else
+        {
+            ShowLockConflictWarning(lockId);
+        }
     }
 
     private async Task OpenEditDialog(CategoryDto category)
     {
-        var content = new CategoryEditDialogInput { CategoryToEdit = category };
-        var dialog = await DialogService.ShowDialogAsync<CategoryEditDialog>(content, new() { Title = string.Format(Loc["CategoryEdit_EditTitle"].Value, category.Name), PreventScroll = true });
+        var idStr = category.Id.ToString();
         
-        await dialog.Result;
+        if (await LockNotifier.TryAcquireLockAsync(idStr, _currentUserId))
+        {
+            try
+            {
+                var content = new CategoryEditDialogInput { CategoryToEdit = category };
+                var dialog = await DialogService.ShowDialogAsync<CategoryEditDialog>(content, new() { Title = string.Format(Loc["CategoryEdit_EditTitle"].Value, category.Name), PreventScroll = true });
+                
+                await dialog.Result;
+            }
+            finally
+            {
+                await LockNotifier.ReleaseLockAsync(idStr);
+            }
+        }
+        else
+        {
+            ShowLockConflictWarning(idStr);
+        }
     }
     
     private async Task ConfirmDelete(CategoryDto category)
     {
-        var dialog = await DialogService.ShowDialogAsync<ConfirmDeleteDialog>(
-            new ConfirmDeleteContent(category.Name), 
-            new() { Title = Loc["Dialog_Delete_Title"].Value, PreventScroll = true });
-            
-        var result = await dialog.Result;
-        if (result is { Cancelled: false, Data: true })
+        var idStr = category.Id.ToString();
+        
+        if (await LockNotifier.TryAcquireLockAsync(idStr, _currentUserId))
         {
             try
             {
-                await Mediator.Send(new DeleteCategory(category.Id));
+                var dialog = await DialogService.ShowDialogAsync<ConfirmDeleteDialog>(
+                    new ConfirmDeleteContent(category.Name), 
+                    new() { Title = Loc["Dialog_Delete_Title"].Value, PreventScroll = true });
+                    
+                var result = await dialog.Result;
+                if (result is { Cancelled: false, Data: true })
+                {
+                    try { await Mediator.Send(new DeleteCategory(category.Id)); }
+                    catch (Exception ex) { ToastService.ShowError(ex.InnerException?.Message ?? Loc["Toast_Error"].Value); }
+                }
             }
-            catch (Exception ex) 
-            { 
-                var message = ex.InnerException?.Message ?? Loc["Toast_Error"].Value;
-                ToastService.ShowError(message); 
+            finally
+            {
+                await LockNotifier.ReleaseLockAsync(idStr);
             }
         }
+        else
+        {
+            ShowLockConflictWarning(idStr);
+        }
+    }
+    
+    private void ShowLockConflictWarning(string idStr)
+    {
+        LockNotifier.IsLockedBy(idStr, out var lockedBy);
+        ToastService.ShowWarning($"This item is currently being modified by {lockedBy ?? "unknown"}.");
     }
 
     private void HandleCategoryChange(CategoryChangeNotification change)
