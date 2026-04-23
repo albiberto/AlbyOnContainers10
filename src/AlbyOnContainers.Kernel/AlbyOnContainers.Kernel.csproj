@@ -20,9 +20,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\AlbyOnContainers.Shared.Application\AlbyOnContainers.Shared.Application.csproj" />
-        <ProjectReference Include="..\AlbyOnContainers.Shared.Contracts\AlbyOnContainers.Shared.Contracts.csproj" />
-        <ProjectReference Include="..\AlbyOnContainers.Kernel.DistributedLocks\AlbyOnContainers.Kernel.DistributedLocks.csproj" />
+        <ProjectReference Include="..\AlbyOnContainers.Plugins.DistributedLocks\AlbyOnContainers.Plugins.DistributedLocks.csproj" />
         <ProjectReference Include="..\AlbyOnContainers.Kernel.Domain\AlbyOnContainers.Kernel.Domain.csproj" />
         <ProjectReference Include="..\AlbyOnContainers.Kernel.Security\AlbyOnContainers.Kernel.Security.csproj" />
     </ItemGroup>

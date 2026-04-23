@@ -14,10 +14,4 @@
         <PackageReference Include="Polly.Core" />
     </ItemGroup>
 
-    <ItemGroup>
-        <ProjectReference Include="..\AlbyOnContainers.Shared.Application\AlbyOnContainers.Shared.Application.csproj" />
-        <ProjectReference Include="..\AlbyOnContainers.Kernel.Domain\AlbyOnContainers.Kernel.Domain.csproj" />
-        <ProjectReference Include="..\ProductInformationManager.Domain\ProductInformationManager.Domain.csproj"/>
-    </ItemGroup>
-
 </Project>

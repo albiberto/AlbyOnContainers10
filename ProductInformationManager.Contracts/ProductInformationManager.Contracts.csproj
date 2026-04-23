@@ -6,4 +6,8 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\src\AlbyOnContainers.Kernel.Messaging\AlbyOnContainers.Kernel.Messaging.csproj" />
+    </ItemGroup>
+
 </Project>

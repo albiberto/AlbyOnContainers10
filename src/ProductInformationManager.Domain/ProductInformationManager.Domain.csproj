@@ -5,9 +5,5 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
     </PropertyGroup>
-
-    <ItemGroup>
-        <ProjectReference Include="..\AlbyOnContainers.Kernel.Domain\AlbyOnContainers.Kernel.Domain.csproj" />
-    </ItemGroup>
-
+    
 </Project>

@@ -1,17 +1,21 @@
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 namespace AlbyOnContainers.Kernel;
 
-/// <summary>
-/// Internal implementation of the IAlbyKernelBuilder.
-/// </summary>
-internal sealed class AlbyKernelBuilder(IHostApplicationBuilder hostBuilder) : IAlbyKernelBuilder
+public interface IAlbyKernelBuilder
 {
-    public IHostApplicationBuilder HostBuilder { get; } = hostBuilder;
-    
-    public IServiceCollection Services => HostBuilder.Services;
-    
-    public IConfiguration Configuration => HostBuilder.Configuration;
+    IHostApplicationBuilder Host { get; }
+}
+
+internal sealed class AlbyKernelBuilder(IHostApplicationBuilder host) : IAlbyKernelBuilder
+{
+    public IHostApplicationBuilder Host { get; } = host;
+}
+
+public static class KernelHostingExtensions
+{
+    public static IAlbyKernelBuilder AddAlbyKernel(this IHostApplicationBuilder builder)
+    {
+        return new AlbyKernelBuilder(builder);
+    }
 }
