@@ -1,8 +1,8 @@
 ﻿using System.Collections.Concurrent;
 using System.Reactive.Linq;
-using AlbyOnContainers.Shared.DistributedLocks.Model;
+using AlbyOnContainers.Kernel.DistributedLocks.Model;
 
-namespace AlbyOnContainers.Shared.DistributedLocks;
+namespace AlbyOnContainers.Kernel.DistributedLocks;
 
 public sealed class LockTracker<TEntity> : IDisposable
 {

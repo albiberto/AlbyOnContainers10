@@ -1,7 +1,7 @@
 using AlbyOnContainers.ServiceDefaults;
 using AlbyOnContainers.Shared.Application.Abstract;
 using AlbyOnContainers.Shared.Application.Infrastructure;
-using AlbyOnContainers.Shared.Security;
+using AlbyOnContainers.Kernel.Security;
 using MassTransit;
 using Microsoft.FluentUI.AspNetCore.Components;
 using ProductInformationManager.Application;
@@ -9,15 +9,52 @@ using ProductInformationManager.Infrastructure;
 using ProductInformationManager.Web.DevSpace;
 using ProductInformationManager.Web.Notifiers;
 
+
+using AlbyOnContainers.Kernel;
+using AlbyOnContainers.Kernel.Modules;
+using ProductInformationManager.Infrastructure.Interceptors;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Aspire ServiceDefaults
 builder.AddServiceDefaults();
 
-// Authentication via Keycloak
-builder.Services.AddKeycloakAuthentication(builder.Configuration);
+// --- ALBY KERNEL SDK ---
+// Using the new Fluent API to configure enterprise infrastructure centrally
+builder.AddAlbyKernel()
+    .WithSecurity()
+    .WithMessaging(bus =>
+    {
+        bus.AddConsumers(typeof(Program).Assembly);
+        bus.AddEntityFrameworkOutbox<ProductContext>(o =>
+        {
+            o.UsePostgres();
+            o.UseBusOutbox(); 
+        });
+    })
+    .WithMediator(configurator =>
+    {
+        configurator.AddConsumers(typeof(ApplicationServiceExtensions).Assembly);
+    })
+    .WithCaching()
+    .WithDistributedLocks()
+    .WithPersistence<ProductContext>("productdb", (sp, options) =>
+    {
+        // Add PIM-specific interceptors and options
+        var environment = sp.GetRequiredService<IHostEnvironment>();
+        var telemetry = sp.GetRequiredService<DbCommandTelemetryInterceptor>();
+        
+        options.AddInterceptors(telemetry);
 
-// Shared UI Notifier — registra solo le classi che implementano INotifier
+        if (environment.IsDevelopment())
+        {
+            options.EnableDetailedErrors();
+        }
+    });
+
+// Shared UI Notifier
 builder.Services.Scan(scan => scan
     .FromAssemblyOf<INotifier>()
     .AddClasses(classes => classes.AssignableTo<INotifier>())
@@ -27,39 +64,14 @@ builder.Services.Scan(scan => scan
 
 builder.Services.AddScoped<ICurrentUserService, StubCurrentUserService>();
 
-builder.Services.AddMassTransit(x =>
-{
-    x.DisableUsageTelemetry();
-    x.SetKebabCaseEndpointNameFormatter();
+// Application 
+builder.Services.AddApplication();
 
-    x.AddConsumers(typeof(Program).Assembly);
-
-    x.AddEntityFrameworkOutbox<ProductContext>(o =>
-    {
-        o.UsePostgres();
-        o.UseBusOutbox(); 
-    });
-
-    x.UsingRabbitMq((context, cfg) =>
-    {
-        var connectionString = builder.Configuration.GetConnectionString("messaging") ?? throw new InvalidOperationException("Connection string 'messaging' not found.");
-        cfg.Host(connectionString);
-        cfg.ConfigureConsumePipeline(context);
-        cfg.ConfigureEndpoints(context);
-    });
-});
-
-// Application (MassTransit)
-builder.Services.AddApplication(builder.Configuration);
-
-// Infrastructure (EF Core)
+// Infrastructure 
 builder.Services.AddInfrastructure(builder.Configuration);
 
 // Fluent UI Blazor
 builder.Services.AddFluentUIComponents();
-
-// Distributed Lock
-builder.Services.AddDistributedLocks(builder.Configuration);
 
 // Blazor
 builder.Services.AddRazorComponents()

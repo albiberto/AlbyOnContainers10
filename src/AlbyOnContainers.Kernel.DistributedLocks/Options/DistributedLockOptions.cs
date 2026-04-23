@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace AlbyOnContainers.Shared.DistributedLocks.Options;
+namespace AlbyOnContainers.Kernel.DistributedLocks.Options;
 
 public class DistributedLockOptions
 {

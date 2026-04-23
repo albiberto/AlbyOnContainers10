@@ -1,7 +1,7 @@
-using AlbyOnContainers.Shared.Contracts;
 using MassTransit;
 using Microsoft.Extensions.Logging;
 using ProductInformationManager.Application.Cache;
+using ProductInformationManager.Messages;
 
 namespace ProductInformationManager.Application.Consumers;
 

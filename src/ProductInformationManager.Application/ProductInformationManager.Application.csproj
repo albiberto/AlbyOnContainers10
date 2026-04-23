@@ -24,7 +24,7 @@
         <ProjectReference Include="..\ProductInformationManager.Domain\ProductInformationManager.Domain.csproj" />
         <ProjectReference Include="..\ProductInformationManager.Infrastructure\ProductInformationManager.Infrastructure.csproj" />
         <ProjectReference Include="..\ProductInformationManager.Messages\ProductInformationManager.Messages.csproj" />
-        <ProjectReference Include="..\AlbyOnContainers.Shared.Domain\AlbyOnContainers.Shared.Domain.csproj" />
+        <ProjectReference Include="..\AlbyOnContainers.Kernel.Domain\AlbyOnContainers.Kernel.Domain.csproj" />
     </ItemGroup>
 
 

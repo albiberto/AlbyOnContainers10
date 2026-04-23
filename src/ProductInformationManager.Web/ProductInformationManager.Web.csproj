@@ -9,23 +9,24 @@
     <ItemGroup>
         <PackageReference Include="MassTransit.EntityFrameworkCore" />
         <PackageReference Include="MassTransit.RabbitMQ" />
-        <PackageReference Include="Microsoft.FluentUI.AspNetCore.Components"/>
-        <PackageReference Include="Microsoft.FluentUI.AspNetCore.Components.Icons"/>
-        <PackageReference Include="MassTransit"/>
+        <PackageReference Include="Microsoft.FluentUI.AspNetCore.Components" />
+        <PackageReference Include="Microsoft.FluentUI.AspNetCore.Components.Icons" />
+        <PackageReference Include="MassTransit" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
-        <PackageReference Include="System.Reactive"/>
+        <PackageReference Include="System.Reactive" />
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\AlbyOnContainers.ServiceDefaults\AlbyOnContainers.ServiceDefaults.csproj"/>
-        <ProjectReference Include="..\AlbyOnContainers.Shared.DistributedLocks\AlbyOnContainers.Shared.DistributedLocks.csproj" />
-        <ProjectReference Include="..\AlbyOnContainers.Shared.Security\AlbyOnContainers.Shared.Security.csproj"/>
-        <ProjectReference Include="..\ProductInformationManager.Application\ProductInformationManager.Application.csproj"/>
-        <ProjectReference Include="..\ProductInformationManager.Infrastructure\ProductInformationManager.Infrastructure.csproj"/>
-        <ProjectReference Include="..\ProductInformationManager.Messages\ProductInformationManager.Messages.csproj"/>
+        <ProjectReference Include="..\AlbyOnContainers.ServiceDefaults\AlbyOnContainers.ServiceDefaults.csproj" />
+        <ProjectReference Include="..\AlbyOnContainers.Kernel.DistributedLocks\AlbyOnContainers.Kernel.DistributedLocks.csproj" />
+        <ProjectReference Include="..\AlbyOnContainers.Kernel.Security\AlbyOnContainers.Kernel.Security.csproj" />
+        <ProjectReference Include="..\ProductInformationManager.Application\ProductInformationManager.Application.csproj" />
+        <ProjectReference Include="..\ProductInformationManager.Infrastructure\ProductInformationManager.Infrastructure.csproj" />
+        <ProjectReference Include="..\ProductInformationManager.Messages\ProductInformationManager.Messages.csproj" />
+        <ProjectReference Include="..\AlbyOnContainers.Kernel\AlbyOnContainers.Kernel.csproj" />
     </ItemGroup>
 
 </Project>

@@ -7,7 +7,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\ProductInformationManager.Domain\ProductInformationManager.Domain.csproj"/>
+        <ProjectReference Include="..\ProductInformationManager.Domain\ProductInformationManager.Domain.csproj" />
+        <ProjectReference Include="..\AlbyOnContainers.Shared.Contracts\AlbyOnContainers.Shared.Contracts.csproj" />
     </ItemGroup>
 
 </Project>

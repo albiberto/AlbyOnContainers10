@@ -1,4 +1,4 @@
-namespace AlbyOnContainers.Shared.DistributedLocks.Model;
+namespace AlbyOnContainers.Kernel.DistributedLocks.Model;
 
 public abstract record Emit(string EntityType, string EntityId)
 {

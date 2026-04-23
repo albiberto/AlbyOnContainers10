@@ -1,4 +1,4 @@
-namespace AlbyOnContainers.Shared.Domain;
+namespace AlbyOnContainers.Kernel.Domain;
 
 public abstract class AuditableEntity
 {

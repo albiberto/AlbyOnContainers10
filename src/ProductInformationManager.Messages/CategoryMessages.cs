@@ -1,5 +1,8 @@
-namespace ProductInformationManager.Messages;
+using System;
+using System.Collections.Generic;
+using AlbyOnContainers.Shared.Contracts;
 
+namespace ProductInformationManager.Messages;
 // --- Shared Interface for Formal Validation ---
 public interface ICategorySaveCommand
 {
@@ -31,3 +34,9 @@ public record DeleteCategoryCommandResult(Guid Id);
 // === Queries ===
 public record CategoryDto(Guid Id, string Name, string? Description, string Path, Guid? ParentId, bool HasChildren);
 public record CategoryFlatDto(Guid Id, string Name, string Path, int Depth);
+
+// === Events ===
+
+public record CategoryCreatedEvent(Guid Id, string Name, string Description, string Path, Guid? ParentId, long Version = 0) : ContractBase(Version);
+public record CategoryUpdatedEvent(Guid Id, string Name, string Description, string Path, Guid? ParentId, long Version = 0) : ContractBase(Version);
+public record CategoryDeletedEvent(Guid Id) : ContractBase;

@@ -1,13 +1,13 @@
 ﻿using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Text.Json;
-using AlbyOnContainers.Shared.DistributedLocks.Model;
-using AlbyOnContainers.Shared.DistributedLocks.Options;
+using AlbyOnContainers.Kernel.DistributedLocks.Model;
+using AlbyOnContainers.Kernel.DistributedLocks.Options;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using StackExchange.Redis;
 
-namespace AlbyOnContainers.Shared.DistributedLocks;
+namespace AlbyOnContainers.Kernel.DistributedLocks;
 
 public sealed class DistributedLockHostedService(IConnectionMultiplexer redis, IOptions<DistributedLockOptions> options) : IHostedService, IAsyncDisposable
 {

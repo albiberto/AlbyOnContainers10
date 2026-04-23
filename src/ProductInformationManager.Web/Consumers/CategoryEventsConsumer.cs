@@ -2,6 +2,7 @@ using AlbyOnContainers.Shared.Contracts;
 using MassTransit;
 using Microsoft.Extensions.Logging;
 using ProductInformationManager.Web.Notifiers;
+using ProductInformationManager.Messages;
 
 namespace ProductInformationManager.Web.Consumers;
 

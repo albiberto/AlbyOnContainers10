@@ -1,6 +1,6 @@
 ﻿using System.Reflection;
-using AlbyOnContainers.Shared.DistributedLocks;
-using AlbyOnContainers.Shared.DistributedLocks.Options;
+using AlbyOnContainers.Kernel.DistributedLocks;
+using AlbyOnContainers.Kernel.DistributedLocks.Options;
 using Medallion.Threading;
 using Medallion.Threading.Redis;
 using Microsoft.Extensions.Configuration;

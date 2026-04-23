@@ -1,11 +1,17 @@
 using AlbyOnContainers.Shared.Application.Abstract;
-using AlbyOnContainers.Shared.Domain;
+using AlbyOnContainers.Kernel.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using System.Threading;
+using System.Threading.Tasks;
 
-namespace ProductInformationManager.Infrastructure.Interceptors;
+namespace AlbyOnContainers.Kernel.Modules;
 
-public class AuditableEntityInterceptor(ICurrentUserService currentUserService) : SaveChangesInterceptor
+/// <summary>
+/// Interceptor to automatically populate audit fields (CreatedBy, CreatedAt, UpdatedBy, UpdatedAt)
+/// for entities inheriting from AuditableEntity.
+/// </summary>
+public sealed class AuditableEntityInterceptor(ICurrentUserService currentUserService) : SaveChangesInterceptor
 {
     public override ValueTask<InterceptionResult<int>> SavingChangesAsync(DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
     {

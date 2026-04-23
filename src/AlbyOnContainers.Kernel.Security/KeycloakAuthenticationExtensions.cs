@@ -5,7 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 
-namespace AlbyOnContainers.Shared.Security;
+namespace AlbyOnContainers.Kernel.Security;
 
 public static class KeycloakAuthenticationExtensions
 {

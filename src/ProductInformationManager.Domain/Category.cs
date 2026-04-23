@@ -1,5 +1,5 @@
 using System.Text.RegularExpressions;
-using AlbyOnContainers.Shared.Domain;
+using AlbyOnContainers.Kernel.Domain;
 using ProductInformationManager.Domain.ValueObjects;
 
 namespace ProductInformationManager.Domain;

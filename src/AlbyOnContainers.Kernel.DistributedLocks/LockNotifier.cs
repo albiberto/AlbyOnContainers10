@@ -2,10 +2,10 @@
 using Medallion.Threading;
 using Microsoft.Extensions.Options;
 using System.Reactive.Linq;
-using AlbyOnContainers.Shared.DistributedLocks.Model;
-using AlbyOnContainers.Shared.DistributedLocks.Options;
+using AlbyOnContainers.Kernel.DistributedLocks.Model;
+using AlbyOnContainers.Kernel.DistributedLocks.Options;
 
-namespace AlbyOnContainers.Shared.DistributedLocks;
+namespace AlbyOnContainers.Kernel.DistributedLocks;
 
 public sealed class LockNotifier<TEntity>(IDistributedLockProvider lockProvider, DistributedLockHostedService hostedService, LockTracker<TEntity> tracker, IOptions<DistributedLockOptions> options) : IAsyncDisposable
 {

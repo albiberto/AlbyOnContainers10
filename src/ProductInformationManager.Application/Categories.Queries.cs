@@ -1,4 +1,4 @@
-using AlbyOnContainers.Shared.Domain;
+using AlbyOnContainers.Kernel.Domain;
 using MassTransit;
 using ProductInformationManager.Application.Cache;
 using ProductInformationManager.Messages;

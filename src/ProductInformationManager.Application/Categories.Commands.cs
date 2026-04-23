@@ -1,5 +1,5 @@
 using AlbyOnContainers.Shared.Contracts;
-using AlbyOnContainers.Shared.Domain;
+using AlbyOnContainers.Kernel.Domain;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
