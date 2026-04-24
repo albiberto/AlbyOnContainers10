@@ -1,5 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+    <ItemGroup>
+      <ProjectReference Include="..\..\Kernel\AlbyOnContainers.Kernel.Messaging\AlbyOnContainers.Kernel.Messaging.csproj" />
+      <ProjectReference Include="..\ProductInformationManager.Domain\ProductInformationManager.Domain.csproj" />
+    </ItemGroup>
+
     <PropertyGroup>
         <TargetFramework>net10.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>

@@ -17,5 +17,14 @@
         <PackageReference Include="Aspire.StackExchange.Redis" />
         <PackageReference Include="ZiggyCreatures.FusionCache.Backplane.StackExchangeRedis" />
     </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\ProductInformationManager.Domain\ProductInformationManager.Domain.csproj" />
+      <ProjectReference Include="..\ProductInformationManager.Contracts\ProductInformationManager.Contracts.csproj" />
+      <ProjectReference Include="..\ProductInformationManager.Messages\ProductInformationManager.Messages.csproj" />
+      <ProjectReference Include="..\..\Kernel\AlbyOnContainers.Kernel.Messaging\AlbyOnContainers.Kernel.Messaging.csproj" />
+      <ProjectReference Include="..\..\Kernel\AlbyOnContainers.Kernel.Caching\AlbyOnContainers.Kernel.Caching.csproj" />
+      <ProjectReference Include="..\..\Kernel\AlbyOnContainers.Kernel.Abstraction\AlbyOnContainers.Kernel.Abstraction.csproj" />
+    </ItemGroup>
     
 </Project>
