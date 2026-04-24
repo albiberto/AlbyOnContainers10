@@ -1,63 +1,65 @@
 ﻿using System.Reflection;
-using AlbyOnContainers.Plugins.DistributedLocks;
+using AlbyOnContainers.Kernel.Abstraction;
 using AlbyOnContainers.Plugins.DistributedLocks.Options;
 using Medallion.Threading;
 using Medallion.Threading.Redis;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using StackExchange.Redis;
 
-// ReSharper disable once CheckNamespace
-namespace Microsoft.Extensions.DependencyInjection;
+namespace AlbyOnContainers.Plugins.DistributedLocks;
 
-public static class LockServiceCollectionExtensions
+public static class DistributedLocksPluginExtensions
 {
-    extension(IServiceCollection services)
+    extension(IKernelBuilder builder)
     {
-        public IServiceCollection AddDistributedLocks(IConfiguration configuration, Action<DistributedLockOptions> configureOptions)
+        public IKernelBuilder WithDistributedLocks(Action<DistributedLockOptions> configureOptions)
         {
-            services.AddOptions<DistributedLockOptions>()
+            builder.Host.Services.AddOptions<DistributedLockOptions>()
                 .Configure(configureOptions)
                 .ValidateDataAnnotations()
                 .ValidateOnStart();
 
-            return services.AddCoreDistributedLocks(configuration);
+            builder.Host.Services.AddCoreDistributedLocks(builder.Host.Configuration);
+        
+            return builder;
         }
 
-        public IServiceCollection AddDistributedLocks(IConfiguration configuration, string sectionName = "DistributedLock")
+        public IKernelBuilder WithDistributedLocks(string sectionName = "DistributedLock")
         {
-            services.AddOptions<DistributedLockOptions>()
-                .Bind(configuration.GetSection(sectionName))
+            builder.Host.Services.AddOptions<DistributedLockOptions>()
+                .Bind(builder.Host.Configuration.GetSection(sectionName))
                 .ValidateDataAnnotations()
                 .ValidateOnStart();
 
-            return services.AddCoreDistributedLocks(configuration);
-        }
+            builder.Host.Services.AddCoreDistributedLocks(builder.Host.Configuration);
 
-        private IServiceCollection AddCoreDistributedLocks(IConfiguration configuration)
+            return builder;
+        }
+    }
+
+    private static void AddCoreDistributedLocks(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.PostConfigure<DistributedLockOptions>(options =>
         {
-            services.PostConfigure<DistributedLockOptions>(options =>
-            {
-                if (!string.IsNullOrWhiteSpace(options.RedisChannel)) return;
-                var projectName = Assembly.GetEntryAssembly()?.GetName().Name ?? "default-app";
-                options.RedisChannel = $"{projectName}-locks".ToLowerInvariant();
-            });
-            
-            var redisConnection = configuration.GetConnectionString("cache") ?? throw new InvalidOperationException("Connection string 'cache' not found.");
+            if (!string.IsNullOrWhiteSpace(options.RedisChannel)) return;
+            var projectName = Assembly.GetEntryAssembly()?.GetName().Name ?? "default-app";
+            options.RedisChannel = $"{projectName}-locks".ToLowerInvariant();
+        });
+        
+        var redisConnection = configuration.GetConnectionString("cache") ?? throw new InvalidOperationException("Connection string 'cache' not found. Distributed Locks cannot be established.");
 
-            services.AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(redisConnection));
+        services.AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(redisConnection));
 
-            services.AddSingleton<IDistributedLockProvider>(sp =>
-            {
-                var connection = sp.GetRequiredService<IConnectionMultiplexer>();
-                return new RedisDistributedSynchronizationProvider(connection.GetDatabase());
-            });
+        services.AddSingleton<IDistributedLockProvider>(sp =>
+        {
+            var connection = sp.GetRequiredService<IConnectionMultiplexer>();
+            return new RedisDistributedSynchronizationProvider(connection.GetDatabase());
+        });
 
-            services.AddSingleton<DistributedLockHostedService>();
-            services.AddHostedService(sp => sp.GetRequiredService<DistributedLockHostedService>());
-            services.AddSingleton(typeof(LockTracker<>));
-            services.AddScoped(typeof(LockNotifier<>));
-
-            return services;
-        }
+        services.AddSingleton<DistributedLockHostedService>();
+        services.AddHostedService(sp => sp.GetRequiredService<DistributedLockHostedService>());
+        services.AddSingleton(typeof(LockTracker<>));
+        services.AddScoped(typeof(LockNotifier<>));
     }
 }

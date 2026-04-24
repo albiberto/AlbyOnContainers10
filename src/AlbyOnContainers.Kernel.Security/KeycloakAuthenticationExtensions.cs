@@ -2,24 +2,24 @@ using AlbyOnContainers.Kernel.Security.Options;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 
-namespace AlbyOnContainers.Kernel.Security;
+// ReSharper disable once CheckNamespace
+namespace Microsoft.Extensions.DependencyInjection;
 
 public static class KeycloakAuthenticationExtensions
 {
     extension(IServiceCollection services)
     {
-        public IServiceCollection AddAlbyKeycloakAuthentication(IConfiguration configuration, string sectionName = "Keycloak")
+        public IServiceCollection AddKeycloakAuthentication(IConfiguration configuration, string sectionName = "Keycloak")
         {
             services.AddOptions<KeycloakOptions>().Bind(configuration.GetSection(sectionName)).ValidateDataAnnotations().ValidateOnStart();
 
             return services.AddInternalKeycloakAuth();
         }
 
-        public IServiceCollection AddAlbyKeycloakAuthentication(Action<KeycloakOptions> configureOptions)
+        public IServiceCollection AddKeycloakAuthentication(Action<KeycloakOptions> configureOptions)
         {
             services.AddOptions<KeycloakOptions>().Configure(configureOptions).ValidateDataAnnotations().ValidateOnStart();
 

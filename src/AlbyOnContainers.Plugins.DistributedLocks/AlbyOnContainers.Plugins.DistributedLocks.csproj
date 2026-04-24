@@ -13,5 +13,9 @@
         <PackageReference Include="Microsoft.Extensions.Options.DataAnnotations" />
         <PackageReference Include="System.Reactive" />
     </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\AlbyOnContainers.Kernel.Abstraction\AlbyOnContainers.Kernel.Abstraction.csproj" />
+    </ItemGroup>
     
 </Project>
