@@ -37,7 +37,7 @@ public static class KernelHostingExtensions
     // --- CACHING ---
     public static IKernelBuilder WithCaching(this IKernelBuilder builder)
     {
-        builder.Host.Services.AddAlbyCachingDefaults(); 
+        builder.Host.Services.AddAlbyCachingDefaults(builder.Host.Configuration); 
         return builder;
     }
 }
