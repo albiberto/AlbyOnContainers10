@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <TargetFramework>net10.0</TargetFramework>
@@ -13,8 +13,10 @@
     <ItemGroup>
         <ProjectReference Include="..\AlbyOnContainers.Kernel.Abstraction\AlbyOnContainers.Kernel.Abstraction.csproj" />
         <ProjectReference Include="..\AlbyOnContainers.Kernel.Caching\AlbyOnContainers.Kernel.Caching.csproj" />
-        <ProjectReference Include="..\AlbyOnContainers.Kernel.Messaging\AlbyOnContainers.Kernel.Messaging.csproj" />
         <ProjectReference Include="..\AlbyOnContainers.Kernel.Domain\AlbyOnContainers.Kernel.Domain.csproj" />
+        <ProjectReference Include="..\AlbyOnContainers.Kernel.Messaging\AlbyOnContainers.Kernel.Messaging.csproj" />
+        <ProjectReference Include="..\AlbyOnContainers.Kernel.Observability\AlbyOnContainers.Kernel.Observability.csproj" />
+        <ProjectReference Include="..\AlbyOnContainers.Kernel.Persistence\AlbyOnContainers.Kernel.Persistence.csproj" />
         <ProjectReference Include="..\AlbyOnContainers.Kernel.Security\AlbyOnContainers.Kernel.Security.csproj" />
     </ItemGroup>
 

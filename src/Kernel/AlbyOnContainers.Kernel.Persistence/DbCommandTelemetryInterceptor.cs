@@ -5,16 +5,15 @@ using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using ProductInformationManager.Infrastructure.Options;
+using Microsoft.Extensions.Configuration;
 
-namespace ProductInformationManager.Infrastructure.Interceptors;
+namespace AlbyOnContainers.Kernel.Persistence;
 
 public sealed partial class DbCommandTelemetryInterceptor(
     ILogger<DbCommandTelemetryInterceptor> logger,
-    IOptions<EfCoreObservabilityOptions> options) : DbCommandInterceptor
+    IConfiguration configuration) : DbCommandInterceptor
 {
-    private static readonly Meter Meter = new("ProductInformationManager.Infrastructure");
+    private static readonly Meter Meter = new("AlbyOnContainers.Kernel.Persistence");
     private static readonly Histogram<double> CommandDuration = Meter.CreateHistogram<double>(
         "pim_efcore_command_duration",
         unit: "ms",
@@ -100,7 +99,8 @@ public sealed partial class DbCommandTelemetryInterceptor(
 
         CommandDuration.Record(durationMs, tags);
 
-        if (durationMs < options.Value.SlowCommandThresholdMs)
+        var slowCommandThresholdMs = configuration.GetValue<int>("EfCore:SlowCommandThresholdMs", 500);
+        if (durationMs < slowCommandThresholdMs)
         {
             return;
         }

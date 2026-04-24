@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <TargetFramework>net10.0</TargetFramework>
@@ -7,7 +7,9 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\AlbyOnContainers.Kernel.Abstraction\AlbyOnContainers.Kernel.Abstraction.csproj" />
         <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions"/>
+        <PackageReference Include="Scrutor" />
         <PackageReference Include="ZiggyCreatures.FusionCache" />
         <PackageReference Include="ZiggyCreatures.FusionCache.Backplane.StackExchangeRedis"/>
     </ItemGroup>

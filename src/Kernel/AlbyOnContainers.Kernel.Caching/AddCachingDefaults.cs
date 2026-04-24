@@ -1,26 +1,44 @@
-﻿using ZiggyCreatures.Caching.Fusion;
+using System;
+using System.Reflection;
+using AlbyOnContainers.Kernel.Abstraction;
+using AlbyOnContainers.Kernel.Caching.Cache;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using ZiggyCreatures.Caching.Fusion;
 
-// ReSharper disable once CheckNamespace
-namespace Microsoft.Extensions.DependencyInjection;
+namespace AlbyOnContainers.Kernel.Caching;
 
-public static class MessagingServiceCollectionExtensions
+public static class CachingKernelExtensions
 {
-    public static IServiceCollection AddAlbyCachingDefaults(this IServiceCollection services, IConfiguration configuration)
+    public static IKernelBuilder WithCaching(this IKernelBuilder builder)
     {
-        var redisConnection = configuration.GetConnectionString("cache") ?? throw new InvalidOperationException("Connection string 'cache' not found. Distributed Caching cannot be established.");
+        var redisConnection = builder.Host.Configuration.GetConnectionString("cache");
 
-        services.AddFusionCacheStackExchangeRedisBackplane(options => { options.Configuration = redisConnection; });
+        if (string.IsNullOrWhiteSpace(redisConnection))
+        {
+            throw new InvalidOperationException("Fail-Fast: Connection string 'cache' not found. Distributed Caching cannot be established.");
+        }
 
-        services.AddFusionCache().WithDefaultEntryOptions(options =>
+        builder.Host.Services.AddFusionCacheStackExchangeRedisBackplane(options => { options.Configuration = redisConnection; });
+
+        builder.Host.Services.AddFusionCache()
+            .WithDefaultEntryOptions(options =>
             {
                 options.Duration = TimeSpan.FromMinutes(30);
                 options.IsFailSafeEnabled = true;
                 options.FailSafeMaxDuration = TimeSpan.FromHours(2);
-
                 options.JitterMaxDuration = TimeSpan.FromSeconds(2);
             })
             .WithRegisteredBackplane();
 
-        return services;
+        var callingAssembly = Assembly.GetCallingAssembly();
+
+        builder.Host.Services.Scan(scan => scan
+            .FromAssemblies(callingAssembly)
+            .AddClasses(classes => classes.AssignableTo(typeof(CacheBase<>)))
+            .AsSelf()
+            .WithSingletonLifetime());
+
+        return builder;
     }
 }
