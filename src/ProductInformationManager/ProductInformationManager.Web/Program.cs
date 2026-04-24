@@ -19,7 +19,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Using the new Fluent API to configure enterprise infrastructure centrally
 builder.AddAlbyKernel()
     .WithObservability()
-    .WithKeycloakAuthentication()
+    .WithSecurity()
     .WithEfCorePersistence<ProductContext>("productdb")
     .WithMessaging(bus =>
     {

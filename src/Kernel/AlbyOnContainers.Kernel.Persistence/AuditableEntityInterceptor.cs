@@ -1,11 +1,12 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using AlbyOnContainers.Kernel.Domain.SeedWork;
 using AlbyOnContainers.Kernel.Security.Abstractions;
 
 namespace AlbyOnContainers.Kernel.Persistence;
 
-public sealed class AuditableEntityInterceptor(ICurrentUserService currentUserService) : SaveChangesInterceptor
+public sealed class AuditableEntityInterceptor : SaveChangesInterceptor
 {
     public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
     {
@@ -24,10 +25,10 @@ public sealed class AuditableEntityInterceptor(ICurrentUserService currentUserSe
 
     private void UpdateEntities(DbContext? context)
     {
-        if (context == null)
-            return;
+        if (context == null) return;
 
-        var user = currentUserService.UserName ?? currentUserService.UserId ?? "System";
+        var currentUserService = context.GetService<ICurrentUserService>();
+        var user = currentUserService?.UserName ?? currentUserService?.UserId ?? "System";
 
         foreach (var entry in context.ChangeTracker.Entries<AuditableEntity>())
         {

@@ -20,7 +20,7 @@ public static class PersistenceKernelExtensions
             throw new InvalidOperationException($"Fail-Fast: Connection string '{connectionStringName}' is missing or empty.");
         }
 
-        builder.Host.Services.AddScoped<AuditableEntityInterceptor>();
+        builder.Host.Services.AddSingleton<AuditableEntityInterceptor>();
         builder.Host.Services.AddSingleton<DbCommandTelemetryInterceptor>();
 
         builder.Host.Services.AddDbContext<TDbContext>((sp, options) =>

@@ -13,7 +13,7 @@ namespace AlbyOnContainers.Kernel.Security;
 
 public static class SecurityKernelExtensions
 {
-    public static IKernelBuilder WithKeycloakAuthentication(this IKernelBuilder builder, string sectionName = "Keycloak")
+    public static IKernelBuilder WithSecurity(this IKernelBuilder builder, string sectionName = "Keycloak")
     {
         var section = builder.Host.Configuration.GetSection(sectionName);
         if (!section.Exists() || string.IsNullOrWhiteSpace(section["Authority"]))
@@ -30,7 +30,7 @@ public static class SecurityKernelExtensions
         return builder;
     }
 
-    public static IKernelBuilder WithKeycloakAuthentication(this IKernelBuilder builder, Action<KeycloakOptions> configureOptions)
+    public static IKernelBuilder WithSecurity(this IKernelBuilder builder, Action<KeycloakOptions> configureOptions)
     {
         builder.Host.Services.AddOptions<KeycloakOptions>()
             .Configure(configureOptions)
