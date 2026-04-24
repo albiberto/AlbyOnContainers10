@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using AlbyOnContainers.Kernel;
 using AlbyOnContainers.Kernel.Caching;
 using AlbyOnContainers.Kernel.Messaging;
@@ -20,12 +21,12 @@ var builder = WebApplication.CreateBuilder(args);
 builder.AddAlbyKernel()
     .WithObservability()
     .WithSecurity()
-    .WithEfCorePersistence<ProductContext>("productdb")
+    .WithEfCorePersistence<ProductContext>((sp, options) => options.UseNpgsql(builder.Configuration.GetConnectionString("productdb")!))
     .WithMessaging(bus =>
     {
         bus.AddConsumers(typeof(Program).Assembly);
     })
-    .WithEfCoreOutbox<ProductContext>()
+    .WithEfCoreOutbox<ProductContext>(o => o.UsePostgres())
     .WithMediator(configurator =>
     {
         configurator.AddConsumers(typeof(ApplicationServiceExtensions).Assembly);

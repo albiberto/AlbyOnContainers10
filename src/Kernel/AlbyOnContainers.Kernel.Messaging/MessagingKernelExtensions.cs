@@ -76,14 +76,14 @@ public static class MessagingKernelExtensions
         return builder;
     }
 
-    public static IKernelBuilder WithEfCoreOutbox<TDbContext>(this IKernelBuilder builder) 
+    public static IKernelBuilder WithEfCoreOutbox<TDbContext>(this IKernelBuilder builder, Action<IEntityFrameworkOutboxConfigurator>? configureOutbox = null) 
         where TDbContext : DbContext
     {
         builder.Host.Services.AddMassTransit(x =>
         {
             x.AddEntityFrameworkOutbox<TDbContext>(o =>
             {
-                o.UsePostgres();
+                configureOutbox?.Invoke(o);
                 o.UseBusOutbox();
             });
         });

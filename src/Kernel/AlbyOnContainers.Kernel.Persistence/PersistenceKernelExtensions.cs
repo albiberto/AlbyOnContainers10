@@ -10,16 +10,9 @@ namespace AlbyOnContainers.Kernel.Persistence;
 
 public static class PersistenceKernelExtensions
 {
-    public static IKernelBuilder WithEfCorePersistence<TDbContext>(this IKernelBuilder builder, string connectionStringName) 
+    public static IKernelBuilder WithEfCorePersistence<TDbContext>(this IKernelBuilder builder, Action<IServiceProvider, DbContextOptionsBuilder> configureOptions) 
         where TDbContext : DbContext
     {
-        var connectionString = builder.Host.Configuration.GetConnectionString(connectionStringName);
-
-        if (string.IsNullOrWhiteSpace(connectionString))
-        {
-            throw new InvalidOperationException($"Fail-Fast: Connection string '{connectionStringName}' is missing or empty.");
-        }
-
         builder.Host.Services.AddSingleton<AuditableEntityInterceptor>();
         builder.Host.Services.AddSingleton<DbCommandTelemetryInterceptor>();
 
@@ -28,8 +21,8 @@ public static class PersistenceKernelExtensions
             var auditableInterceptor = sp.GetRequiredService<AuditableEntityInterceptor>();
             var telemetryInterceptor = sp.GetRequiredService<DbCommandTelemetryInterceptor>();
 
-            options.UseNpgsql(connectionString)
-                   .AddInterceptors(auditableInterceptor, telemetryInterceptor);
+            options.AddInterceptors(auditableInterceptor, telemetryInterceptor);
+            configureOptions(sp, options);
 
             if (builder.Host.Environment.IsDevelopment())
             {
