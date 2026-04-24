@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using AlbyOnContainers.Kernel;
+using AlbyOnContainers.Kernel.Localization;
 using AlbyOnContainers.Kernel.Caching;
 using AlbyOnContainers.Kernel.Messaging;
 using AlbyOnContainers.Kernel.Observability;
@@ -32,7 +33,8 @@ builder.AddAlbyKernel()
         configurator.AddConsumers(typeof(ApplicationServiceExtensions).Assembly);
     })
     .WithCaching(typeof(ApplicationServiceExtensions).Assembly)
-    .WithDistributedLocks();
+    .WithDistributedLocks()
+    .WithLocalization();
 
 // Shared UI Notifier
 builder.Services.Scan(scan => scan
@@ -59,14 +61,9 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddCascadingAuthenticationState();
 
-builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
-
 var app = builder.Build();
 
-app.UseRequestLocalization(new RequestLocalizationOptions()
-    .AddSupportedCultures("en", "it")
-    .AddSupportedUICultures("en", "it")
-    .SetDefaultCulture("it"));
+app.UseKernelLocalization();
 
 if (!app.Environment.IsDevelopment())
 {

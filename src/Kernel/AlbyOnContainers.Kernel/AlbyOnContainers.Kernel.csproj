@@ -18,6 +18,7 @@
         <ProjectReference Include="..\AlbyOnContainers.Kernel.Observability\AlbyOnContainers.Kernel.Observability.csproj" />
         <ProjectReference Include="..\AlbyOnContainers.Kernel.Persistence\AlbyOnContainers.Kernel.Persistence.csproj" />
         <ProjectReference Include="..\AlbyOnContainers.Kernel.Security\AlbyOnContainers.Kernel.Security.csproj" />
+        <ProjectReference Include="..\AlbyOnContainers.Kernel.Localization\AlbyOnContainers.Kernel.Localization.csproj" />
     </ItemGroup>
 
 </Project>
