@@ -20,7 +20,7 @@ public static class CachingKernelExtensions
         }
 
         builder.Host.Services.AddFusionCacheStackExchangeRedisBackplane(options => { options.Configuration = redisConnection; });
-        builder.Host.Services.AddFusionCacheSystemTextJsonSerializer();
+        builder.Host.Services.AddFusionCacheNeueccMessagePackSerializer();
 
         builder.Host.Services.AddFusionCache()
             .WithDefaultEntryOptions(options =>
