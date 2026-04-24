@@ -10,7 +10,7 @@ namespace AlbyOnContainers.Kernel.Caching;
 
 public static class CachingKernelExtensions
 {
-    public static IKernelBuilder WithCaching(this IKernelBuilder builder)
+    public static IKernelBuilder WithCaching(this IKernelBuilder builder, params Assembly[] scanAssemblies)
     {
         var redisConnection = builder.Host.Configuration.GetConnectionString("cache");
 
@@ -31,10 +31,10 @@ public static class CachingKernelExtensions
             })
             .WithRegisteredBackplane();
 
-        var callingAssembly = Assembly.GetCallingAssembly();
+        var assembliesToScan = scanAssemblies.Length > 0 ? scanAssemblies : [Assembly.GetCallingAssembly()];
 
         builder.Host.Services.Scan(scan => scan
-            .FromAssemblies(callingAssembly)
+            .FromAssemblies(assembliesToScan)
             .AddClasses(classes => classes.AssignableTo(typeof(CacheBase<>)))
             .AsSelf()
             .WithSingletonLifetime());

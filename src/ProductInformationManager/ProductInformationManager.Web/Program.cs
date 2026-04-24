@@ -30,7 +30,7 @@ builder.AddAlbyKernel()
     {
         configurator.AddConsumers(typeof(ApplicationServiceExtensions).Assembly);
     })
-    .WithCaching()
+    .WithCaching(typeof(ApplicationServiceExtensions).Assembly)
     .WithDistributedLocks();
 
 // Shared UI Notifier

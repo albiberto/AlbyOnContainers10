@@ -42,6 +42,8 @@ public static class PersistenceKernelExtensions
         // we use AddNpgsqlDataSource or AddNpgsqlDbContext in typical Aspire setups. 
         // The above manual registration provides full control over Interceptors.
         
+        builder.Host.Services.AddHealthChecks().AddDbContextCheck<TDbContext>();
+
         return builder;
     }
 }
