@@ -25,6 +25,7 @@
       <ProjectReference Include="..\..\Kernel\AlbyOnContainers.Kernel.Messaging\AlbyOnContainers.Kernel.Messaging.csproj" />
       <ProjectReference Include="..\..\Kernel\AlbyOnContainers.Kernel.Caching\AlbyOnContainers.Kernel.Caching.csproj" />
       <ProjectReference Include="..\..\Kernel\AlbyOnContainers.Kernel.Abstraction\AlbyOnContainers.Kernel.Abstraction.csproj" />
+      <ProjectReference Include="..\ProductInformationManager.Infrastructure\ProductInformationManager.Infrastructure.csproj" />
     </ItemGroup>
     
 </Project>

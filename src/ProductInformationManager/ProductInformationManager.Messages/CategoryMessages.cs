@@ -1,7 +1,5 @@
 using System;
 using System.Collections.Generic;
-using AlbyOnContainers.Shared.Contracts;
-
 namespace ProductInformationManager.Messages;
 // --- Shared Interface for Formal Validation ---
 public interface ICategorySaveCommand

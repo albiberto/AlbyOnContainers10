@@ -15,7 +15,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\ProductInformationManager.Application\ProductInformationManager.Application.csproj" />
       <ProjectReference Include="..\ProductInformationManager.Domain\ProductInformationManager.Domain.csproj" />
       <ProjectReference Include="..\..\Kernel\AlbyOnContainers.Kernel.Persistence\AlbyOnContainers.Kernel.Persistence.csproj" />
       <ProjectReference Include="..\..\Kernel\AlbyOnContainers.Kernel.Observability\AlbyOnContainers.Kernel.Observability.csproj" />

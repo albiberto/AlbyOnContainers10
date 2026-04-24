@@ -1,4 +1,4 @@
-﻿using System.Reflection;
+using System.Reflection;
 using AlbyOnContainers.Kernel.Abstraction;
 using AlbyOnContainers.Plugins.DistributedLocks.Options;
 using Medallion.Threading;
@@ -11,31 +11,28 @@ namespace AlbyOnContainers.Plugins.DistributedLocks;
 
 public static class DistributedLocksPluginExtensions
 {
-    extension(IKernelBuilder builder)
+    public static IKernelBuilder WithDistributedLocks(this IKernelBuilder builder, Action<DistributedLockOptions> configureOptions)
     {
-        public IKernelBuilder WithDistributedLocks(Action<DistributedLockOptions> configureOptions)
-        {
-            builder.Host.Services.AddOptions<DistributedLockOptions>()
-                .Configure(configureOptions)
-                .ValidateDataAnnotations()
-                .ValidateOnStart();
+        builder.Host.Services.AddOptions<DistributedLockOptions>()
+            .Configure(configureOptions)
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
 
-            builder.Host.Services.AddCoreDistributedLocks(builder.Host.Configuration);
-        
-            return builder;
-        }
+        builder.Host.Services.AddCoreDistributedLocks(builder.Host.Configuration);
+    
+        return builder;
+    }
 
-        public IKernelBuilder WithDistributedLocks(string sectionName = "DistributedLock")
-        {
-            builder.Host.Services.AddOptions<DistributedLockOptions>()
-                .Bind(builder.Host.Configuration.GetSection(sectionName))
-                .ValidateDataAnnotations()
-                .ValidateOnStart();
+    public static IKernelBuilder WithDistributedLocks(this IKernelBuilder builder, string sectionName = "DistributedLock")
+    {
+        builder.Host.Services.AddOptions<DistributedLockOptions>()
+            .Bind(builder.Host.Configuration.GetSection(sectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
 
-            builder.Host.Services.AddCoreDistributedLocks(builder.Host.Configuration);
+        builder.Host.Services.AddCoreDistributedLocks(builder.Host.Configuration);
 
-            return builder;
-        }
+        return builder;
     }
 
     private static void AddCoreDistributedLocks(this IServiceCollection services, IConfiguration configuration)

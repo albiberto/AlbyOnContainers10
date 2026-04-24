@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 using ProductInformationManager.Infrastructure;
 using ProductInformationManager.Messages;
 using ZiggyCreatures.Caching.Fusion;
-using AlbyOnContainers.Shared.Application.Cache;
+using AlbyOnContainers.Kernel.Caching.Cache;
 
 namespace ProductInformationManager.Application.Cache;
 
