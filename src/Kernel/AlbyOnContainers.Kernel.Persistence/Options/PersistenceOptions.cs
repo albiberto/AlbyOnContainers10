@@ -13,4 +13,7 @@ public class PersistenceOptions
 
     public bool EnableDetailedErrors { get; set; } = true;
     public bool EnableSensitiveDataLogging { get; set; } = true;
+
+    /// <summary>Queries exceeding this threshold will be logged as warnings.</summary>
+    public int SlowCommandThresholdMs { get; set; } = 500;
 }

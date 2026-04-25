@@ -1,30 +1,28 @@
 using System.Data.Common;
-using System.Diagnostics;
-using System.Diagnostics.Metrics;
 using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
+using AlbyOnContainers.Kernel.Persistence.Options;
 
 namespace AlbyOnContainers.Kernel.Persistence;
 
+/// <summary>
+/// A Singleton EF Core interceptor responsible solely for slow query and failed query logging.
+/// Metrics (duration histograms, error counters) are delegated to the OpenTelemetry
+/// EF Core instrumentation layer (OpenTelemetry.Instrumentation.EntityFrameworkCore).
+/// </summary>
 public sealed partial class DbCommandTelemetryInterceptor(
     ILogger<DbCommandTelemetryInterceptor> logger,
-    IConfiguration configuration) : DbCommandInterceptor
+    IOptions<PersistenceOptions> options) : DbCommandInterceptor
 {
-    private static readonly Meter Meter = new("AlbyOnContainers.Kernel.Persistence");
-    private static readonly Histogram<double> CommandDuration = Meter.CreateHistogram<double>(
-        "pim_efcore_command_duration",
-        unit: "ms",
-        description: "Execution time for EF Core database commands.");
-    private static readonly Counter<long> CommandErrors = Meter.CreateCounter<long>(
-        "pim_efcore_command_errors",
-        description: "Number of failed EF Core database commands.");
+    // ─── Executed (success) ─────────────────────────────────────────────────
 
-    public override DbDataReader ReaderExecuted(DbCommand command, CommandExecutedEventData eventData, DbDataReader result)
+    public override DbDataReader ReaderExecuted(
+        DbCommand command, CommandExecutedEventData eventData, DbDataReader result)
     {
-        RecordCommand(command, eventData);
+        CheckSlowQuery(command, eventData);
         return result;
     }
 
@@ -34,13 +32,14 @@ public sealed partial class DbCommandTelemetryInterceptor(
         DbDataReader result,
         CancellationToken cancellationToken = default)
     {
-        RecordCommand(command, eventData);
+        CheckSlowQuery(command, eventData);
         return ValueTask.FromResult(result);
     }
 
-    public override object? ScalarExecuted(DbCommand command, CommandExecutedEventData eventData, object? result)
+    public override object? ScalarExecuted(
+        DbCommand command, CommandExecutedEventData eventData, object? result)
     {
-        RecordCommand(command, eventData);
+        CheckSlowQuery(command, eventData);
         return result;
     }
 
@@ -50,13 +49,14 @@ public sealed partial class DbCommandTelemetryInterceptor(
         object? result,
         CancellationToken cancellationToken = default)
     {
-        RecordCommand(command, eventData);
+        CheckSlowQuery(command, eventData);
         return ValueTask.FromResult(result);
     }
 
-    public override int NonQueryExecuted(DbCommand command, CommandExecutedEventData eventData, int result)
+    public override int NonQueryExecuted(
+        DbCommand command, CommandExecutedEventData eventData, int result)
     {
-        RecordCommand(command, eventData);
+        CheckSlowQuery(command, eventData);
         return result;
     }
 
@@ -66,75 +66,65 @@ public sealed partial class DbCommandTelemetryInterceptor(
         int result,
         CancellationToken cancellationToken = default)
     {
-        RecordCommand(command, eventData);
+        CheckSlowQuery(command, eventData);
         return ValueTask.FromResult(result);
     }
 
+    // ─── Failed ─────────────────────────────────────────────────────────────
+
     public override void CommandFailed(DbCommand command, CommandErrorEventData eventData)
-    {
-        RecordFailure(command, eventData);
-    }
+        => LogFailedCommand(command, eventData);
 
     public override Task CommandFailedAsync(
         DbCommand command,
         CommandErrorEventData eventData,
         CancellationToken cancellationToken = default)
     {
-        RecordFailure(command, eventData);
+        LogFailedCommand(command, eventData);
         return Task.CompletedTask;
     }
 
-    private void RecordCommand(DbCommand command, CommandExecutedEventData eventData)
+    // ─── Core logic ─────────────────────────────────────────────────────────
+
+    private void CheckSlowQuery(DbCommand command, CommandExecutedEventData eventData)
     {
         var durationMs = eventData.Duration.TotalMilliseconds;
-        var operation = GetOperation(command);
-        var databaseName = eventData.Context?.Database.GetDbConnection().Database ?? "unknown";
+        var threshold = options.Value.SlowCommandThresholdMs;
 
-        var tags = new TagList
-        {
-            { "db.system", "postgresql" },
-            { "db.name", databaseName },
-            { "db.operation", operation }
-        };
-
-        CommandDuration.Record(durationMs, tags);
-
-        var slowCommandThresholdMs = configuration.GetValue<int>("EfCore:SlowCommandThresholdMs", 500);
-        if (durationMs < slowCommandThresholdMs)
+        if (durationMs < threshold)
         {
             return;
         }
 
+        var operation = GetOperation(command);
+        var database = eventData.Context?.Database.GetDbConnection().Database ?? "unknown";
+
         logger.LogWarning(
-            "PIM EFCore slow command detected. Operation: {Operation}. DurationMs: {DurationMs}. Database: {Database}. CommandText: {CommandText}",
+            "Slow EF Core command detected. Operation: {Operation}, Duration: {DurationMs} ms, " +
+            "Threshold: {ThresholdMs} ms, Database: {Database}, CommandText: {CommandText}",
             operation,
             durationMs,
-            databaseName,
+            threshold,
+            database,
             NormalizeCommandText(command.CommandText));
     }
 
-    private void RecordFailure(DbCommand command, CommandErrorEventData eventData)
+    private void LogFailedCommand(DbCommand command, CommandErrorEventData eventData)
     {
         var operation = GetOperation(command);
-        var databaseName = eventData.Context?.Database.GetDbConnection().Database ?? "unknown";
-
-        var tags = new TagList
-        {
-            { "db.system", "postgresql" },
-            { "db.name", databaseName },
-            { "db.operation", operation }
-        };
-
-        CommandErrors.Add(1, tags);
+        var database = eventData.Context?.Database.GetDbConnection().Database ?? "unknown";
 
         logger.LogError(
             eventData.Exception,
-            "PIM EFCore command failed. Operation: {Operation}. DurationMs: {DurationMs}. Database: {Database}. CommandText: {CommandText}",
+            "EF Core command failed. Operation: {Operation}, Duration: {DurationMs} ms, " +
+            "Database: {Database}, CommandText: {CommandText}",
             operation,
             eventData.Duration.TotalMilliseconds,
-            databaseName,
+            database,
             NormalizeCommandText(command.CommandText));
     }
+
+    // ─── Helpers ─────────────────────────────────────────────────────────────
 
     private static string GetOperation(DbCommand command)
     {

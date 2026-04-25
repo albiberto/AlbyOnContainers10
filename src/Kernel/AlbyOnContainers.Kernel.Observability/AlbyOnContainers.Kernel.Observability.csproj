@@ -10,6 +10,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <PackageReference Include="OpenTelemetry.Instrumentation.EntityFrameworkCore" />
         <ProjectReference Include="..\AlbyOnContainers.Kernel.Abstraction\AlbyOnContainers.Kernel.Abstraction.csproj" />
         <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
         <PackageReference Include="OpenTelemetry.Extensions.Hosting" />

@@ -9,6 +9,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using OpenTelemetry;
 using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 
 namespace AlbyOnContainers.Kernel.Observability;
@@ -73,6 +74,18 @@ public static class ObservabilityKernelExtensions
         });
 
         builder.Host.Services.AddOpenTelemetry()
+            .ConfigureResource(resource =>
+            {
+                var sp = builder.Host.Services.BuildServiceProvider();
+                var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<ObservabilityOptions>>().Value;
+
+                resource.AddService(
+                    serviceName: options.ServiceName,
+                    serviceNamespace: options.Namespace,
+                    serviceInstanceId: System.Environment.MachineName);
+                
+                resource.AddEnvironmentVariableDetector();
+            })
             .WithMetrics(metrics =>
             {
                 metrics.AddAspNetCoreInstrumentation()
@@ -82,42 +95,42 @@ public static class ObservabilityKernelExtensions
                 var sp = builder.Host.Services.BuildServiceProvider();
                 var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<ObservabilityOptions>>().Value;
 
-                foreach (var meter in options.MeterNames)
+                foreach (var meter in options.CustomMeters)
                 {
                     metrics.AddMeter(meter);
                 }
                 
-                // Use auto-discovered assembly name
-                if (scanAssembly.GetName().Name is { } assemblyName && !options.MeterNames.Contains(assemblyName))
+                if (scanAssembly.GetName().Name is { } assemblyName && !options.CustomMeters.Contains(assemblyName))
                 {
                     metrics.AddMeter(assemblyName);
                 }
             })
             .WithTracing(tracing =>
             {
-                tracing.AddSource(builder.Host.Environment.ApplicationName)
-                    .AddAspNetCoreInstrumentation()
-                    .AddHttpClientInstrumentation();
+                tracing.AddAspNetCoreInstrumentation()
+                    .AddHttpClientInstrumentation()
+                    .AddEntityFrameworkCoreInstrumentation();
 
                 var sp = builder.Host.Services.BuildServiceProvider();
                 var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<ObservabilityOptions>>().Value;
 
-                foreach (var source in options.TraceSources)
+                tracing.AddSource(options.ServiceName);
+
+                foreach (var source in options.CustomTracingSources)
                 {
                     tracing.AddSource(source);
                 }
                 
-                if (scanAssembly.GetName().Name is { } assemblyName && !options.TraceSources.Contains(assemblyName))
+                if (scanAssembly.GetName().Name is { } assemblyName && !options.CustomTracingSources.Contains(assemblyName))
                 {
                     tracing.AddSource(assemblyName);
                 }
             });
 
-        // Resolve options for exporter check
         var spExporter = builder.Host.Services.BuildServiceProvider();
         var opt = spExporter.GetRequiredService<Microsoft.Extensions.Options.IOptions<ObservabilityOptions>>().Value;
         
-        var hasEndpoint = !string.IsNullOrWhiteSpace(builder.Host.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]);
+        var hasEndpoint = !string.IsNullOrWhiteSpace(opt.OtlpEndpoint) || !string.IsNullOrWhiteSpace(builder.Host.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]);
         if (opt.EnableOtlpExporter && hasEndpoint)
         {
             builder.Host.Services.AddOpenTelemetry().UseOtlpExporter();
