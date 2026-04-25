@@ -19,7 +19,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // --- ALBY KERNEL SDK ---
 // Using the new Fluent API to configure enterprise infrastructure centrally
-builder.AddAlbyKernel()
+builder.AddKernel()
     .WithObservability()
     .WithSecurity()
     .WithEfCorePersistence<ProductContext>((sp, options) => options.UseNpgsql(builder.Configuration.GetConnectionString("productdb")!))
@@ -32,7 +32,7 @@ builder.AddAlbyKernel()
     {
         configurator.AddConsumers(typeof(ApplicationServiceExtensions).Assembly);
     })
-    .WithCaching(typeof(ApplicationServiceExtensions).Assembly)
+    .WithCaching(opt => opt.RedisConnectionString = builder.Configuration.GetConnectionString("cache")!, typeof(ApplicationServiceExtensions).Assembly)
     .WithDistributedLocks()
     .WithLocalization();
 

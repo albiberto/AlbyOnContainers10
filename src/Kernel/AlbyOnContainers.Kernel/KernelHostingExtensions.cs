@@ -5,8 +5,5 @@ namespace AlbyOnContainers.Kernel;
 
 public static class KernelHostingExtensions
 {
-    public static IKernelBuilder AddAlbyKernel(this IHostApplicationBuilder builder)
-    {
-        return new KernelBuilder(builder);
-    }
+    public static IKernelBuilder AddKernel(this IHostApplicationBuilder builder) => new KernelBuilder(builder);
 }
