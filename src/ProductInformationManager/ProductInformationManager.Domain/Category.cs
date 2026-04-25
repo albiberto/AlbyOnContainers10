@@ -1,9 +1,10 @@
 using System.Text.RegularExpressions;
+using ProductInformationManager.Domain.Events;
 using ProductInformationManager.Domain.ValueObjects;
 
 namespace ProductInformationManager.Domain;
 
-public partial class Category : AuditableEntity
+public partial class Category : AggregateRoot
 {
     private readonly List<Category> _children = [];
     private readonly List<Product> _products = [];
@@ -22,7 +23,7 @@ public partial class Category : AuditableEntity
         Description = description;
         ParentId = parentId;
     }
-    
+
     public CategoryId Id { get; private set; } = null!;
     public string Name { get; private set; } = null!;
     public string Description { get; private set; } = string.Empty;
@@ -30,30 +31,40 @@ public partial class Category : AuditableEntity
     public CategoryId? ParentId { get; init; }
 
     // --- Navigational properties ---
-    
+
     public Category? Parent { get; private set; }
-    
+
     public IReadOnlyCollection<Category> Children => _children;
     public IReadOnlyCollection<Product> Products => _products;
     public IReadOnlyCollection<DescriptionType> DescriptionTypes => _descriptionTypes;
-    
+
     // --- Factory Method ---
-    
+
     public static Category Create(string name, string description, CategoryId? parentId, string parentPath)
     {
         var normalizedName = NormalizePath(name);
         var path = string.IsNullOrWhiteSpace(parentPath) ? normalizedName : $"{parentPath}.{normalizedName}";
-        
-        return new(name, path, description, parentId);
-    }
 
-    // --- Proprietà di navigazione omesse per brevità... ---
+        var category = new Category(name, path, description, parentId);
+        category.AppendEvent(new CategoryCreatedDomainEvent(
+            category.Id.Value, category.Name, category.Description, category.Path, category.ParentId?.Value));
+
+        return category;
+    }
 
     public void Rename(string newName, string? newDescription)
     {
         if (string.IsNullOrWhiteSpace(newName)) throw new DomainException("Name cannot be empty.");
         Name = newName;
         Description = newDescription ?? string.Empty;
+
+        AppendEvent(new CategoryUpdatedDomainEvent(
+            Id.Value, Name, Description, Path, ParentId?.Value));
+    }
+
+    public void MarkDeleted()
+    {
+        AppendEvent(new CategoryDeletedDomainEvent(Id.Value));
     }
 
     private static string NormalizePath(string name) => PathNormalizer().Replace(name.Trim().ToLowerInvariant(), "_").Trim('_');

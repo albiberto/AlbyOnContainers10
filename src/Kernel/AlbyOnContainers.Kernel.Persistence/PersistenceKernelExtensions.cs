@@ -43,13 +43,15 @@ public static class PersistenceKernelExtensions
 
         builder.Host.Services.AddSingleton<AuditableEntityInterceptor>();
         builder.Host.Services.AddSingleton<DbCommandTelemetryInterceptor>();
+        builder.Host.Services.AddSingleton<DomainEventDispatcherInterceptor>();
 
         builder.Host.Services.AddDbContext<TMarker>((sp, options) =>
         {
             var auditableInterceptor = sp.GetRequiredService<AuditableEntityInterceptor>();
             var telemetryInterceptor = sp.GetRequiredService<DbCommandTelemetryInterceptor>();
+            var domainEventInterceptor = sp.GetRequiredService<DomainEventDispatcherInterceptor>();
 
-            options.AddInterceptors(auditableInterceptor, telemetryInterceptor);
+            options.AddInterceptors(auditableInterceptor, telemetryInterceptor, domainEventInterceptor);
 
             var persistenceOptions = sp.GetRequiredService<IOptions<PersistenceOptions>>().Value;
 
