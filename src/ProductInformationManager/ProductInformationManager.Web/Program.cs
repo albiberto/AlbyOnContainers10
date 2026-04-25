@@ -44,8 +44,6 @@ builder.Services.Scan(scan => scan
     .WithSingletonLifetime()
 );
 
-builder.Services.AddScoped<ICurrentUserService, StubCurrentUserService>();
-
 // Application 
 builder.Services.AddApplication();
 
