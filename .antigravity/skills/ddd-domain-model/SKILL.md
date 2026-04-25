@@ -19,21 +19,26 @@ Act as a Principal Domain-Driven Design (DDD) Architect. Your task is to design 
    - Avoid generic `Update(...)` methods that blindly accept every property unless it specifically models a single, cohesive business transaction.
 
 4. **INVARIANT PROTECTION (ALWAYS VALID STATE):** - Every constructor and business mutation method MUST aggressively validate its input parameters before mutating state.
-   - If a business rule, validation, or invariant is violated, the method MUST throw a custom `DomainException` (e.g., `if (string.IsNullOrWhiteSpace(name)) throw new DomainException("Name is required.");`). 
+   - If a business rule, validation, or invariant is violated, the method MUST throw a custom `DomainException` (e.g., `if (string.IsNullOrWhiteSpace(name)) throw new DomainException("Name is required.");`).
    - An entity must NEVER exist in an invalid state at any point in its lifecycle.
 
-5. **ZERO INFRASTRUCTURE DEPENDENCIES (PERSISTENCE IGNORANCE):** - Domain classes MUST remain completely ignorant of databases, ORMs, or serialization frameworks. 
-   - The use of Entity Framework Core data annotations (e.g., `[Table]`, `[Column]`, `[Key]`, `[Required]`) or JSON attributes is STRICTLY FORBIDDEN. 
+5. **ZERO INFRASTRUCTURE DEPENDENCIES (PERSISTENCE IGNORANCE):** - Domain classes MUST remain completely ignorant of databases, ORMs, or serialization frameworks.
+   - The use of Entity Framework Core data annotations (e.g., `[Table]`, `[Column]`, `[Key]`, `[Required]`) or JSON attributes is STRICTLY FORBIDDEN.
    - All database mapping and configuration MUST be handled externally via the Fluent API inside the `DbContext` (`OnModelCreating`).
 
 6. **EF CORE & AUDITING COMPATIBILITY:**
    - Entities should generally inherit from the `AuditableEntity` base class to automatically track creation and update metadata.
    - Every entity MUST include a private parameterless constructor strictly to satisfy EF Core materialization requirements. Always add the comment `// EF Core requirement` next to it (e.g., `private Product() { } // EF Core requirement`).
 
+7. **PURE DOMAIN EVENT DISPATCHING:**
+   - Aggregate Roots MUST maintain a private, ephemeral collection of domain events (e.g., `private readonly List<IDomainEvent> _domainEvents = [];`).
+   - Business methods mutating state MUST append events to this list instead of publishing them directly.
+   - External infrastructure (like EF Core Interceptors) will read this list and push the events to the MassTransit Outbox during `SaveChangesAsync()`.
+
 ## Execution
 When asked to create or modify a Domain Entity:
 1. Ensure all properties are fully encapsulated.
 2. Implement strongly-typed IDs.
-3. Expose behavior via intention-revealing methods.
+3. Expose behavior via intention-revealing methods and append Domain Events.
 4. Protect invariants with `DomainException`.
 5. Keep the class 100% free of infrastructure attributes.
