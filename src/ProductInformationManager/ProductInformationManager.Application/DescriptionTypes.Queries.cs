@@ -1,6 +1,4 @@
 using MassTransit;
-using Microsoft.EntityFrameworkCore;
-using ProductInformationManager.Domain.ValueObjects;
 using ProductInformationManager.Infrastructure;
 using ProductInformationManager.Messages;
 

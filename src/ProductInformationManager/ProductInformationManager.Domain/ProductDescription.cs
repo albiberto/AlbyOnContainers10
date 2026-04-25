@@ -1,5 +1,4 @@
-﻿using AlbyOnContainers.Kernel.Domain;
-using ProductInformationManager.Domain.ValueObjects;
+﻿using ProductInformationManager.Domain.ValueObjects;
 
 namespace ProductInformationManager.Domain;
 

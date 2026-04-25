@@ -1,4 +1,3 @@
-using System;
 using AlbyOnContainers.Kernel.Abstraction;
 using AlbyOnContainers.Kernel.Security.Options;
 using Microsoft.AspNetCore.Authentication;

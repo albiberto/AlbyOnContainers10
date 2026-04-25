@@ -1,6 +1,6 @@
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
-using ProductInformationManager.Application.Cache;
+
 namespace ProductInformationManager.Application;
 
 public static class ApplicationServiceExtensions

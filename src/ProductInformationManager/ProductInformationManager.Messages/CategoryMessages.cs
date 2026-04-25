@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 namespace ProductInformationManager.Messages;
 // --- Shared Interface for Formal Validation ---
 public interface ICategorySaveCommand

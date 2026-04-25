@@ -1,4 +1,3 @@
-using AlbyOnContainers.Kernel.Messaging.Contracts;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;

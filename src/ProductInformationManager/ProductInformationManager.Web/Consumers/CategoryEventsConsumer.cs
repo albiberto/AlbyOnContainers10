@@ -1,6 +1,5 @@
 using ProductInformationManager.Contracts;
 using MassTransit;
-using Microsoft.Extensions.Logging;
 using ProductInformationManager.Web.Notifiers;
 
 namespace ProductInformationManager.Web.Consumers;

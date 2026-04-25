@@ -1,4 +1,3 @@
-using AlbyOnContainers.Kernel.Domain;
 using ProductInformationManager.Domain.ValueObjects;
 
 
