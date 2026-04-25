@@ -14,18 +14,12 @@ public static class SecurityKernelExtensions
 {
     public static IKernelBuilder WithSecurity(this IKernelBuilder builder, string sectionName = "Keycloak")
     {
-        var section = builder.Host.Configuration.GetSection(sectionName);
-        if (!section.Exists() || string.IsNullOrWhiteSpace(section["Authority"]))
-        {
-            throw new InvalidOperationException($"Fail-Fast: Configuration section '{sectionName}' is missing or 'Authority' is not set. Security cannot be established.");
-        }
-
         builder.Host.Services.AddOptions<KeycloakOptions>()
-            .Bind(section)
+            .BindConfiguration(sectionName)
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
-        builder.AddInternalKeycloakAuth();
+        builder.AddInternalKeycloakAuth(typeof(SecurityKernelExtensions).Assembly);
         return builder;
     }
 
@@ -36,27 +30,35 @@ public static class SecurityKernelExtensions
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
-        builder.AddInternalKeycloakAuth();
+        builder.AddInternalKeycloakAuth(typeof(SecurityKernelExtensions).Assembly);
         return builder;
     }
 
-    private static IKernelBuilder AddInternalKeycloakAuth(this IKernelBuilder builder)
+    public static IKernelBuilder WithSecurity<TMarker>(this IKernelBuilder builder, string sectionName = "Keycloak")
     {
-        // Bind the options early to know the SchemeName
-        var keycloakOptions = builder.Host.Configuration.GetSection("Keycloak").Get<KeycloakOptions>() ?? new KeycloakOptions();
+        builder.Host.Services.AddOptions<KeycloakOptions>()
+            .BindConfiguration(sectionName)
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
 
+        builder.AddInternalKeycloakAuth(typeof(TMarker).Assembly);
+        return builder;
+    }
+
+    private static IKernelBuilder AddInternalKeycloakAuth(this IKernelBuilder builder, System.Reflection.Assembly scanAssembly)
+    {
         builder.Host.Services.AddAuthentication(options =>
         {
             options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-            options.DefaultChallengeScheme = keycloakOptions.SchemeName;
+            options.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
         })
         .AddCookie()
-        .AddOpenIdConnect(keycloakOptions.SchemeName, options =>
+        .AddOpenIdConnect(OpenIdConnectDefaults.AuthenticationScheme, options =>
         {
-            // The options are configured via IConfigureNamedOptions
+            // Configure via IConfigureNamedOptions
         });
 
-        builder.Host.Services.AddOptions<OpenIdConnectOptions>(keycloakOptions.SchemeName)
+        builder.Host.Services.AddOptions<OpenIdConnectOptions>(OpenIdConnectDefaults.AuthenticationScheme)
             .Configure<IOptions<KeycloakOptions>>((options, keycloakOptionsAccessor) =>
             {
                 var cfg = keycloakOptionsAccessor.Value;

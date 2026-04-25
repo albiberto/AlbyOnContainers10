@@ -1,113 +1,94 @@
 using System;
+using System.Reflection;
 using AlbyOnContainers.Kernel.Abstraction;
 using AlbyOnContainers.Kernel.Messaging.Filters;
+using AlbyOnContainers.Kernel.Messaging.Options;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace AlbyOnContainers.Kernel.Messaging;
 
 public static class MessagingKernelExtensions
 {
-    public static IKernelBuilder WithMessaging(this IKernelBuilder builder, Action<IBusRegistrationConfigurator>? configureBus = null)
+    public static IKernelBuilder WithMessaging(this IKernelBuilder builder, string sectionName = MessagingOptions.SectionName)
     {
-        var connectionString = builder.Host.Configuration.GetConnectionString("messaging");
+        builder.Host.Services.AddOptions<MessagingOptions>()
+            .BindConfiguration(sectionName)
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
 
-        if (string.IsNullOrWhiteSpace(connectionString))
-        {
-            throw new InvalidOperationException("Fail-Fast: Connection string 'messaging' not found. Distributed messaging cannot be established.");
-        }
+        builder.AddInternalMessaging(typeof(MessagingKernelExtensions).Assembly);
+        return builder;
+    }
 
+    public static IKernelBuilder WithMessaging(this IKernelBuilder builder, Action<MessagingOptions> configureOptions)
+    {
+        builder.Host.Services.AddOptions<MessagingOptions>()
+            .Configure(configureOptions)
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        builder.AddInternalMessaging(typeof(MessagingKernelExtensions).Assembly);
+        return builder;
+    }
+
+    public static IKernelBuilder WithMessaging<TMarker>(this IKernelBuilder builder, string sectionName = MessagingOptions.SectionName)
+    {
+        builder.Host.Services.AddOptions<MessagingOptions>()
+            .BindConfiguration(sectionName)
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        builder.AddInternalMessaging(typeof(TMarker).Assembly);
+        return builder;
+    }
+
+    private static void AddInternalMessaging(this IKernelBuilder builder, Assembly scanAssembly)
+    {
         builder.Host.Services.AddMassTransit(x =>
         {
             x.SetKebabCaseEndpointNameFormatter();
             x.DisableUsageTelemetry();
 
-            configureBus?.Invoke(x);
+            x.AddConsumers(scanAssembly);
 
             x.UsingRabbitMq((context, cfg) =>
             {
-                cfg.Host(connectionString);
+                var options = context.GetRequiredService<IOptions<MessagingOptions>>().Value;
+                cfg.Host(options.ConnectionString);
 
                 cfg.UseConsumeFilter(typeof(ConsumeTelemetryFilter<>), context);
                 cfg.UseConsumeFilter(typeof(GlobalExceptionFilter<>), context);
                 cfg.UseConsumeFilter(typeof(ValidationFilter<>), context);
 
-                var filterOptions = context.GetService<Microsoft.Extensions.Options.IOptions<MessagingFilterOptions>>()?.Value;
-                if (filterOptions != null)
-                {
-                    foreach (var filterType in filterOptions.FilterTypes)
-                    {
-                        cfg.UseConsumeFilter(filterType, context);
-                    }
-                }
-
                 cfg.ConfigureEndpoints(context);
             });
         });
 
-        return builder;
-    }
-
-    public static IKernelBuilder WithMediator(this IKernelBuilder builder, Action<IMediatorRegistrationConfigurator> configureConsumers)
-    {
+        // Add mediator by default to support CQRS 
         builder.Host.Services.AddMediator(cfg =>
         {
-            configureConsumers(cfg);
+            cfg.AddConsumers(scanAssembly);
 
             cfg.ConfigureMediator((context, mcfg) =>
             {
                 mcfg.UseConsumeFilter(typeof(ConsumeTelemetryFilter<>), context);
                 mcfg.UseConsumeFilter(typeof(GlobalExceptionFilter<>), context);
                 mcfg.UseConsumeFilter(typeof(ValidationFilter<>), context);
-
-                var filterOptions = context.GetService<Microsoft.Extensions.Options.IOptions<MessagingFilterOptions>>()?.Value;
-                if (filterOptions != null)
-                {
-                    foreach (var filterType in filterOptions.FilterTypes)
-                    {
-                        mcfg.UseConsumeFilter(filterType, context);
-                    }
-                }
             });
         });
-
-        return builder;
     }
 
-    public static IKernelBuilder WithEfCoreOutbox<TDbContext>(this IKernelBuilder builder, Action<IEntityFrameworkOutboxConfigurator>? configureOutbox = null) 
+    // Methods extending something other than IKernelBuilder do not violate the rule
+    public static void AddAlbyOutbox<TDbContext>(this IBusRegistrationConfigurator x, Action<IEntityFrameworkOutboxConfigurator>? configureOutbox = null) 
         where TDbContext : DbContext
     {
-        builder.Host.Services.AddMassTransit(x =>
+        x.AddEntityFrameworkOutbox<TDbContext>(o =>
         {
-            x.AddEntityFrameworkOutbox<TDbContext>(o =>
-            {
-                configureOutbox?.Invoke(o);
-                o.UseBusOutbox();
-            });
+            configureOutbox?.Invoke(o);
+            o.UseBusOutbox();
         });
-
-        return builder;
     }
-
-    public static IKernelBuilder AddMessagingFilter<TFilter>(this IKernelBuilder builder)
-        where TFilter : class, IFilter<ConsumeContext>
-    {
-        // To allow appending filters globally, we can use an IConfigurationObserver or just rely on a startup filter.
-        // Wait, MassTransit allows registering global filters via AddPipeSpecificationObserver
-        // However, a simpler way in MassTransit v8+ is to register the filter in DI, and then when calling UsingRabbitMq or ConfigureMediator, use it.
-        // Since we are creating a Fluent API, it's better to store custom filters in the service collection as a list of types.
-        builder.Host.Services.Configure<MessagingFilterOptions>(options =>
-        {
-            options.FilterTypes.Add(typeof(TFilter));
-        });
-
-        return builder;
-    }
-}
-
-public class MessagingFilterOptions
-{
-    public System.Collections.Generic.List<Type> FilterTypes { get; } = new();
 }

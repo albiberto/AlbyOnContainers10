@@ -12,29 +12,40 @@ namespace AlbyOnContainers.Kernel.Caching;
 
 public static class CachingKernelExtensions
 {
-    public static IKernelBuilder WithCaching(this IKernelBuilder builder, params Assembly[] scanAssemblies)
+    public static IKernelBuilder WithCaching(this IKernelBuilder builder, string sectionName = CachingOptions.SectionName)
     {
         builder.Host.Services.AddOptions<CachingOptions>()
-            .BindConfiguration(CachingOptions.SectionName)
+            .BindConfiguration(sectionName)
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
-        builder.AddInternalCaching(scanAssemblies);
+        builder.AddInternalCaching(Assembly.GetCallingAssembly());
         return builder;
     }
 
-    public static IKernelBuilder WithCaching(this IKernelBuilder builder, Action<CachingOptions> configureOptions, params Assembly[] scanAssemblies)
+    public static IKernelBuilder WithCaching(this IKernelBuilder builder, Action<CachingOptions> configureOptions)
     {
         builder.Host.Services.AddOptions<CachingOptions>()
             .Configure(configureOptions)
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
-        builder.AddInternalCaching(scanAssemblies);
+        builder.AddInternalCaching(Assembly.GetCallingAssembly());
         return builder;
     }
 
-    private static void AddInternalCaching(this IKernelBuilder builder, Assembly[] scanAssemblies)
+    public static IKernelBuilder WithCaching<TMarker>(this IKernelBuilder builder, string sectionName = CachingOptions.SectionName)
+    {
+        builder.Host.Services.AddOptions<CachingOptions>()
+            .BindConfiguration(sectionName)
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        builder.AddInternalCaching(typeof(TMarker).Assembly);
+        return builder;
+    }
+
+    private static void AddInternalCaching(this IKernelBuilder builder, Assembly scanAssembly)
     {
         builder.Host.Services.AddOptions<RedisBackplaneOptions>()
             .Configure<IOptions<CachingOptions>>((redis, opt) =>
@@ -57,10 +68,8 @@ public static class CachingKernelExtensions
         builder.Host.Services.AddFusionCache()
             .WithRegisteredBackplane();
 
-        var assemblies = scanAssemblies.Length > 0 ? scanAssemblies : [Assembly.GetCallingAssembly()];
-
         builder.Host.Services.Scan(scan => scan
-            .FromAssemblies(assemblies)
+            .FromAssemblies(scanAssembly)
             .AddClasses(classes => classes.AssignableTo(typeof(CacheBase<>)))
             .AsSelf()
             .WithSingletonLifetime());

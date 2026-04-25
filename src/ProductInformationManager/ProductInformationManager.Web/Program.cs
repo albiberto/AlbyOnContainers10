@@ -22,19 +22,13 @@ var builder = WebApplication.CreateBuilder(args);
 builder.AddKernel()
     .WithObservability()
     .WithSecurity()
-    .WithEfCorePersistence<ProductContext>((sp, options) => options.UseNpgsql(builder.Configuration.GetConnectionString("productdb")!))
-    .WithMessaging(bus =>
-    {
-        bus.AddConsumers(typeof(Program).Assembly);
-    })
-    .WithEfCoreOutbox<ProductContext>(o => o.UsePostgres())
-    .WithMediator(configurator =>
-    {
-        configurator.AddConsumers(typeof(ApplicationServiceExtensions).Assembly);
-    })
-    .WithCaching(opt => opt.RedisConnectionString = builder.Configuration.GetConnectionString("cache")!, typeof(ApplicationServiceExtensions).Assembly)
+    .WithPersistence<ProductContext>()
+    .WithMessaging<IApplicationAssemblyMarker>()
+    .WithCaching<IApplicationAssemblyMarker>()
     .WithDistributedLocks()
     .WithLocalization();
+
+builder.Services.AddMassTransit(x => x.AddEntityFrameworkOutbox<ProductContext>(o => o.UsePostgres()));
 
 // Shared UI Notifier
 builder.Services.Scan(scan => scan

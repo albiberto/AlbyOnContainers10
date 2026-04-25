@@ -16,7 +16,7 @@ public static class LocalizationKernelExtensions
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
-        builder.AddInternalLocalization();
+        builder.AddInternalLocalization(typeof(LocalizationKernelExtensions).Assembly);
         return builder;
     }
 
@@ -27,11 +27,22 @@ public static class LocalizationKernelExtensions
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
-        builder.AddInternalLocalization();
+        builder.AddInternalLocalization(typeof(LocalizationKernelExtensions).Assembly);
         return builder;
     }
 
-    private static void AddInternalLocalization(this IKernelBuilder builder)
+    public static IKernelBuilder WithLocalization<TMarker>(this IKernelBuilder builder, string configurationSection = LocalizationOptions.SectionName)
+    {
+        builder.Host.Services.AddOptions<LocalizationOptions>()
+            .BindConfiguration(configurationSection)
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        builder.AddInternalLocalization(typeof(TMarker).Assembly);
+        return builder;
+    }
+
+    private static void AddInternalLocalization(this IKernelBuilder builder, System.Reflection.Assembly scanAssembly)
     {
         builder.Host.Services.AddLocalization();
         
