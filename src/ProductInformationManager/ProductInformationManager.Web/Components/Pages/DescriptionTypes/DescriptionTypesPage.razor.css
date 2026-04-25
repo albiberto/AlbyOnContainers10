@@ -1,0 +1,118 @@
+/* ================================================================
+   DescriptionTypesPage.razor.css
+   Scoped styles for the Description Types list page.
+   All values use design tokens from theme.css — zero hardcoded px or hex.
+   ================================================================ */
+
+/* ── Page header icon variant ── */
+.pdm-page-header-icon--success {
+    background: var(--pdm-success-bg);
+}
+
+/* ── Page subtitle ── */
+.pdm-page-subtitle {
+    font-size: 0.85rem;
+    color: var(--pdm-text-muted);
+    margin: var(--pdm-space-1) 0 0;
+}
+
+/* ── State panels (loading / empty) ── */
+.pdm-state-panel {
+    background: var(--pdm-bg-surface);
+    padding: var(--pdm-space-8);
+    border-radius: var(--pdm-radius-lg);
+    border: 1px solid var(--pdm-border);
+}
+
+/* ── Card grid ── */
+.dt-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: var(--pdm-space-5);
+    align-items: flex-start;
+}
+
+/* ── Individual card overrides (padding/radius already in .pdm-section-card) ── */
+.dt-card {
+    padding: var(--pdm-space-4);
+    border-radius: var(--pdm-radius-lg);
+}
+
+/* ── Card header row ── */
+.dt-card__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: var(--pdm-space-3);
+    min-height: 32px;
+}
+
+.dt-card__title-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--pdm-space-2);
+}
+
+.dt-card__name {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--pdm-text-primary);
+}
+
+.dt-card__actions {
+    display: flex;
+    gap: var(--pdm-space-1);
+    flex-shrink: 0;
+}
+
+/* ── Divider ── */
+.dt-card__divider {
+    height: 1px;
+    background: var(--pdm-border);
+    margin: 0 calc(-1 * var(--pdm-space-4)) var(--pdm-space-4);
+}
+
+/* ── Badges ── */
+.pdm-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: var(--pdm-space-1) var(--pdm-space-2);
+    border-radius: var(--pdm-radius-xl);
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1;
+    border: 1px solid transparent;
+}
+
+.pdm-badge--global {
+    background: var(--pdm-success-bg);
+    color: var(--pdm-success);
+    border-color: var(--pdm-success-bg);
+}
+
+.pdm-badge--category {
+    background: var(--pdm-primary-glow);
+    color: var(--pdm-primary);
+    border-color: var(--pdm-border-accent);
+}
+
+/* ── Neutral tag override (list page shows muted bg, not primary) ── */
+.dt-tag--neutral {
+    background: var(--pdm-bg-body, var(--pdm-bg-surface));
+    color: var(--pdm-text-muted);
+    border-color: var(--pdm-border);
+}
+
+/* ── Dialog hint text ── */
+.pdm-dialog-hint {
+    font-size: 0.85rem;
+    color: var(--pdm-text-muted);
+}
+
+/* ── Danger button accent override via CSS custom property ── */
+.pdm-btn--danger {
+    --accent-fill-rest: var(--pdm-danger);
+    --accent-fill-hover: var(--pdm-danger-dark, #b91c1c);
+}

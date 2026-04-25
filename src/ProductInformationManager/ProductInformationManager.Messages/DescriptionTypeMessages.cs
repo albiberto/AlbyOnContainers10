@@ -14,6 +14,12 @@ public record CreateDescriptionTypeResult(bool Success, Guid Id = default, strin
 public record UpdateDescriptionType(Guid Id, string Name, string? Description);
 public record UpdateDescriptionTypeResult(bool Success, string? ErrorMessage = null);
 
+public record AddCategoryDescriptionRule(Guid CategoryId, Guid DescriptionTypeId, bool IsRequired);
+public record AddCategoryDescriptionRuleResult(bool Success, string? ErrorMessage = null);
+
+public record RemoveCategoryDescriptionRule(Guid CategoryId, Guid DescriptionTypeId);
+public record RemoveCategoryDescriptionRuleResult(bool Success, string? ErrorMessage = null);
+
 public record DeleteDescriptionType(Guid Id);
 public record DeleteDescriptionTypeResult(bool Success, string? ErrorMessage = null);
 

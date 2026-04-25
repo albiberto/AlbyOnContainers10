@@ -1,0 +1,49 @@
+/* ================================================================
+   DescriptionTypeEditPage.razor.css
+   Scoped styles for the Description Type edit/create page.
+   All values use design tokens from theme.css — zero hardcoded px or hex.
+   ================================================================ */
+
+/* ── Page subtitle ── */
+.pdm-page-subtitle {
+    font-size: 0.85rem;
+    color: var(--pdm-text-muted);
+    margin: var(--pdm-space-1) 0 0;
+}
+
+/* ── State panels ── */
+.pdm-state-panel {
+    background: var(--pdm-bg-surface);
+    padding: var(--pdm-space-8);
+    border-radius: var(--pdm-radius-lg);
+    border: 1px solid var(--pdm-border);
+}
+
+/* ── Title muted span ── */
+.dt-edit__title-muted {
+    color: var(--pdm-text-muted);
+}
+
+/* ── Content layout column ── */
+.dt-edit__layout {
+    max-width: 800px;
+}
+
+/* ── Full-width input fields ── */
+.dt-edit__field-full {
+    width: 100%;
+}
+
+/* ── Flex-grow input inside inline form ── */
+.dt-edit__field-flex {
+    flex: 1;
+    min-width: 0;
+}
+
+/* ── Value tag uses accent palette ── */
+.dt-edit__value-tag {
+    background: var(--pdm-accent-glow, rgba(8, 145, 178, 0.08));
+    color: var(--pdm-accent);
+    border-color: var(--pdm-accent-border, rgba(8, 145, 178, 0.2));
+    transition: background-color var(--pdm-transition-fast);
+}

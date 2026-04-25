@@ -1,331 +1,307 @@
-@* @page "/description-types/edit" *@
-@* @implements IDisposable *@
-@* @using MassTransit *@
-@* @using System.Reactive.Linq *@
-@* @using ProductInformationManager.Web.Services *@
-@* *@
-@* @inject CatalogUiNotifier UiNotifier *@
-@* @inject IRequestClient<GetDescriptionTypeById> GetClient *@
-@* @inject IRequestClient<CreateDescriptionType> CreateClient *@
-@* @inject IRequestClient<UpdateDescriptionType> UpdateClient *@
-@* @inject IRequestClient<SetDescriptionTypeGlobal> SetGlobalClient *@
-@* @inject IRequestClient<AddDescriptionValue> AddValueClient *@
-@* @inject IRequestClient<DeleteDescriptionValue> DeleteValueClient *@
-@* @inject IRequestClient<SearchCategory> GetCategoriesClient *@
-@* @inject IRequestClient<AddCategoryDescriptionRule> AddRuleClient *@
-@* @inject IRequestClient<RemoveCategoryDescriptionRule> RemoveRuleClient *@
-@* @inject IToastService ToastService *@
-@* @inject NavigationManager NavManager *@
-@* *@
-@* <PageTitle>@(Id.HasValue ? "Edit" : "Create") Description Type — Product Data Manager</PageTitle> *@
-@* *@
-@* <div class="pdm-animate-in"> *@
-@*     <div class="pdm-page-header"> *@
-@*         <div> *@
-@*             <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center" Style="gap: 8px;"> *@
-@*                 <FluentButton Appearance="Appearance.Stealth" IconStart="@(new Icons.Regular.Size16.ArrowLeft())" OnClick="@(() => NavManager.NavigateTo("/description-types"))" /> *@
-@*                 <h1> *@
-@*                     <span>@(Id.HasValue ? "Edit: " : "Create: ")</span> *@
-@*                     <span style="color: var(--pdm-text-muted);">@(_dt?.Name ?? "New Description Type")</span> *@
-@*                 </h1> *@
-@*             </FluentStack> *@
-@*             <div style="font-size: 0.85rem; color: var(--pdm-text-muted); margin-top: 2px;">Manage details and description values for this aggregate</div> *@
-@*         </div> *@
-@*         @if (!Id.HasValue) *@
-@*         { *@
-@*             <FluentButton Appearance="Appearance.Accent" OnClick="CreateNew" Loading="_creating" IconStart="@(new Icons.Regular.Size16.Save())" Disabled="@(string.IsNullOrWhiteSpace(_formName))"> *@
-@*                 Create & Continue *@
-@*             </FluentButton> *@
-@*         } *@
-@*     </div> *@
-@* *@
-@*     @if (_loading) *@
-@*     { *@
-@*         <div class="pdm-loading-state" style="padding: 40px;"> *@
-@*             <FluentProgressRing /> *@
-@*             <span>Loading description type details...</span> *@
-@*         </div> *@
-@*     } *@
-@*     else if (_dt is null && Id.HasValue) *@
-@*     { *@
-@*         <div class="pdm-empty-state"> *@
-@*             <div class="pdm-empty-state__icon"> *@
-@*                 <FluentIcon Value="@(new Icons.Regular.Size24.ErrorCircle())" Color="Color.Custom" CustomColor="#ef4444" /> *@
-@*             </div> *@
-@*             <p>Description Type not found.</p> *@
-@*         </div> *@
-@*     } *@
-@*     else *@
-@*     { *@
-@*         <div style="max-width: 800px; display: flex; flex-direction: column; gap: 24px;"> *@
-@*             <div class="pdm-section-card"> *@
-@*                 <div class="pdm-section-card__header"> *@
-@*                     <h3 class="pdm-section-card__title">General Settings</h3> *@
-@*                 </div> *@
-@*                 <div class="pdm-section-card__content"> *@
-@*                     <FluentStack Orientation="Orientation.Vertical" Style="gap: 16px;"> *@
-@*                         <FluentTextField @bind-Value="_formName" @bind-Value:after="HandleNameChanged" Label="Name" Required="true" Style="width: 100%;" /> *@
-@*                         <FluentTextArea @bind-Value="_formDescription" @bind-Value:after="HandleDescChanged" Label="Description" Rows="2" Style="width: 100%;" /> *@
-@*                          *@
-@*                         @if (Id.HasValue) *@
-@*                         { *@
-@*                             <div> *@
-@*                                 <FluentCheckbox @bind-Value="_formIsGlobal" @bind-Value:after="HandleGlobalChanged" Label="Is Global Schema (applies to all products across any category)" /> *@
-@*                             </div> *@
-@* *@
-@*                             <FluentSelect TOption="CategoryFlatDto" *@
-@*                                           Items="@_allCategories" *@
-@*                                           Label="Assign to Category Branch (1-to-Many strict enforcement)" *@
-@*                                           OptionText="@(c => c.Name)" *@
-@*                                           OptionValue="@(c => c.Id.ToString())" *@
-@*                                           @bind-SelectedOption="_selectedCategory" *@
-@*                                           @bind-SelectedOption:after="HandleCategoryChanged" *@
-@*                                           Placeholder="Select a category..." *@
-@*                                           Disabled="@_formIsGlobal" *@
-@*                                           Style="width: 100%;" /> *@
-@*                         } *@
-@*                     </FluentStack> *@
-@*                 </div> *@
-@*             </div> *@
-@* *@
-@*             @if (Id.HasValue) *@
-@*             { *@
-@*                 <div class="pdm-section-card"> *@
-@*                     <div class="pdm-section-card__header"> *@
-@*                         <h3 class="pdm-section-card__title">Description Values (Pills)</h3> *@
-@*                     </div> *@
-@*                     <div class="pdm-section-card__content"> *@
-@*                         <div class="pdm-tags-container" style="gap: 8px;"> *@
-@*                             @foreach (var value in _dt.Values) *@
-@*                             { *@
-@*                                 <span class="pdm-tag" style="background: rgba(6, 182, 212, 0.1); color: #0891b2; border: 1px solid rgba(6, 182, 212, 0.2); transition: all 0.2s;"> *@
-@*                                     @value.Value *@
-@*                                     <button class="pdm-tag-remove" title="Remove value" @onclick="@(() => RemoveValue(value.Id))"> *@
-@*                                         <FluentIcon Value="@(new Icons.Regular.Size12.Dismiss())" Color="Color.Custom" CustomColor="#0891b2" /> *@
-@*                                     </button> *@
-@*                                 </span> *@
-@*                             } *@
-@*                             @if (!_dt.Values.Any()) *@
-@*                             { *@
-@*                                 <span class="pdm-no-items-text">No values defined yet.</span> *@
-@*                             } *@
-@*                         </div> *@
-@* *@
-@*                         <div class="pdm-inline-form" style="margin-top: 16px;"> *@
-@*                             <FluentTextField @bind-Value="_newValueText" Placeholder="New value..." Style="flex: 1;" /> *@
-@*                             <FluentButton Appearance="Appearance.Outline" IconStart="@(new Icons.Regular.Size16.Add())" OnClick="AddValue" Loading="_addingValue">Add Locally</FluentButton> *@
-@*                         </div> *@
-@*                     </div> *@
-@*                 </div> *@
-@*             } *@
-@*         </div> *@
-@*     } *@
-@* </div> *@
-@* *@
-@* @code { *@
-@*     [SupplyParameterFromQuery]  *@
-@*     public Guid? Id { get; set; } *@
-@* *@
-@*     private DescriptionTypeDto? _dt; *@
-@*     private List<CategoryFlatDto> _allCategories = []; *@
-@*      *@
-@*     private bool _loading = true; *@
-@*     private bool _creating = false; *@
-@*     private bool _addingValue = false; *@
-@* *@
-@*     // Form fields *@
-@*     private string _formName = string.Empty; *@
-@*     private string? _formDescription; *@
-@*     private bool _formIsGlobal; *@
-@*     private CategoryFlatDto? _selectedCategory; *@
-@*     private Guid? _originalCategoryId; *@
-@* *@
-@*     // Local State values *@
-@*     private string _newValueText = string.Empty; *@
-@* *@
-@*     private IDisposable? _subscription; *@
-@* *@
-@*     protected override async Task OnInitializedAsync() *@
-@*     { *@
-@*         await LoadData(); *@
-@* *@
-@*         _subscription = UiNotifier.DescriptionTypeChanges *@
-@*             .Where(id => Id.HasValue && id == Id.Value) *@
-@*             .Sample(TimeSpan.FromMilliseconds(500)) *@
-@*             .Subscribe(_ => *@
-@*             { *@
-@*                 InvokeAsync(async () => *@
-@*                 { *@
-@*                     var response = await GetClient.GetResponse<GetDescriptionTypeByIdResult>(new GetDescriptionTypeById(Id!.Value)); *@
-@*                     _dt = response.Message.DescriptionType; *@
-@*                     if (_dt is not null) *@
-@*                     { *@
-@*                         // Update UI seamlessly *@
-@*                         StateHasChanged(); *@
-@*                     } *@
-@*                 }); *@
-@*             }); *@
-@*     } *@
-@* *@
-@*     public void Dispose() *@
-@*     { *@
-@*         _subscription?.Dispose(); *@
-@*     } *@
-@* *@
-@*     private async Task LoadData() *@
-@*     { *@
-@*         _loading = true; *@
-@*          *@
-@*         var catResponse = await GetCategoriesClient.GetResponse<GetAllCategoriesFlatResult>(new SearchCategory()); *@
-@*         _allCategories = catResponse.Message.Categories; *@
-@* *@
-@*         if (Id.HasValue) *@
-@*         { *@
-@*             var response = await GetClient.GetResponse<GetDescriptionTypeByIdResult>(new GetDescriptionTypeById(Id.Value)); *@
-@*             _dt = response.Message.DescriptionType; *@
-@* *@
-@*             if (_dt is not null) *@
-@*             { *@
-@*                 _formName = _dt.Name; *@
-@*                 _formDescription = _dt.Description; *@
-@*                 _formIsGlobal = _dt.IsGlobal; *@
-@*                 _originalCategoryId = _dt.CategoryId; *@
-@* *@
-@*                 if (_dt.CategoryId.HasValue) *@
-@*                 { *@
-@*                     _selectedCategory = _allCategories.FirstOrDefault(c => c.Id == _dt.CategoryId.Value); *@
-@*                 } *@
-@*             } *@
-@*         } *@
-@*         else *@
-@*         { *@
-@*             _formName = string.Empty; *@
-@*             _formDescription = null; *@
-@*             _formIsGlobal = false; *@
-@*             _originalCategoryId = null; *@
-@*             _selectedCategory = null; *@
-@*         } *@
-@* *@
-@*         _loading = false; *@
-@*     } *@
-@* *@
-@*     private async Task CreateNew() *@
-@*     { *@
-@*         if (string.IsNullOrWhiteSpace(_formName)) return; *@
-@*         _creating = true; *@
-@* *@
-@*         var createResp = await CreateClient.GetResponse<CreateDescriptionTypeResult>(new CreateDescriptionType(_formName, _formDescription)); *@
-@*         if (!createResp.Message.Success) *@
-@*         { *@
-@*             ToastService.ShowError(createResp.Message.ErrorMessage ?? "Errore durante la creazione"); *@
-@*             _creating = false; *@
-@*             return; *@
-@*         } *@
-@* *@
-@*         ToastService.ShowSuccess("Description Type creato, ora puoi aggiungere valori e regole."); *@
-@*         NavManager.NavigateTo($"/description-types/edit?id={createResp.Message.Id}", forceLoad: false); *@
-@*         Id = createResp.Message.Id; *@
-@*         await LoadData(); *@
-@*         _creating = false; *@
-@*     } *@
-@* *@
-@*     private async Task HandleNameChanged() *@
-@*     { *@
-@*         if (_dt == null || string.IsNullOrWhiteSpace(_formName) || _formName == _dt.Name) return; *@
-@*         var updateResp = await UpdateClient.GetResponse<UpdateDescriptionTypeResult>(new UpdateDescriptionType(_dt.Id, _formName, _formDescription)); *@
-@*         if (!updateResp.Message.Success) { *@
-@*             ToastService.ShowError(updateResp.Message.ErrorMessage ?? "Errore aggiornamento nome"); *@
-@*             _formName = _dt.Name; // Revert *@
-@*         } *@
-@*     } *@
-@* *@
-@*     private async Task HandleDescChanged() *@
-@*     { *@
-@*         if (_dt == null || _formDescription == _dt.Description) return; *@
-@*         var updateResp = await UpdateClient.GetResponse<UpdateDescriptionTypeResult>(new UpdateDescriptionType(_dt.Id, _formName, _formDescription)); *@
-@*         if (!updateResp.Message.Success) { *@
-@*             ToastService.ShowError(updateResp.Message.ErrorMessage ?? "Errore aggiornamento descrizione"); *@
-@*             _formDescription = _dt.Description; // Revert *@
-@*         } *@
-@*     } *@
-@* *@
-@*     private async Task HandleGlobalChanged() *@
-@*     { *@
-@*         if (_dt == null || _formIsGlobal == _dt.IsGlobal) return; *@
-@*         var glResp = await SetGlobalClient.GetResponse<SetDescriptionTypeGlobalResult>(new SetDescriptionTypeGlobal(_dt.Id, _formIsGlobal)); *@
-@*         if (!glResp.Message.Success) { *@
-@*             ToastService.ShowError(glResp.Message.ErrorMessage ?? "Errore impostazione flag globale"); *@
-@*             _formIsGlobal = _dt.IsGlobal; // Revert *@
-@*         } *@
-@*     } *@
-@* *@
-@*     private async Task HandleCategoryChanged() *@
-@*     { *@
-@*         if (_dt == null || _formIsGlobal) return; *@
-@*         if (_selectedCategory?.Id == _originalCategoryId) return; *@
-@* *@
-@*         Guid? newCatId = _selectedCategory?.Id; *@
-@* *@
-@*         if (_originalCategoryId.HasValue) *@
-@*         { *@
-@*             var rmResp = await RemoveRuleClient.GetResponse<RemoveCategoryDescriptionRuleResult>(new RemoveCategoryDescriptionRule(_originalCategoryId.Value, _dt.Id)); *@
-@*             if (!rmResp.Message.Success) { *@
-@*                 ToastService.ShowError(rmResp.Message.ErrorMessage ?? "Errore rimozione categoria precedente"); *@
-@*                 RevertCategory(); *@
-@*                 return; *@
-@*             } *@
-@*         } *@
-@* *@
-@*         if (newCatId.HasValue) *@
-@*         { *@
-@*             var adResp = await AddRuleClient.GetResponse<AddCategoryDescriptionRuleResult>(new AddCategoryDescriptionRule(newCatId.Value, _dt.Id, false)); *@
-@*             if (!adResp.Message.Success) { *@
-@*                 ToastService.ShowError(adResp.Message.ErrorMessage ?? "Errore associazione nuova categoria"); *@
-@*                 RevertCategory(); *@
-@*                 return; *@
-@*             } *@
-@*         } *@
-@*          *@
-@*         _originalCategoryId = newCatId; *@
-@*     } *@
-@* *@
-@*     private void RevertCategory() *@
-@*     { *@
-@*         if (_originalCategoryId.HasValue) *@
-@*             _selectedCategory = _allCategories.FirstOrDefault(c => c.Id == _originalCategoryId.Value); *@
-@*         else *@
-@*             _selectedCategory = null; *@
-@*     } *@
-@* *@
-@*     private async Task AddValue() *@
-@*     { *@
-@*         if (string.IsNullOrWhiteSpace(_newValueText) || _dt == null) return; *@
-@*         var valTrimmed = _newValueText.Trim(); *@
-@*         if (_dt.Values.Any(v => v.Value.Equals(valTrimmed, StringComparison.OrdinalIgnoreCase))) *@
-@*         { *@
-@*             ToastService.ShowWarning("Questo valore esiste già."); *@
-@*             return; *@
-@*         } *@
-@* *@
-@*         _addingValue = true; *@
-@*         var addResp = await AddValueClient.GetResponse<AddDescriptionValueResult>(new AddDescriptionValue(_dt.Id, valTrimmed)); *@
-@*         if (!addResp.Message.Success) *@
-@*         { *@
-@*             ToastService.ShowError(addResp.Message.ErrorMessage ?? "Errore durante l'aggiunta del valore"); *@
-@*         } *@
-@*         else *@
-@*         { *@
-@*             _newValueText = string.Empty; *@
-@*         } *@
-@*         _addingValue = false; *@
-@*     } *@
-@* *@
-@*     private async Task RemoveValue(Guid valueId) *@
-@*     { *@
-@*         var delResp = await DeleteValueClient.GetResponse<DeleteDescriptionValueResult>(new DeleteDescriptionValue(valueId)); *@
-@*         if (!delResp.Message.Success) *@
-@*         { *@
-@*             ToastService.ShowError(delResp.Message.ErrorMessage ?? "Errore durante l'eliminazione del valore"); *@
-@*         } *@
-@*     } *@
-@* } *@
+@page "/description-types/edit"
+@implements IDisposable
+@using MassTransit
+
+@inject IRequestClient<GetDescriptionTypeById> GetClient
+@inject IRequestClient<CreateDescriptionType> CreateClient
+@inject IRequestClient<UpdateDescriptionType> UpdateClient
+@inject IRequestClient<SetDescriptionTypeGlobal> SetGlobalClient
+@inject IRequestClient<AddDescriptionValue> AddValueClient
+@inject IRequestClient<DeleteDescriptionValue> DeleteValueClient
+@inject IRequestClient<SearchCategories> GetCategoriesClient
+@inject IRequestClient<AddCategoryDescriptionRule> AddRuleClient
+@inject IRequestClient<RemoveCategoryDescriptionRule> RemoveRuleClient
+@inject IToastService ToastService
+@inject NavigationManager NavManager
+
+<PageTitle>@(Id.HasValue ? "Edit" : "Create") Description Type – Product Data Manager</PageTitle>
+
+<div class="pdm-animate-in">
+    <div class="pdm-page-header">
+        <div>
+            <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center" Gap="@("var(--pdm-space-2)")">
+                <FluentButton Appearance="Appearance.Stealth"
+                              IconStart="@(new Icons.Regular.Size16.ArrowLeft())"
+                              OnClick="@(() => NavManager.NavigateTo("/description-types"))"/>
+                <h1>
+                    <span>@(Id.HasValue ? "Edit: " : "Create: ")</span>
+                    <span class="dt-edit__title-muted">@(_dt?.Name ?? "New Description Type")</span>
+                </h1>
+            </FluentStack>
+            <p class="pdm-page-subtitle">Manage details and description values for this schema</p>
+        </div>
+        @if (!Id.HasValue) {
+            <FluentButton Appearance="Appearance.Accent"
+                          OnClick="CreateNew"
+                          Loading="_creating"
+                          IconStart="@(new Icons.Regular.Size16.Save())"
+                          Disabled="@(string.IsNullOrWhiteSpace(_formName))">
+                Create &amp; Continue
+            </FluentButton>
+        }
+    </div>
+
+    @if (_loading) {
+        <div class="pdm-loading-state pdm-state-panel">
+            <FluentProgressRing/>
+            <span>Loading description type details…</span>
+        </div>
+    } else if (_dt is null && Id.HasValue) {
+        <div class="pdm-empty-state pdm-state-panel">
+            <div class="pdm-empty-state__icon">
+                <FluentIcon Value="@(new Icons.Regular.Size24.ErrorCircle())" Color="Color.Custom" CustomColor="var(--pdm-danger)"/>
+            </div>
+            <p>Description Type not found.</p>
+        </div>
+    } else {
+        <FluentStack Orientation="Orientation.Vertical" Gap="@("var(--pdm-space-6)")" Class="dt-edit__layout">
+
+            <!-- General Settings card -->
+            <div class="pdm-section-card">
+                <div class="pdm-section-card__header">
+                    <h3 class="pdm-section-card__title">General Settings</h3>
+                </div>
+                <div class="pdm-section-card__content">
+                    <FluentStack Orientation="Orientation.Vertical" Gap="@("var(--pdm-space-4)")">
+                        <FluentTextField @bind-Value="_formName"
+                                         @bind-Value:after="HandleNameChanged"
+                                         Label="Name"
+                                         Required="true"
+                                         Class="dt-edit__field-full"/>
+                        <FluentTextArea @bind-Value="_formDescription"
+                                        @bind-Value:after="HandleDescChanged"
+                                        Label="Description"
+                                        Rows="2"
+                                        Class="dt-edit__field-full"/>
+
+                        @if (Id.HasValue) {
+                            <FluentCheckbox @bind-Value="_formIsGlobal"
+                                            @bind-Value:after="HandleGlobalChanged"
+                                            Label="Is Global Schema (applies to all products across any category)"/>
+
+                            <FluentSelect TOption="CategoryFlatDto"
+                                          Items="@_allCategories"
+                                          Label="Assign to Category Branch (1-to-Many strict enforcement)"
+                                          OptionText="@(c => c.Name)"
+                                          OptionValue="@(c => c.Id.ToString())"
+                                          @bind-SelectedOption="_selectedCategory"
+                                          @bind-SelectedOption:after="HandleCategoryChanged"
+                                          Placeholder="Select a category…"
+                                          Disabled="@_formIsGlobal"
+                                          Class="dt-edit__field-full"/>
+                        }
+                    </FluentStack>
+                </div>
+            </div>
+
+            <!-- Values card — only when editing an existing type -->
+            @if (Id.HasValue && _dt is not null) {
+                <div class="pdm-section-card">
+                    <div class="pdm-section-card__header">
+                        <h3 class="pdm-section-card__title">Description Values</h3>
+                    </div>
+                    <div class="pdm-section-card__content">
+                        <div class="pdm-tags-container">
+                            @foreach (var value in _dt.Values) {
+                                <span class="pdm-tag dt-edit__value-tag">
+                                    @value.Value
+                                    <button class="pdm-tag-remove" title="Remove value"
+                                            @onclick="@(() => RemoveValue(value.Id))">
+                                        <FluentIcon Value="@(new Icons.Regular.Size12.Dismiss())"
+                                                    Color="Color.Custom"
+                                                    CustomColor="var(--pdm-accent)"/>
+                                    </button>
+                                </span>
+                            }
+                            @if (!_dt.Values.Any()) {
+                                <span class="pdm-no-items-text">No values defined yet.</span>
+                            }
+                        </div>
+
+                        <div class="pdm-inline-form">
+                            <FluentTextField @bind-Value="_newValueText"
+                                             Placeholder="New value…"
+                                             Class="dt-edit__field-flex"/>
+                            <FluentButton Appearance="Appearance.Outline"
+                                          IconStart="@(new Icons.Regular.Size16.Add())"
+                                          OnClick="AddValue"
+                                          Loading="_addingValue">
+                                Add
+                            </FluentButton>
+                        </div>
+                    </div>
+                </div>
+            }
+
+        </FluentStack>
+    }
+</div>
+
+@code {
+    [SupplyParameterFromQuery]
+    public Guid? Id { get; set; }
+
+    private DescriptionTypeDto? _dt;
+    private List<CategoryFlatDto> _allCategories = [];
+    private CategoryFlatDto? _selectedCategory;
+    private Guid? _originalCategoryId;
+
+    private string _formName = string.Empty;
+    private string? _formDescription;
+    private bool _formIsGlobal;
+
+    private bool _loading = true;
+    private bool _creating;
+    private bool _addingValue;
+    private string _newValueText = string.Empty;
+
+    protected override async Task OnInitializedAsync() => await LoadData();
+
+    public void Dispose() { }
+
+    private async Task LoadData() {
+        _loading = true;
+
+        var catResponse = await GetCategoriesClient.GetResponse<SearchCategoriesResult>(new SearchCategories());
+        _allCategories = catResponse.Message.Categories.ToList();
+
+        if (Id.HasValue) {
+            var response = await GetClient.GetResponse<GetDescriptionTypeByIdResult>(new GetDescriptionTypeById(Id.Value));
+            _dt = response.Message.DescriptionType;
+
+            if (_dt is not null) {
+                _formName = _dt.Name;
+                _formDescription = _dt.Description;
+                _formIsGlobal = _dt.IsGlobal;
+                _originalCategoryId = _dt.CategoryId;
+
+                if (_dt.CategoryId.HasValue) {
+                    _selectedCategory = _allCategories.FirstOrDefault(c => c.Id == _dt.CategoryId.Value);
+                }
+            }
+        } else {
+            _formName = string.Empty;
+            _formDescription = null;
+            _formIsGlobal = false;
+            _originalCategoryId = null;
+            _selectedCategory = null;
+        }
+
+        _loading = false;
+    }
+
+    private async Task CreateNew() {
+        if (string.IsNullOrWhiteSpace(_formName)) return;
+        _creating = true;
+
+        var createResp = await CreateClient.GetResponse<CreateDescriptionTypeResult>(
+            new CreateDescriptionType(_formName, _formDescription));
+
+        if (!createResp.Message.Success) {
+            ToastService.ShowError(createResp.Message.ErrorMessage ?? "Error during creation");
+            _creating = false;
+            return;
+        }
+
+        ToastService.ShowSuccess("Description Type created — you can now add values.");
+        NavManager.NavigateTo($"/description-types/edit?id={createResp.Message.Id}", forceLoad: false);
+        Id = createResp.Message.Id;
+        await LoadData();
+        _creating = false;
+    }
+
+    private async Task HandleNameChanged() {
+        if (_dt is null || string.IsNullOrWhiteSpace(_formName) || _formName == _dt.Name) return;
+        var resp = await UpdateClient.GetResponse<UpdateDescriptionTypeResult>(
+            new UpdateDescriptionType(_dt.Id, _formName, _formDescription));
+        if (!resp.Message.Success) {
+            ToastService.ShowError(resp.Message.ErrorMessage ?? "Name update failed");
+            _formName = _dt.Name;
+        }
+    }
+
+    private async Task HandleDescChanged() {
+        if (_dt is null || _formDescription == _dt.Description) return;
+        var resp = await UpdateClient.GetResponse<UpdateDescriptionTypeResult>(
+            new UpdateDescriptionType(_dt.Id, _formName, _formDescription));
+        if (!resp.Message.Success) {
+            ToastService.ShowError(resp.Message.ErrorMessage ?? "Description update failed");
+            _formDescription = _dt.Description;
+        }
+    }
+
+    private async Task HandleGlobalChanged() {
+        if (_dt is null || _formIsGlobal == _dt.IsGlobal) return;
+        var resp = await SetGlobalClient.GetResponse<SetDescriptionTypeGlobalResult>(
+            new SetDescriptionTypeGlobal(_dt.Id, _formIsGlobal));
+        if (!resp.Message.Success) {
+            ToastService.ShowError(resp.Message.ErrorMessage ?? "Global flag update failed");
+            _formIsGlobal = _dt.IsGlobal;
+        }
+    }
+
+    private async Task HandleCategoryChanged() {
+        if (_dt is null || _formIsGlobal) return;
+        if (_selectedCategory?.Id == _originalCategoryId) return;
+
+        Guid? newCatId = _selectedCategory?.Id;
+
+        if (_originalCategoryId.HasValue) {
+            var rmResp = await RemoveRuleClient.GetResponse<RemoveCategoryDescriptionRuleResult>(
+                new RemoveCategoryDescriptionRule(_originalCategoryId.Value, _dt.Id));
+            if (!rmResp.Message.Success) {
+                ToastService.ShowError(rmResp.Message.ErrorMessage ?? "Error removing previous category");
+                RevertCategory();
+                return;
+            }
+        }
+
+        if (newCatId.HasValue) {
+            var adResp = await AddRuleClient.GetResponse<AddCategoryDescriptionRuleResult>(
+                new AddCategoryDescriptionRule(newCatId.Value, _dt.Id, false));
+            if (!adResp.Message.Success) {
+                ToastService.ShowError(adResp.Message.ErrorMessage ?? "Error assigning new category");
+                RevertCategory();
+                return;
+            }
+        }
+
+        _originalCategoryId = newCatId;
+    }
+
+    private void RevertCategory() {
+        _selectedCategory = _originalCategoryId.HasValue
+            ? _allCategories.FirstOrDefault(c => c.Id == _originalCategoryId.Value)
+            : null;
+    }
+
+    private async Task AddValue() {
+        if (string.IsNullOrWhiteSpace(_newValueText) || _dt is null) return;
+        var trimmed = _newValueText.Trim();
+        if (_dt.Values.Any(v => v.Value.Equals(trimmed, StringComparison.OrdinalIgnoreCase))) {
+            ToastService.ShowWarning("This value already exists.");
+            return;
+        }
+
+        _addingValue = true;
+        var resp = await AddValueClient.GetResponse<AddDescriptionValueResult>(
+            new AddDescriptionValue(_dt.Id, trimmed));
+        if (!resp.Message.Success) {
+            ToastService.ShowError(resp.Message.ErrorMessage ?? "Error adding value");
+        } else {
+            _newValueText = string.Empty;
+            await LoadData();
+        }
+        _addingValue = false;
+    }
+
+    private async Task RemoveValue(Guid valueId) {
+        var resp = await DeleteValueClient.GetResponse<DeleteDescriptionValueResult>(
+            new DeleteDescriptionValue(valueId));
+        if (!resp.Message.Success) {
+            ToastService.ShowError(resp.Message.ErrorMessage ?? "Error removing value");
+        } else {
+            await LoadData();
+        }
+    }
+}
