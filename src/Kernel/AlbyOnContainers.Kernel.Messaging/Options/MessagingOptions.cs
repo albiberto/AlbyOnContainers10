@@ -13,4 +13,5 @@ public sealed class MessagingOptions : KernelOptions<MessagingOptions>
     
     public TimeSpan RetryInitialInterval { get; set; } = TimeSpan.FromSeconds(2);
     public TimeSpan RetryMaxInterval { get; set; } = TimeSpan.FromSeconds(30);
+    public TimeSpan RetryDeltaInterval { get; set; } = TimeSpan.FromSeconds(5);
 }

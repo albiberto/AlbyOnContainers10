@@ -18,25 +18,21 @@ public static class MessagingKernelExtensions
         // 1. OVERLOAD CON OUTBOX PATTERN (Multi-Assembly Support)
         // ==============================================================================
 
-        public IKernelBuilder WithMessaging<TDbContext>(string? section, params Type[] assemblyMarkers) where TDbContext : DbContext
+        public IKernelBuilder WithMessaging<TDbContext>(string? section, params Type[] assemblyMarkers)
+            where TDbContext : DbContext
         {
-            if (assemblyMarkers.Length == 0) 
-                throw new ArgumentException("At least one assembly marker must be provided.", nameof(assemblyMarkers));
-            
+            ValidateMarkers(assemblyMarkers);
             builder.BindOptions(section);
             BuildAndConfigureMassTransit<TDbContext>(builder.Host.Services, assemblyMarkers);
-            
             return builder;
         }
 
-        public IKernelBuilder WithMessaging<TDbContext>(Action<MessagingOptions> configureOptions, params Type[] assemblyMarkers) where TDbContext : DbContext
+        public IKernelBuilder WithMessaging<TDbContext>(Action<MessagingOptions> configureOptions, params Type[] assemblyMarkers)
+            where TDbContext : DbContext
         {
-            if (assemblyMarkers.Length == 0) 
-                throw new ArgumentException("At least one assembly marker must be provided.", nameof(assemblyMarkers));
-
+            ValidateMarkers(assemblyMarkers);
             builder.ConfigureOptions(configureOptions);
             BuildAndConfigureMassTransit<TDbContext>(builder.Host.Services, assemblyMarkers);
-            
             return builder;
         }
 
@@ -46,29 +42,29 @@ public static class MessagingKernelExtensions
 
         public IKernelBuilder WithMessaging(string? section, params Type[] assemblyMarkers)
         {
-            if (assemblyMarkers.Length == 0) 
-                throw new ArgumentException("At least one assembly marker must be provided.", nameof(assemblyMarkers));
-
+            ValidateMarkers(assemblyMarkers);
             builder.BindOptions(section);
             BuildAndConfigureMassTransit(builder.Host.Services, assemblyMarkers);
-            
             return builder;
         }
 
         public IKernelBuilder WithMessaging(Action<MessagingOptions> configureOptions, params Type[] assemblyMarkers)
         {
-            if (assemblyMarkers.Length == 0) 
-                throw new ArgumentException("At least one assembly marker must be provided.", nameof(assemblyMarkers));
-
+            ValidateMarkers(assemblyMarkers);
             builder.ConfigureOptions(configureOptions);
             BuildAndConfigureMassTransit(builder.Host.Services, assemblyMarkers);
-            
             return builder;
         }
 
         // ==============================================================================
         // PRIVATE HELPERS & LOGIC
         // ==============================================================================
+
+        private static void ValidateMarkers(Type[] markers)
+        {
+            if (markers is null || markers.Length == 0)
+                throw new ArgumentException("At least one assembly marker must be provided.", nameof(markers));
+        }
 
         private void BindOptions(string? section)
         {
@@ -88,7 +84,9 @@ public static class MessagingKernelExtensions
                 .ValidateOnStart();
         }
 
-        private static void BuildAndConfigureMassTransit<TDbContext>(IServiceCollection services, Type[] markers) where TDbContext : DbContext =>
+        private static void BuildAndConfigureMassTransit<TDbContext>(IServiceCollection services, Type[] markers)
+            where TDbContext : DbContext
+        {
             BuildAndConfigureMassTransit(services, markers, cfg =>
             {
                 cfg.AddEntityFrameworkOutbox<TDbContext>(o =>
@@ -97,42 +95,39 @@ public static class MessagingKernelExtensions
                     o.UseBusOutbox();
                 });
             });
+        }
 
-        private static void BuildAndConfigureMassTransit(IServiceCollection services, Type[] markers, Action<IBusRegistrationConfigurator>? configureBus = null)
+        private static void BuildAndConfigureMassTransit(
+            IServiceCollection services,
+            Type[] markers,
+            Action<IBusRegistrationConfigurator>? configureBus = null)
         {
-            // Extract unique assemblies to avoid scanning the same assembly multiple times
             var assemblies = markers.Select(t => t.Assembly).Distinct().ToArray();
 
             // 1. IN-PROCESS MEDIATOR (Commands & Queries ONLY)
             services.AddMediator(cfg =>
             {
-                // Strict isolation: Only load consumers decorated with [MediatorConsumer]
-                cfg.AddConsumers(type => 
-                    type.GetCustomAttribute<MediatorConsumerAttribute>() is not null, 
+                cfg.AddConsumers(
+                    type => type.GetCustomAttribute<MediatorConsumerAttribute>() is not null,
                     assemblies);
 
                 cfg.ConfigureMediator((context, mCfg) =>
                 {
-                    // LIFO Pipeline: GlobalExceptionFilter MUST be registered first to catch Validation exceptions
-                    mCfg.UseConsumeFilter(typeof(GlobalExceptionFilter<>), context);
                     mCfg.UseConsumeFilter(typeof(ValidationFilter<>), context);
+                    mCfg.UseConsumeFilter(typeof(GlobalExceptionFilter<>), context);
                 });
             });
 
             // 2. OUT-OF-PROCESS BUS (Events & External Integration ONLY)
             services.AddMassTransit(cfg =>
             {
-                // Strict isolation: Only load consumers decorated with [EventConsumer]
-                cfg.AddConsumers(type => 
-                    type.GetCustomAttribute<EventConsumerAttribute>() is not null, 
+                cfg.AddConsumers(
+                    type => type.GetCustomAttribute<EventConsumerAttribute>() is not null,
                     assemblies);
 
                 cfg.SetKebabCaseEndpointNameFormatter();
-                
-                // Keep diagnostics clean in production environments
                 cfg.DisableUsageTelemetry();
 
-                // Apply custom bus configurations (like the EF Core Outbox)
                 configureBus?.Invoke(cfg);
 
                 cfg.UsingRabbitMq((context, rmq) =>
@@ -145,23 +140,20 @@ public static class MessagingKernelExtensions
                         h.Password(options.Password);
                     });
 
-                    // Transparent Resilience using TimeSpans
                     rmq.UseMessageRetry(r => r.Exponential(
                         options.RetryCount,
                         options.RetryInitialInterval,
                         options.RetryMaxInterval,
-                        TimeSpan.FromSeconds(5) // delta
+                        options.RetryDeltaInterval
                     ));
 
-                    // LIFO Pipeline: Consistent with Mediator behavior
-                    rmq.UseConsumeFilter(typeof(GlobalExceptionFilter<>), context);
                     rmq.UseConsumeFilter(typeof(ValidationFilter<>), context);
+                    rmq.UseConsumeFilter(typeof(GlobalExceptionFilter<>), context);
 
                     rmq.ConfigureEndpoints(context);
                 });
             });
 
-            // Register FluentValidation across all scanned assemblies
             services.AddValidatorsFromAssemblies(assemblies, includeInternalTypes: true);
         }
     }
