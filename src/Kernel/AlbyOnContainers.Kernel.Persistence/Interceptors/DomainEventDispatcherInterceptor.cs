@@ -6,9 +6,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AlbyOnContainers.Kernel.Persistence.Interceptors;
 
-public sealed class DomainEventDispatcherInterceptor(
-    IServiceProvider serviceProvider,
-    ILogger<DomainEventDispatcherInterceptor> logger) : SaveChangesInterceptor
+public sealed class DomainEventDispatcherInterceptor(IServiceProvider serviceProvider, ILogger<DomainEventDispatcherInterceptor> logger) : SaveChangesInterceptor
 {
     // ==============================================================================
     // SYNCHRONOUS PATH (BLOCKED)
