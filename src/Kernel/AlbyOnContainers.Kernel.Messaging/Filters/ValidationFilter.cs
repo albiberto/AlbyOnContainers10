@@ -4,23 +4,22 @@ using Microsoft.Extensions.Logging;
 
 namespace AlbyOnContainers.Kernel.Messaging.Filters;
 
-public class ValidationFilter<T>(ILogger<ValidationFilter<T>> logger, IValidator<T>? validator = null) : IFilter<ConsumeContext<T>> where T : class
+public sealed class ValidationFilter<T>(
+    ILogger<ValidationFilter<T>> logger,
+    IValidator<T>? validator = null) : IFilter<ConsumeContext<T>> where T : class
 {
     public async Task Send(ConsumeContext<T> context, IPipe<ConsumeContext<T>> next)
     {
-        if (validator is not null)
+        if (validator is null)
         {
-            var validationResult = await validator.ValidateAsync(context.Message, context.CancellationToken);
-
-            if (!validationResult.IsValid)
-            {
-                var errors = validationResult.Errors.Select(error => $"{error.PropertyName}: {error.ErrorMessage}").ToArray();
-
-                logger.LogWarning("Validation failed for {MessageType}. Errors: {@ValidationErrors}", typeof(T).Name, errors);
-
-                throw new ValidationException(validationResult.Errors);
-            }
+            logger.LogDebug("[Messaging] No validator registered for message type {MessageType}. Skipping validation.", typeof(T).Name);
+            await next.Send(context);
+            return;
         }
+
+        var result = await validator.ValidateAsync(context.Message, context.CancellationToken);
+
+        if (!result.IsValid) throw new ValidationException(result.Errors);
 
         await next.Send(context);
     }

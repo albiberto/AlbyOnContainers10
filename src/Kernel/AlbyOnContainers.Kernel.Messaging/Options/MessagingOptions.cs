@@ -3,8 +3,13 @@ using AlbyOnContainers.Kernel.Options;
 
 namespace AlbyOnContainers.Kernel.Messaging.Options;
 
-public class MessagingOptions : KernelOptions<MessagingOptions>
+public sealed class MessagingOptions : KernelOptions<MessagingOptions>
 {
-    [Required]
-    public string ConnectionString { get; set; } = string.Empty;
+    [Required] public string Host { get; set; } = "localhost";
+    [Required] public string Username { get; set; } = "guest";
+    [Required] public string Password { get; set; } = "guest";
+
+    public int RetryCount { get; set; } = 3;
+    public int RetryInitialIntervalSeconds { get; set; } = 2;
+    public int RetryMaxIntervalSeconds { get; set; } = 30;
 }
