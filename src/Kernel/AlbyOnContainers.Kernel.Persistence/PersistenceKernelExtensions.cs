@@ -1,83 +1,87 @@
-using System;
-using System.Reflection;
-using System.Linq;
-using AlbyOnContainers.Kernel.Persistence.Options;
+namespace AlbyOnContainers.Kernel.Persistence;
+
+using Interceptors;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
-
-namespace AlbyOnContainers.Kernel.Persistence;
+using Options;
 
 public static class PersistenceKernelExtensions
 {
-    public static IKernelBuilder WithPersistence(this IKernelBuilder builder, string sectionName = PersistenceOptions.SectionName)
+    extension(IKernelBuilder builder)
     {
-        builder.Host.Services.AddOptions<PersistenceOptions>()
-            .BindConfiguration(sectionName)
-            .ValidateDataAnnotations()
-            .ValidateOnStart();
+        // ==============================================================================
+        // STRICTLY TDbContext OVERLOADS ONLY
+        // ==============================================================================
 
-        builder.AddInternalPersistence(Assembly.GetCallingAssembly());
-        return builder;
-    }
-
-    public static IKernelBuilder WithPersistence(this IKernelBuilder builder, Action<PersistenceOptions> configureOptions)
-    {
-        builder.Host.Services.AddOptions<PersistenceOptions>()
-            .Configure(configureOptions)
-            .ValidateDataAnnotations()
-            .ValidateOnStart();
-
-        builder.AddInternalPersistence(Assembly.GetCallingAssembly());
-        return builder;
-    }
-
-    public static IKernelBuilder WithPersistence<TMarker>(this IKernelBuilder builder, string sectionName = PersistenceOptions.SectionName) where TMarker : DbContext
-    {
-        builder.Host.Services.AddOptions<PersistenceOptions>()
-            .BindConfiguration(sectionName)
-            .ValidateDataAnnotations()
-            .ValidateOnStart();
-
-        builder.Host.Services.AddSingleton<AuditableEntityInterceptor>();
-        builder.Host.Services.AddSingleton<DbCommandTelemetryInterceptor>();
-        builder.Host.Services.AddSingleton<DomainEventDispatcherInterceptor>();
-
-        builder.Host.Services.AddDbContext<TMarker>((sp, options) =>
+        public IKernelBuilder WithPersistence<TDbContext>(Action<IServiceProvider, DbContextOptionsBuilder> configureDbContext, string? section = null) where TDbContext : DbContext
         {
-            var auditableInterceptor = sp.GetRequiredService<AuditableEntityInterceptor>();
-            var telemetryInterceptor = sp.GetRequiredService<DbCommandTelemetryInterceptor>();
-            var domainEventInterceptor = sp.GetRequiredService<DomainEventDispatcherInterceptor>();
+            builder.BindOptions(section);
+            IKernelBuilder.BuildAndConfigurePersistence<TDbContext>(builder.Host.Services, configureDbContext);
+            return builder;
+        }
 
-            options.AddInterceptors(auditableInterceptor, telemetryInterceptor, domainEventInterceptor);
+        public IKernelBuilder WithPersistence<TDbContext>(Action<IServiceProvider, DbContextOptionsBuilder> configureDbContext, Action<PersistenceOptions> configureOptions) where TDbContext : DbContext
+        {
+            builder.ConfigureOptions(configureOptions);
+            IKernelBuilder.BuildAndConfigurePersistence<TDbContext>(builder.Host.Services, configureDbContext);
+            return builder;
+        }
 
-            var persistenceOptions = sp.GetRequiredService<IOptions<PersistenceOptions>>().Value;
+        // ==============================================================================
+        // PRIVATE HELPERS
+        // ==============================================================================
 
-            if (persistenceOptions.Provider.Equals("Postgres", StringComparison.OrdinalIgnoreCase))
+        private void BindOptions(string? section)
+        {
+            builder.Host.Services
+                .AddOptions<PersistenceOptions>()
+                .BindConfiguration(section ?? PersistenceOptions.Section)
+                .ValidateDataAnnotations()
+                .ValidateOnStart();
+        }
+
+        private void ConfigureOptions(Action<PersistenceOptions> configure)
+        {
+            builder.Host.Services
+                .AddOptions<PersistenceOptions>()
+                .Configure(configure)
+                .ValidateDataAnnotations()
+                .ValidateOnStart();
+        }
+
+        private static void BuildAndConfigurePersistence<TDbContext>(
+            IServiceCollection services,
+            Action<IServiceProvider, DbContextOptionsBuilder> configureDbContext)
+            where TDbContext : DbContext
+        {
+            // 1. Register Enterprise Interceptors as Singletons
+            services.AddSingleton<AuditableEntityInterceptor>();
+            services.AddSingleton<DomainEventDispatcherInterceptor>();
+
+            // 2. Take ownership of DbContext registration.
+            // This guarantees that our Enterprise configurations are ALWAYS applied correctly.
+            services.AddDbContext<TDbContext>((sp, options) =>
             {
-                options.UseNpgsql(persistenceOptions.ConnectionString);
-            }
+                // Execute the consuming microservice's configuration first (e.g., .UseNpgsql(connString))
+                configureDbContext(sp, options);
 
-            if (persistenceOptions.EnableDetailedErrors)
-            {
-                options.EnableDetailedErrors();
-            }
+                // Fetch the strictly-typed Kernel Persistence Options via the Fail-Fast Options Pattern
+                var persistenceOptions = sp.GetRequiredService<IOptions<PersistenceOptions>>().Value;
 
-            if (persistenceOptions.EnableSensitiveDataLogging)
-            {
-                options.EnableSensitiveDataLogging();
-            }
-        });
+                // Append Enterprise DDD and Auditing Interceptors
+                options
+                    .AddInterceptors(
+                        sp.GetRequiredService<AuditableEntityInterceptor>(),
+                        sp.GetRequiredService<DomainEventDispatcherInterceptor>()
+                    );
 
-        builder.Host.Services.AddHealthChecks().AddDbContextCheck<TMarker>();
+                if (persistenceOptions.EnableSensitiveDataLogging) options.EnableSensitiveDataLogging();
+                if (persistenceOptions.EnableDetailedErrors) options.EnableDetailedErrors();
+            });
 
-        return builder;
-    }
-
-    private static void AddInternalPersistence(this IKernelBuilder builder, Assembly scanAssembly)
-    {
-        builder.Host.Services.AddSingleton<AuditableEntityInterceptor>();
-        builder.Host.Services.AddSingleton<DbCommandTelemetryInterceptor>();
+            // 3. Automatically register Health Checks for the specific DbContext
+            services.AddHealthChecks().AddDbContextCheck<TDbContext>();
+        }
     }
 }

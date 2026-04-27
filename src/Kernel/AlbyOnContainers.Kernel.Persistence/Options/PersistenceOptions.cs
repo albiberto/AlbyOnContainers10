@@ -1,19 +1,12 @@
-using System.ComponentModel.DataAnnotations;
+using AlbyOnContainers.Kernel.Options;
 
 namespace AlbyOnContainers.Kernel.Persistence.Options;
 
-public class PersistenceOptions
+public sealed class PersistenceOptions : KernelOptions<PersistenceOptions>
 {
-    public const string SectionName = "Persistence";
-
-    [Required]
-    public string ConnectionString { get; set; } = string.Empty;
-
-    public string Provider { get; set; } = "Postgres";
-
-    public bool EnableDetailedErrors { get; set; } = true;
-    public bool EnableSensitiveDataLogging { get; set; } = true;
-
-    /// <summary>Queries exceeding this threshold will be logged as warnings.</summary>
-    public int SlowCommandThresholdMs { get; set; } = 500;
+    public bool EnableSensitiveDataLogging { get; set; } = false;
+    public bool EnableDetailedErrors { get; set; } = false;
+    
+    public int MaxRetryCount { get; set; } = 3;
+    public int CommandTimeout { get; set; } = 30;
 }
