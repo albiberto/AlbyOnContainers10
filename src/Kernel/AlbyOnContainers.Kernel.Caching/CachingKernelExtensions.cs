@@ -1,6 +1,4 @@
 using System;
-using System.Reflection;
-using AlbyOnContainers.Kernel.Abstraction;
 using AlbyOnContainers.Kernel.Caching.Cache;
 using AlbyOnContainers.Kernel.Caching.Options;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,66 +10,82 @@ namespace AlbyOnContainers.Kernel.Caching;
 
 public static class CachingKernelExtensions
 {
-    public static IKernelBuilder WithCaching(this IKernelBuilder builder, string sectionName = CachingOptions.SectionName)
+    // ==============================================================================
+    // PUBLIC API
+    // ==============================================================================
+
+    extension(IKernelBuilder builder)
     {
-        builder.Host.Services.AddOptions<CachingOptions>()
-            .BindConfiguration(sectionName)
-            .ValidateDataAnnotations()
-            .ValidateOnStart();
+        public IKernelBuilder WithCaching<TMarker>(string? section = null)
+        {
+            builder.BindOptions(section);
+            builder.ConfigureCaching<TMarker>();
+            return builder;
+        }
 
-        builder.AddInternalCaching(Assembly.GetCallingAssembly());
-        return builder;
-    }
+        public IKernelBuilder WithCaching<TMarker>(Action<CachingOptions> configureOptions)
+        {
+            builder.ConfigureOptions(configureOptions);
+            builder.ConfigureCaching<TMarker>();
+            return builder;
+        }
+        
+        // ==============================================================================
+        // PRIVATE BOILERPLATE HELPERS
+        // ==============================================================================
 
-    public static IKernelBuilder WithCaching(this IKernelBuilder builder, Action<CachingOptions> configureOptions)
-    {
-        builder.Host.Services.AddOptions<CachingOptions>()
-            .Configure(configureOptions)
-            .ValidateDataAnnotations()
-            .ValidateOnStart();
+        private void BindOptions(string? section)
+        {
+            builder.Host.Services
+                .AddOptions<CachingOptions>()
+                .BindConfiguration(section ?? CachingOptions.Section)
+                .ValidateDataAnnotations()
+                .ValidateOnStart();
+        }
 
-        builder.AddInternalCaching(Assembly.GetCallingAssembly());
-        return builder;
-    }
+        private void ConfigureOptions(Action<CachingOptions> configure)
+        {
+            builder.Host.Services
+                .AddOptions<CachingOptions>()
+                .Configure(configure)
+                .ValidateDataAnnotations()
+                .ValidateOnStart();
+        }
 
-    public static IKernelBuilder WithCaching<TMarker>(this IKernelBuilder builder, string sectionName = CachingOptions.SectionName)
-    {
-        builder.Host.Services.AddOptions<CachingOptions>()
-            .BindConfiguration(sectionName)
-            .ValidateDataAnnotations()
-            .ValidateOnStart();
+        private void ConfigureCaching<TMarker>()
+        {
+            var services = builder.Host.Services;
 
-        builder.AddInternalCaching(typeof(TMarker).Assembly);
-        return builder;
-    }
+            // 1. Redis Backplane Configuration (Mapped from CachingOptions)
+            services.AddOptions<RedisBackplaneOptions>()
+                .Configure<IOptions<CachingOptions>>((redis, opt) => 
+                { 
+                    redis.Configuration = opt.Value.RedisConnectionString; 
+                });
 
-    private static void AddInternalCaching(this IKernelBuilder builder, Assembly scanAssembly)
-    {
-        builder.Host.Services.AddOptions<RedisBackplaneOptions>()
-            .Configure<IOptions<CachingOptions>>((redis, opt) =>
-            {
-                redis.Configuration = opt.Value.RedisConnectionString;
-            });
+            // 2. FusionCache Options Mapping
+            services.AddOptions<FusionCacheOptions>()
+                .Configure<IOptions<CachingOptions>>((fusion, opt) =>
+                {
+                    fusion.DefaultEntryOptions.Duration = opt.Value.Duration;
+                    fusion.DefaultEntryOptions.IsFailSafeEnabled = opt.Value.IsFailSafeEnabled;
+                    fusion.DefaultEntryOptions.FailSafeMaxDuration = opt.Value.FailSafeMaxDuration;
+                    fusion.DefaultEntryOptions.JitterMaxDuration = opt.Value.JitterMaxDuration;
+                });
 
-        builder.Host.Services.AddOptions<FusionCacheOptions>()
-            .Configure<IOptions<CachingOptions>>((fusion, opt) =>
-            {
-                fusion.DefaultEntryOptions.Duration = TimeSpan.FromMinutes(opt.Value.DurationInMinutes);
-                fusion.DefaultEntryOptions.IsFailSafeEnabled = opt.Value.IsFailSafeEnabled;
-                fusion.DefaultEntryOptions.FailSafeMaxDuration = TimeSpan.FromHours(opt.Value.FailSafeMaxDurationInHours);
-                fusion.DefaultEntryOptions.JitterMaxDuration = TimeSpan.FromSeconds(opt.Value.JitterMaxDurationInSeconds);
-            });
+            // 3. Infrastructure Registration (Redis + MessagePack)
+            services.AddFusionCacheStackExchangeRedisBackplane();
+            services.AddFusionCacheNeueccMessagePackSerializer();
 
-        builder.Host.Services.AddFusionCacheStackExchangeRedisBackplane();
-        builder.Host.Services.AddFusionCacheNeueccMessagePackSerializer();
+            services.AddFusionCache()
+                .WithRegisteredBackplane();
 
-        builder.Host.Services.AddFusionCache()
-            .WithRegisteredBackplane();
-
-        builder.Host.Services.Scan(scan => scan
-            .FromAssemblies(scanAssembly)
-            .AddClasses(classes => classes.AssignableTo(typeof(CacheBase<>)))
-            .AsSelf()
-            .WithSingletonLifetime());
+            // 4. Auto-Discovery: Scan the assembly for classes inheriting from CacheBase<T>
+            services.Scan(scan => scan
+                .FromAssembliesOf(typeof(TMarker))
+                .AddClasses(classes => classes.AssignableTo(typeof(CacheBase<>)))
+                .AsSelf()
+                .WithSingletonLifetime());
+        }
     }
 }

@@ -1,16 +1,17 @@
 using System.ComponentModel.DataAnnotations;
+using AlbyOnContainers.Kernel.Options;
 
 namespace AlbyOnContainers.Kernel.Caching.Options;
 
-public class CachingOptions
+public class CachingOptions: KernelOptions<CachingOptions>
 {
-    public const string SectionName = "Caching";
+    [Required(AllowEmptyStrings = false)] public string RedisConnectionString { get; set; } = string.Empty;
 
-    [Required]
-    public string RedisConnectionString { get; set; } = string.Empty;
+    public TimeSpan Duration { get; set; } = TimeSpan.FromMinutes(30);
 
-    public int DurationInMinutes { get; set; } = 30;
+    public TimeSpan FailSafeMaxDuration { get; set; } = TimeSpan.FromHours(2);
+
+    public TimeSpan JitterMaxDuration { get; set; } = TimeSpan.FromSeconds(2);
+
     public bool IsFailSafeEnabled { get; set; } = true;
-    public int FailSafeMaxDurationInHours { get; set; } = 2;
-    public int JitterMaxDurationInSeconds { get; set; } = 2;
 }

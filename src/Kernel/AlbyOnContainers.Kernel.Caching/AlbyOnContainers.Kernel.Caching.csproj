@@ -7,14 +7,17 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\AlbyOnContainers.Kernel.Abstraction\AlbyOnContainers.Kernel.Abstraction.csproj" />
         <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions"/>
-        <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
-        <PackageReference Include="Microsoft.Extensions.Options.DataAnnotations" />
-        <PackageReference Include="Scrutor" />
-        <PackageReference Include="ZiggyCreatures.FusionCache" />
+        <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions"/>
+        <PackageReference Include="Microsoft.Extensions.Options.DataAnnotations"/>
+        <PackageReference Include="Scrutor"/>
+        <PackageReference Include="ZiggyCreatures.FusionCache"/>
         <PackageReference Include="ZiggyCreatures.FusionCache.Backplane.StackExchangeRedis"/>
-        <PackageReference Include="ZiggyCreatures.FusionCache.Serialization.NeueccMessagePack" />
+        <PackageReference Include="ZiggyCreatures.FusionCache.Serialization.NeueccMessagePack"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\AlbyOnContainers.Kernel\AlbyOnContainers.Kernel.csproj"/>
     </ItemGroup>
 
 </Project>

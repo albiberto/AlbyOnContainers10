@@ -1,6 +1,7 @@
 using MassTransit;
 using Microsoft.Extensions.Logging;
 using ProductInformationManager.Application.Cache;
+using ProductInformationManager.Contracts;
 using ProductInformationManager.Messages;
 
 namespace ProductInformationManager.Application.Consumers;
@@ -12,19 +13,19 @@ public class CategoryConsumer(CategoryCache cache, ILogger<CategoryConsumer> log
 {
     public async Task Consume(ConsumeContext<CategoryCreatedEvent> context)
     {
-        await cache.InvalidateAsync(context.CancellationToken);
+        await cache.ExpireAllAsync(context.CancellationToken);
         logger.LogInformation("PIM category cache invalidated after CategoryCreatedEvent {CategoryId}", context.Message.Id);
     }
 
     public async Task Consume(ConsumeContext<CategoryUpdatedEvent> context)
     {
-        await cache.InvalidateAsync(context.CancellationToken);
+        await cache.ExpireAllAsync(context.CancellationToken);
         logger.LogInformation("PIM category cache invalidated after CategoryUpdatedEvent {CategoryId}", context.Message.Id);
     }
 
     public async Task Consume(ConsumeContext<CategoryDeletedEvent> context)
     {
-        await cache.InvalidateAsync(context.CancellationToken);
+        await cache.ExpireAllAsync(context.CancellationToken);
         logger.LogInformation("PIM category cache invalidated after CategoryDeletedEvent {CategoryId}", context.Message.Id);
     }
 }

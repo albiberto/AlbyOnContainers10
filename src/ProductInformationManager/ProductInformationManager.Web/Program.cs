@@ -1,18 +1,13 @@
-using Microsoft.EntityFrameworkCore;
 using AlbyOnContainers.Kernel;
-using AlbyOnContainers.Kernel.Localization;
 using AlbyOnContainers.Kernel.Caching;
 using AlbyOnContainers.Kernel.Messaging;
 using AlbyOnContainers.Kernel.Observability;
-using AlbyOnContainers.Kernel.Persistence;
-using AlbyOnContainers.Kernel.Security;
-using AlbyOnContainers.Kernel.Security.Abstractions;
-using AlbyOnContainers.Plugins.DistributedLocks;
 using MassTransit;
 using Microsoft.FluentUI.AspNetCore.Components;
 using ProductInformationManager.Application;
+using ProductInformationManager.Application.Cache;
+using ProductInformationManager.Application.Consumers;
 using ProductInformationManager.Infrastructure;
-using ProductInformationManager.Web.DevSpace;
 using ProductInformationManager.Web.Notifiers;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -20,15 +15,8 @@ var builder = WebApplication.CreateBuilder(args);
 // --- ALBY KERNEL SDK ---
 // Using the new Fluent API to configure enterprise infrastructure centrally
 builder.AddKernel()
-    .WithObservability()
-    .WithSecurity()
-    .WithPersistence<ProductContext>()
-    .WithMessaging<IApplicationAssemblyMarker>()
-    .WithCaching<IApplicationAssemblyMarker>()
-    .WithDistributedLocks()
-    .WithLocalization();
-
-builder.Services.AddMassTransit(x => x.AddEntityFrameworkOutbox<ProductContext>(o => o.UsePostgres()));
+    .WithCaching<CategoryCache>()
+    .WithMessaging<CreateCategoryConsumer, ProductContext>();
 
 // Shared UI Notifier
 builder.Services.Scan(scan => scan
@@ -54,8 +42,6 @@ builder.Services.AddRazorComponents()
 builder.Services.AddCascadingAuthenticationState();
 
 var app = builder.Build();
-
-app.UseKernelLocalization();
 
 if (!app.Environment.IsDevelopment())
 {

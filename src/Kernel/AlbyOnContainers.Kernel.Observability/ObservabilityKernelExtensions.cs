@@ -1,5 +1,4 @@
 using System;
-using AlbyOnContainers.Kernel.Abstraction;
 using AlbyOnContainers.Kernel.Observability.Options;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;

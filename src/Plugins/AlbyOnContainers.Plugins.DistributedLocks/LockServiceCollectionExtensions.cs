@@ -1,5 +1,5 @@
 using System.Reflection;
-using AlbyOnContainers.Kernel.Abstraction;
+using AlbyOnContainers.Kernel;
 using AlbyOnContainers.Plugins.DistributedLocks.Options;
 using Medallion.Threading;
 using Medallion.Threading.Redis;

@@ -11,7 +11,6 @@
 
     <ItemGroup>
         <PackageReference Include="OpenTelemetry.Instrumentation.EntityFrameworkCore" />
-        <ProjectReference Include="..\AlbyOnContainers.Kernel.Abstraction\AlbyOnContainers.Kernel.Abstraction.csproj" />
         <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
         <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
         <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" />
@@ -19,5 +18,9 @@
         <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" />
         <PackageReference Include="Microsoft.Extensions.ServiceDiscovery" />
         <PackageReference Include="Microsoft.Extensions.Http.Resilience" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\AlbyOnContainers.Kernel\AlbyOnContainers.Kernel.csproj" />
     </ItemGroup>
 </Project>

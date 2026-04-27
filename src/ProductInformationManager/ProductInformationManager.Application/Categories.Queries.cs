@@ -8,7 +8,7 @@ public class GetRootCategoriesConsumer(CategoryCache cache) : IConsumer<GetRootC
 {
     public async Task Consume(ConsumeContext<GetRootCategories> context)
     {
-        var all = await cache.GetAllAsync(context.CancellationToken);
+        var all = await cache.GetOrSetAllAsync(context.CancellationToken);
         
         var roots = all
             .Where(c => c.ParentId == null)
@@ -23,7 +23,7 @@ public class GetChildCategoriesConsumer(CategoryCache cache) : IConsumer<GetChil
 {
     public async Task Consume(ConsumeContext<GetChildCategories> context)
     {
-        var all = await cache.GetAllAsync(context.CancellationToken);
+        var all = await cache.GetOrSetAllAsync(context.CancellationToken);
         
         var children = all
             .Where(c => c.ParentId == context.Message.ParentId)
@@ -38,7 +38,7 @@ public class GetCategoryByIdConsumer(CategoryCache cache) : IConsumer<GetCategor
 {
     public async Task Consume(ConsumeContext<GetCategoryById> context)
     {
-        var all = await cache.GetAllAsync(context.CancellationToken);
+        var all = await cache.GetOrSetAllAsync(context.CancellationToken);
         
         var category = all.FirstOrDefault(c => c.Id == context.Message.Id);
         
@@ -62,7 +62,7 @@ public class SearchCategoriesConsumer(CategoryCache cache) : IConsumer<SearchCat
 
         var lowerPattern = pattern.ToLowerInvariant();
 
-        var all = await cache.GetAllAsync(context.CancellationToken);
+        var all = await cache.GetOrSetAllAsync(context.CancellationToken);
 
         var results = all
             .Where(c => c.Name.Contains(lowerPattern, StringComparison.InvariantCultureIgnoreCase))

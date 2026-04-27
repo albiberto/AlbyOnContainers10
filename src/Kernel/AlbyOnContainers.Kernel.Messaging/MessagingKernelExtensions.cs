@@ -1,94 +1,119 @@
-using System;
-using System.Reflection;
-using AlbyOnContainers.Kernel.Abstraction;
-using AlbyOnContainers.Kernel.Messaging.Filters;
-using AlbyOnContainers.Kernel.Messaging.Options;
+namespace AlbyOnContainers.Kernel.Messaging;
+
+using Filters;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-
-namespace AlbyOnContainers.Kernel.Messaging;
+using Options;
 
 public static class MessagingKernelExtensions
 {
-    public static IKernelBuilder WithMessaging(this IKernelBuilder builder, string sectionName = MessagingOptions.SectionName)
+    // ==============================================================================
+    // PUBLIC API
+    // ==============================================================================
+
+    extension(IKernelBuilder builder)
     {
-        builder.Host.Services.AddOptions<MessagingOptions>()
-            .BindConfiguration(sectionName)
-            .ValidateDataAnnotations()
-            .ValidateOnStart();
-
-        builder.AddInternalMessaging(typeof(MessagingKernelExtensions).Assembly);
-        return builder;
-    }
-
-    public static IKernelBuilder WithMessaging(this IKernelBuilder builder, Action<MessagingOptions> configureOptions)
-    {
-        builder.Host.Services.AddOptions<MessagingOptions>()
-            .Configure(configureOptions)
-            .ValidateDataAnnotations()
-            .ValidateOnStart();
-
-        builder.AddInternalMessaging(typeof(MessagingKernelExtensions).Assembly);
-        return builder;
-    }
-
-    public static IKernelBuilder WithMessaging<TMarker>(this IKernelBuilder builder, string sectionName = MessagingOptions.SectionName)
-    {
-        builder.Host.Services.AddOptions<MessagingOptions>()
-            .BindConfiguration(sectionName)
-            .ValidateDataAnnotations()
-            .ValidateOnStart();
-
-        builder.AddInternalMessaging(typeof(TMarker).Assembly);
-        return builder;
-    }
-
-    private static void AddInternalMessaging(this IKernelBuilder builder, Assembly scanAssembly)
-    {
-        builder.Host.Services.AddMassTransit(x =>
+        public IKernelBuilder WithMessaging<TMarker>(string? section = null)
         {
-            x.SetKebabCaseEndpointNameFormatter();
-            x.DisableUsageTelemetry();
+            builder.BindOptions(section);
+            builder.ConfigureMassTransit<TMarker>();
+            return builder;
+        }
 
-            x.AddConsumers(scanAssembly);
+        public IKernelBuilder WithMessaging<TMarker>(Action<MessagingOptions> configureOptions)
+        {
+            builder.ConfigureOptions(configureOptions);
+            builder.ConfigureMassTransit<TMarker>();
+            return builder;
+        }
 
-            x.UsingRabbitMq((context, cfg) =>
+        public IKernelBuilder WithMessaging<TMarker, TDbContext>(string? section = null) where TDbContext : DbContext
+        {
+            builder.BindOptions(section);
+            builder.ConfigureMassTransitWithOutbox<TMarker, TDbContext>();
+            return builder;
+        }
+
+        public IKernelBuilder WithMessaging<TMarker, TDbContext>(Action<MessagingOptions> configureOptions) where TDbContext : DbContext
+        {
+            builder.ConfigureOptions(configureOptions);
+            builder.ConfigureMassTransitWithOutbox<TMarker, TDbContext>();
+            return builder;
+        }
+        
+        // ==============================================================================
+        // PRIVATE BOILERPLATE HELPERS
+        // ==============================================================================
+
+        private void BindOptions(string? section)
+        {
+            builder.Host.Services
+                .AddOptions<MessagingOptions>()
+                .BindConfiguration(section ?? MessagingOptions.Section)
+                .ValidateDataAnnotations()
+                .ValidateOnStart();
+        }
+
+        private void ConfigureOptions(Action<MessagingOptions> configure)
+        {
+            builder.Host.Services
+                .AddOptions<MessagingOptions>()
+                .Configure(configure)
+                .ValidateDataAnnotations()
+                .ValidateOnStart();
+        }
+
+        private void ConfigureMassTransitWithOutbox<TMarker, TDbContext>() where TDbContext : DbContext
+        {
+            builder.ConfigureMassTransit<TMarker>(x =>
             {
-                var options = context.GetRequiredService<IOptions<MessagingOptions>>().Value;
-                cfg.Host(options.ConnectionString);
-
-                cfg.UseConsumeFilter(typeof(ConsumeTelemetryFilter<>), context);
-                cfg.UseConsumeFilter(typeof(GlobalExceptionFilter<>), context);
-                cfg.UseConsumeFilter(typeof(ValidationFilter<>), context);
-
-                cfg.ConfigureEndpoints(context);
+                x.AddEntityFrameworkOutbox<TDbContext>(o =>
+                {
+                    o.UsePostgres();
+                    o.UseBusOutbox();
+                });
             });
-        });
+        }
 
-        // Add mediator by default to support CQRS 
-        builder.Host.Services.AddMediator(cfg =>
+        private void ConfigureMassTransit<TMarker>(Action<IBusRegistrationConfigurator>? configureBus = null)
         {
-            cfg.AddConsumers(scanAssembly);
+            var services = builder.Host.Services;
+            var marker = typeof(TMarker).Assembly;
 
-            cfg.ConfigureMediator((context, mcfg) =>
+            services.AddMassTransit(x =>
             {
-                mcfg.UseConsumeFilter(typeof(ConsumeTelemetryFilter<>), context);
-                mcfg.UseConsumeFilter(typeof(GlobalExceptionFilter<>), context);
-                mcfg.UseConsumeFilter(typeof(ValidationFilter<>), context);
-            });
-        });
-    }
+                x.SetKebabCaseEndpointNameFormatter();
+                x.DisableUsageTelemetry();
+                x.AddConsumers(marker);
 
-    // Methods extending something other than IKernelBuilder do not violate the rule
-    public static void AddAlbyOutbox<TDbContext>(this IBusRegistrationConfigurator x, Action<IEntityFrameworkOutboxConfigurator>? configureOutbox = null) 
-        where TDbContext : DbContext
-    {
-        x.AddEntityFrameworkOutbox<TDbContext>(o =>
-        {
-            configureOutbox?.Invoke(o);
-            o.UseBusOutbox();
-        });
+                // Apply optional configurations (like the Outbox)
+                configureBus?.Invoke(x);
+
+                x.UsingRabbitMq((context, cfg) =>
+                {
+                    var options = context.GetRequiredService<IOptions<MessagingOptions>>().Value;
+                    cfg.Host(options.ConnectionString);
+
+                    cfg.UseConsumeFilter(typeof(GlobalExceptionFilter<>), context);
+                    cfg.UseConsumeFilter(typeof(ValidationFilter<>), context);
+
+                    cfg.ConfigureEndpoints(context);
+                });
+            });
+
+            // Mediator for internal CQRS
+            services.AddMediator(cfg =>
+            {
+                cfg.AddConsumers(marker);
+
+                cfg.ConfigureMediator((context, configure) =>
+                {
+                    configure.UseConsumeFilter(typeof(GlobalExceptionFilter<>), context);
+                    configure.UseConsumeFilter(typeof(ValidationFilter<>), context);
+                });
+            });
+        }
     }
 }

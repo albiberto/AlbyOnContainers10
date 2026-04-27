@@ -20,6 +20,7 @@
     <ItemGroup>
         <ProjectReference Include="..\AlbyOnContainers.Kernel.Abstraction\AlbyOnContainers.Kernel.Abstraction.csproj" />
         <ProjectReference Include="..\AlbyOnContainers.Kernel.Domain\AlbyOnContainers.Kernel.Domain.csproj" />
+        <ProjectReference Include="..\AlbyOnContainers.Kernel\AlbyOnContainers.Kernel.csproj" />
     </ItemGroup>
 
 </Project>

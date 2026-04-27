@@ -8,18 +8,19 @@ using Microsoft.Extensions.Logging;
 namespace AlbyOnContainers.Kernel.Persistence;
 
 /// <summary>
-/// A SaveChanges interceptor that automatically dispatches domain events
-/// accumulated by AggregateRoot entities to the MassTransit bus before
-/// the transaction commits. When an EF Core Outbox is configured, the
-/// publish is transactionally consistent with the database write.
+/// A SaveChanges interceptor that automatically collects domain events from tracked
+/// AggregateRoot entities, translates them to integration events via a registered
+/// <see cref="IDomainEventMapper"/>, and publishes them through MassTransit before
+/// the transaction commits. When the EF Core Outbox is configured, the publish
+/// is transactionally durable.
+///
+/// The interceptor is Singleton — it resolves IPublishEndpoint and IDomainEventMapper
+/// dynamically per-call from the DbContext's scoped service provider to remain
+/// thread-safe and dependency-injection-clean.
 /// </summary>
-public sealed class DomainEventDispatcherInterceptor(
-    ILogger<DomainEventDispatcherInterceptor> logger) : SaveChangesInterceptor
+public sealed class DomainEventDispatcherInterceptor(ILogger<DomainEventDispatcherInterceptor> logger) : SaveChangesInterceptor
 {
-    public override async ValueTask<InterceptionResult<int>> SavingChangesAsync(
-        DbContextEventData eventData,
-        InterceptionResult<int> result,
-        CancellationToken cancellationToken = default)
+    public override async ValueTask<InterceptionResult<int>> SavingChangesAsync(DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
     {
         if (eventData.Context is not null)
         {
@@ -43,7 +44,7 @@ public sealed class DomainEventDispatcherInterceptor(
             return;
         }
 
-        // Collect and clear before publish — prevents re-dispatch on retry
+        // Collect then clear immediately — prevents re-dispatch on EF Core retry
         var domainEvents = aggregates
             .SelectMany(a => a.DomainEvents)
             .ToList();
@@ -53,18 +54,48 @@ public sealed class DomainEventDispatcherInterceptor(
             aggregate.ClearDomainEvents();
         }
 
-        // Resolve IPublishEndpoint dynamically from the DbContext's service provider.
-        // This works within a MassTransit consumer scope, and when the EF Core Outbox
-        // is active, publish is enlisted in the same transaction as SaveChanges.
+        // Resolve MassTransit endpoint and optional domain-to-integration mapper
+        // from the DbContext's scoped service provider (avoids circular deps / leaks).
         var publishEndpoint = context.GetService<IPublishEndpoint>();
+        if (publishEndpoint is null)
+        {
+            logger.LogWarning(
+                "DomainEventDispatcherInterceptor: IPublishEndpoint not available in the DbContext " +
+                "service provider. {Count} domain event(s) will NOT be dispatched.",
+                domainEvents.Count);
+            return;
+        }
+
+        // Optional mapper: translates domain events → integration events.
+        // If none is registered the domain event is published directly (useful for
+        // bounded contexts where the domain event IS the integration event).
+        var mapper = context.GetService<IDomainEventMapper>();
 
         foreach (var domainEvent in domainEvents)
         {
-            logger.LogDebug(
-                "Dispatching domain event {EventType} from interceptor.",
-                domainEvent.GetType().Name);
+            if (mapper is not null)
+            {
+                // Map domain → integration events and publish each one
+                var integrationEvents = mapper.Map(domainEvent).ToList();
 
-            await publishEndpoint.Publish(domainEvent, domainEvent.GetType(), cancellationToken);
+                if (integrationEvents.Count == 0)
+                {
+                    logger.LogDebug("DomainEventDispatcherInterceptor: {EventType} produced no integration events — skipping.", domainEvent.GetType().Name);
+                    continue;
+                }
+
+                foreach (var integrationEvent in integrationEvents)
+                {
+                    logger.LogDebug("Dispatching integration event {IntegrationEventType} (from domain event {DomainEventType}).", integrationEvent.GetType().Name, domainEvent.GetType().Name);
+                    await publishEndpoint.Publish(integrationEvent, integrationEvent.GetType(), cancellationToken);
+                }
+            }
+            else
+            {
+                // No mapper registered — publish the domain event directly
+                logger.LogDebug("Dispatching domain event {EventType} directly (no IDomainEventMapper registered).", domainEvent.GetType().Name);
+                await publishEndpoint.Publish(domainEvent, domainEvent.GetType(), cancellationToken);
+            }
         }
     }
 }

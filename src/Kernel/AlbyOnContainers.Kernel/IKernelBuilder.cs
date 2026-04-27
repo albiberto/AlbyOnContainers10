@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Hosting;
 
-namespace AlbyOnContainers.Kernel.Abstraction;
+namespace AlbyOnContainers.Kernel;
 
 public interface IKernelBuilder
 {

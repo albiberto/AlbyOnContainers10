@@ -27,12 +27,6 @@ public record CreateCategoryCommandResult(Guid Id);
 public record UpdateCategoryCommandResult(Guid Id);
 public record DeleteCategoryCommandResult(Guid Id);
 
-// === Queries ===
+// === DTOs ===
 public record CategoryDto(Guid Id, string Name, string? Description, string Path, Guid? ParentId, bool HasChildren);
 public record CategoryFlatDto(Guid Id, string Name, string Path, int Depth);
-
-// === Events ===
-
-public record CategoryCreatedEvent(Guid Id, string Name, string Description, string Path, Guid? ParentId, long Version = 0) : ContractBase(Version);
-public record CategoryUpdatedEvent(Guid Id, string Name, string Description, string Path, Guid? ParentId, long Version = 0) : ContractBase(Version);
-public record CategoryDeletedEvent(Guid Id) : ContractBase;

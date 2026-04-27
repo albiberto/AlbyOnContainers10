@@ -2,5 +2,5 @@
 
 public abstract record ContractBase(long Version = 0)
 {
-    public DateTimeOffset OccurredOn = DateTimeOffset.UtcNow;
+    public DateTimeOffset OccurredOn { get; init; } = DateTimeOffset.UtcNow;
 }

@@ -1,14 +1,10 @@
 using System.ComponentModel.DataAnnotations;
+using AlbyOnContainers.Kernel.Options;
 
 namespace AlbyOnContainers.Kernel.Messaging.Options;
 
-public class MessagingOptions
+public class MessagingOptions : KernelOptions<MessagingOptions>
 {
-    public const string SectionName = "Messaging";
-
     [Required]
     public string ConnectionString { get; set; } = string.Empty;
-
-    public bool EnableOutbox { get; set; } = true;
-    public bool EnableMediator { get; set; } = true;
 }
