@@ -1,13 +1,18 @@
+using System;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using AlbyOnContainers.Kernel.Domain.SeedWork;
 using MassTransit;
 using Microsoft.EntityFrameworkCore.Diagnostics;
-using Microsoft.EntityFrameworkCore.Infrastructure; // Required for GetService<T>()
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace AlbyOnContainers.Kernel.Persistence.Interceptors;
 
-public sealed class DomainEventDispatcherInterceptor(IServiceProvider serviceProvider, ILogger<DomainEventDispatcherInterceptor> logger) : SaveChangesInterceptor
+// Il costruttore ora è pulito e coerente: riceve solo il logger.
+public sealed class DomainEventDispatcherInterceptor(ILogger<DomainEventDispatcherInterceptor> logger) : SaveChangesInterceptor
 {
     public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
     {
@@ -20,52 +25,50 @@ public sealed class DomainEventDispatcherInterceptor(IServiceProvider servicePro
         
         if (dbContext is null) return await base.SavingChangesAsync(eventData, result, cancellationToken);
 
-        // 1. Collect all AggregateRoots that contain Domain Events
         var entities = dbContext.ChangeTracker
             .Entries<AggregateRoot>()
             .Where(e => e.Entity.DomainEvents.Count != 0)
             .Select(e => e.Entity)
             .ToList();
 
-        // 2. Extract the events
         var domainEvents = entities.SelectMany(e => e.DomainEvents).ToList();
 
-        // 3. Clear events BEFORE dispatching to prevent double-dispatch 
         foreach (var entity in entities) 
         {
             entity.ClearDomainEvents();
         }
 
-        // Exit early if there are no events to process
         if (domainEvents.Count == 0) return await base.SavingChangesAsync(eventData, result, cancellationToken);
 
-        // 4. Resolve the mapper dynamically from the root Service Provider (Singleton is safe here)
-        var mapper = serviceProvider.GetService<IDomainEventMapper>();
+        // Estraiamo lo scope dal DbContext una sola volta
+        var scopedProvider = dbContext.GetInfrastructure();
+
+        // 1. Risolviamo il Publish Endpoint. Se manca, logghiamo una sola volta e usciamo.
+        var publishEndpoint = scopedProvider.GetService<IPublishEndpoint>();
+        if (publishEndpoint is null)
+        {
+            logger.LogWarning("IPublishEndpoint not available in the current scope. {Count} Domain Event(s) were NOT published.", domainEvents.Count);
+            return await base.SavingChangesAsync(eventData, result, cancellationToken);
+        }
+
+        // 2. Risolviamo il Mapper coerentemente dallo stesso provider
+        var mapper = scopedProvider.GetService<IDomainEventMapper>();
 
         foreach (var domainEvent in domainEvents)
         {
             logger.LogDebug("Dispatching Domain Event: {EventName}", domainEvent.GetType().Name);
 
-            // 5. If a mapper is available, map the Domain Event to an Integration Message
             var integrationMessage = mapper?.Map(domainEvent);
 
-            if (integrationMessage == null) continue;
+            if (integrationMessage is null) 
+            {
+                logger.LogDebug("Domain Event {EventName} was not mapped to an Integration Message and will be ignored.", domainEvent.GetType().Name);
+                continue;
+            }
             
-            // 6. RESOLVE FROM DBCONTEXT INFRASTRUCTURE (CRITICAL FIX):
-            var scopedProvider = dbContext.GetInfrastructure();
-            var publishEndpoint = scopedProvider.GetService<IPublishEndpoint>();
-                
-            if (publishEndpoint != null)
-            {
-                await publishEndpoint.Publish(integrationMessage, cancellationToken);
-            }
-            else
-            {
-                logger.LogWarning("IPublishEndpoint could not be resolved from DbContext. Event {EventName} was NOT published.", domainEvent.GetType().Name);
-            }
+            await publishEndpoint.Publish(integrationMessage, cancellationToken);
         }
 
-        // 7. Continue with the standard EF Core Save pipeline
         return await base.SavingChangesAsync(eventData, result, cancellationToken);
     }
 }
