@@ -5,11 +5,12 @@ namespace AlbyOnContainers.Kernel.Messaging.Options;
 
 public sealed class MessagingOptions : KernelOptions<MessagingOptions>
 {
-    [Required] public string Host { get; set; } = "localhost";
-    [Required] public string Username { get; set; } = "guest";
-    [Required] public string Password { get; set; } = "guest";
+    [Required] public string Host { get; set; } = null!;
+    [Required] public string Username { get; set; } = null!;
+    [Required] public string Password { get; set; } = null!;
 
     public int RetryCount { get; set; } = 3;
-    public int RetryInitialIntervalSeconds { get; set; } = 2;
-    public int RetryMaxIntervalSeconds { get; set; } = 30;
+    
+    public TimeSpan RetryInitialInterval { get; set; } = TimeSpan.FromSeconds(2);
+    public TimeSpan RetryMaxInterval { get; set; } = TimeSpan.FromSeconds(30);
 }

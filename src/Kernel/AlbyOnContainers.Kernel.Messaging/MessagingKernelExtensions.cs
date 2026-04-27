@@ -1,3 +1,5 @@
+using System.Reflection;
+using AlbyOnContainers.Kernel.Messaging.Attributes;
 using AlbyOnContainers.Kernel.Messaging.Filters;
 using AlbyOnContainers.Kernel.Messaging.Options;
 using FluentValidation;
@@ -13,45 +15,59 @@ public static class MessagingKernelExtensions
     extension (IKernelBuilder builder)
     {
         // ==============================================================================
-        // 1. OVERLOAD CON OUTBOX PATTERN (Per microservizi con DbContext)
+        // 1. OVERLOAD CON OUTBOX PATTERN (Multi-Assembly Support)
         // ==============================================================================
 
-        public IKernelBuilder WithMessaging<TMarker, TDbContext>(string? section = null)
-            where TDbContext : DbContext
+        public IKernelBuilder WithMessaging<TDbContext>(string? section, params Type[] assemblyMarkers) where TDbContext : DbContext
         {
+            if (assemblyMarkers.Length == 0) 
+                throw new ArgumentException("At least one assembly marker must be provided.", nameof(assemblyMarkers));
+            
             builder.BindOptions(section);
-            BuildAndConfigureMassTransit<TMarker, TDbContext>(builder.Host.Services);
+            BuildAndConfigureMassTransit<TDbContext>(builder.Host.Services, assemblyMarkers);
+            
             return builder;
         }
 
-        public IKernelBuilder WithMessaging<TMarker, TDbContext>(Action<MessagingOptions> configureOptions)
-            where TDbContext : DbContext
+        public IKernelBuilder WithMessaging<TDbContext>(Action<MessagingOptions> configureOptions, params Type[] assemblyMarkers) where TDbContext : DbContext
         {
+            if (assemblyMarkers.Length == 0) 
+                throw new ArgumentException("At least one assembly marker must be provided.", nameof(assemblyMarkers));
+
             builder.ConfigureOptions(configureOptions);
-            BuildAndConfigureMassTransit<TMarker, TDbContext>(builder.Host.Services);
+            BuildAndConfigureMassTransit<TDbContext>(builder.Host.Services, assemblyMarkers);
+            
             return builder;
         }
 
         // ==============================================================================
-        // 2. OVERLOAD SENZA OUTBOX (Per microservizi stateless senza DB)
+        // 2. OVERLOAD SENZA OUTBOX (Multi-Assembly Support)
         // ==============================================================================
 
-        public IKernelBuilder WithMessaging<TMarker>(string? section = null)
+        public IKernelBuilder WithMessaging(string? section, params Type[] assemblyMarkers)
         {
+            if (assemblyMarkers.Length == 0) 
+                throw new ArgumentException("At least one assembly marker must be provided.", nameof(assemblyMarkers));
+
             builder.BindOptions(section);
-            BuildAndConfigureMassTransit<TMarker>(builder.Host.Services);
+            BuildAndConfigureMassTransit(builder.Host.Services, assemblyMarkers);
+            
             return builder;
         }
 
-        public IKernelBuilder WithMessaging<TMarker>(Action<MessagingOptions> configureOptions)
+        public IKernelBuilder WithMessaging(Action<MessagingOptions> configureOptions, params Type[] assemblyMarkers)
         {
+            if (assemblyMarkers.Length == 0) 
+                throw new ArgumentException("At least one assembly marker must be provided.", nameof(assemblyMarkers));
+
             builder.ConfigureOptions(configureOptions);
-            BuildAndConfigureMassTransit<TMarker>(builder.Host.Services);
+            BuildAndConfigureMassTransit(builder.Host.Services, assemblyMarkers);
+            
             return builder;
         }
 
         // ==============================================================================
-        // PRIVATE HELPERS E LOGICA DI REGISTRAZIONE
+        // PRIVATE HELPERS & LOGIC
         // ==============================================================================
 
         private void BindOptions(string? section)
@@ -72,11 +88,8 @@ public static class MessagingKernelExtensions
                 .ValidateOnStart();
         }
 
-        // Configura il MassTransit includendo l'Outbox Pattern di Entity Framework
-        private static void BuildAndConfigureMassTransit<TMarker, TDbContext>(IServiceCollection services)
-            where TDbContext : DbContext
-        {
-            BuildAndConfigureMassTransit<TMarker>(services, cfg =>
+        private static void BuildAndConfigureMassTransit<TDbContext>(IServiceCollection services, Type[] markers) where TDbContext : DbContext =>
+            BuildAndConfigureMassTransit(services, markers, cfg =>
             {
                 cfg.AddEntityFrameworkOutbox<TDbContext>(o =>
                 {
@@ -84,39 +97,42 @@ public static class MessagingKernelExtensions
                     o.UseBusOutbox();
                 });
             });
-        }
 
-        // Configurazione core: isola il Mediator (CQRS In-Process) da RabbitMQ (Eventi Asincroni)
-        private static void BuildAndConfigureMassTransit<TMarker>(
-            IServiceCollection services, 
-            Action<IBusRegistrationConfigurator>? configureBus = null)
+        private static void BuildAndConfigureMassTransit(IServiceCollection services, Type[] markers, Action<IBusRegistrationConfigurator>? configureBus = null)
         {
-            var assembly = typeof(TMarker).Assembly;
+            // Extract unique assemblies to avoid scanning the same assembly multiple times
+            var assemblies = markers.Select(t => t.Assembly).Distinct().ToArray();
 
             // 1. IN-PROCESS MEDIATOR (Commands & Queries ONLY)
             services.AddMediator(cfg =>
             {
+                // Strict isolation: Only load consumers decorated with [MediatorConsumer]
                 cfg.AddConsumers(type => 
-                    type.Name.EndsWith("CommandConsumer") || type.Name.EndsWith("QueryConsumer"), 
-                    assembly);
+                    type.GetCustomAttribute<MediatorConsumerAttribute>() is not null, 
+                    assemblies);
 
                 cfg.ConfigureMediator((context, mCfg) =>
                 {
-                    mCfg.UseConsumeFilter(typeof(ValidationFilter<>), context);
+                    // LIFO Pipeline: GlobalExceptionFilter MUST be registered first to catch Validation exceptions
                     mCfg.UseConsumeFilter(typeof(GlobalExceptionFilter<>), context);
+                    mCfg.UseConsumeFilter(typeof(ValidationFilter<>), context);
                 });
             });
 
             // 2. OUT-OF-PROCESS BUS (Events & External Integration ONLY)
             services.AddMassTransit(cfg =>
             {
+                // Strict isolation: Only load consumers decorated with [EventConsumer]
                 cfg.AddConsumers(type => 
-                    type.Name.EndsWith("EventConsumer"), 
-                    assembly);
+                    type.GetCustomAttribute<EventConsumerAttribute>() is not null, 
+                    assemblies);
 
                 cfg.SetKebabCaseEndpointNameFormatter();
+                
+                // Keep diagnostics clean in production environments
+                cfg.DisableUsageTelemetry();
 
-                // Applica configurazioni custom al Bus (es. l'Outbox Pattern iniettato dall'overload)
+                // Apply custom bus configurations (like the EF Core Outbox)
                 configureBus?.Invoke(cfg);
 
                 cfg.UsingRabbitMq((context, rmq) =>
@@ -129,23 +145,24 @@ public static class MessagingKernelExtensions
                         h.Password(options.Password);
                     });
 
-                    // Resilienza: Exponential Backoff per errori transitori
+                    // Transparent Resilience using TimeSpans
                     rmq.UseMessageRetry(r => r.Exponential(
                         options.RetryCount,
-                        TimeSpan.FromSeconds(options.RetryInitialIntervalSeconds),
-                        TimeSpan.FromSeconds(options.RetryMaxIntervalSeconds),
-                        TimeSpan.FromSeconds(5)
+                        options.RetryInitialInterval,
+                        options.RetryMaxInterval,
+                        TimeSpan.FromSeconds(5) // delta
                     ));
 
-                    rmq.UseConsumeFilter(typeof(ValidationFilter<>), context);
+                    // LIFO Pipeline: Consistent with Mediator behavior
                     rmq.UseConsumeFilter(typeof(GlobalExceptionFilter<>), context);
+                    rmq.UseConsumeFilter(typeof(ValidationFilter<>), context);
 
                     rmq.ConfigureEndpoints(context);
                 });
             });
 
-            // Registra i Validator per FluentValidation
-            services.AddValidatorsFromAssembly(assembly, includeInternalTypes: true);
+            // Register FluentValidation across all scanned assemblies
+            services.AddValidatorsFromAssemblies(assemblies, includeInternalTypes: true);
         }
     }
 }

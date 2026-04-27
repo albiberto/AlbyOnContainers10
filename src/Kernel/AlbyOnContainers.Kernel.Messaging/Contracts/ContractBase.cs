@@ -1,6 +1,6 @@
 ﻿namespace AlbyOnContainers.Kernel.Messaging.Contracts;
 
-public abstract record ContractBase(long Version = 0)
+public abstract record ContractBase
 {
-    public DateTimeOffset OccurredOn { get; init; } = DateTimeOffset.UtcNow;
+    public required DateTimeOffset OccurredOn { get; init; }
 }
