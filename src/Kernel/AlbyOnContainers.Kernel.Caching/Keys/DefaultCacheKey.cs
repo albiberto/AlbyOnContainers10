@@ -2,18 +2,17 @@
 
 namespace AlbyOnContainers.Kernel.Caching.Keys;
 
-/// <summary>
-///     Strongly-typed cache key generator based on the generic type.
-///     Computes the entity prefix only once per type at runtime for peak performance.
-/// </summary>
-/// <typeparam name="T">The type of the entity or DTO being cached.</typeparam>
-public record DefaultCacheKey<T>(string? Identifier = null) : ICacheKey
+public record DefaultCacheKey<T> : ICacheKey
 {
-    private static readonly string EntityPrefix = typeof(T).Name.Replace("Dto", string.Empty).ToLowerInvariant();
+    private static readonly string EntityPrefix = typeof(T).Name.ToLowerInvariant();
+    
+    public string Value { get; }
 
-    public string Value => string.IsNullOrWhiteSpace(Identifier) 
-        ? $"{EntityPrefix}:all" 
-        : $"{EntityPrefix}:{Identifier.ToLowerInvariant()}";
+    public DefaultCacheKey() => Value = $"{EntityPrefix}:all";
 
-    public override string ToString() => Value;
+    public DefaultCacheKey(string identifier) => Value = $"{EntityPrefix}:{identifier.ToLowerInvariant()}";
+
+    public DefaultCacheKey(Guid identifier) => Value = $"{EntityPrefix}:{identifier}";
+
+    public static implicit operator string(DefaultCacheKey<T> key) => key.Value;
 }

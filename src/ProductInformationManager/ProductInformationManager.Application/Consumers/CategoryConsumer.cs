@@ -13,19 +13,19 @@ public class CategoryConsumer(CategoryCache cache, ILogger<CategoryConsumer> log
 {
     public async Task Consume(ConsumeContext<CategoryCreatedEvent> context)
     {
-        await cache.ExpireAllAsync(context.CancellationToken);
+        await cache.InvalidateAllAsync(context.CancellationToken);
         logger.LogInformation("PIM category cache invalidated after CategoryCreatedEvent {CategoryId}", context.Message.Id);
     }
 
     public async Task Consume(ConsumeContext<CategoryUpdatedEvent> context)
     {
-        await cache.ExpireAllAsync(context.CancellationToken);
+        await cache.InvalidateAllAsync(context.CancellationToken);
         logger.LogInformation("PIM category cache invalidated after CategoryUpdatedEvent {CategoryId}", context.Message.Id);
     }
 
     public async Task Consume(ConsumeContext<CategoryDeletedEvent> context)
     {
-        await cache.ExpireAllAsync(context.CancellationToken);
+        await cache.InvalidateAllAsync(context.CancellationToken);
         logger.LogInformation("PIM category cache invalidated after CategoryDeletedEvent {CategoryId}", context.Message.Id);
     }
 }
