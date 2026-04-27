@@ -113,8 +113,8 @@ public static class MessagingKernelExtensions
 
                 cfg.ConfigureMediator((context, mCfg) =>
                 {
-                    mCfg.UseConsumeFilter(typeof(ValidationFilter<>), context);
                     mCfg.UseConsumeFilter(typeof(GlobalExceptionFilter<>), context);
+                    mCfg.UseConsumeFilter(typeof(ValidationFilter<>), context);
                 });
             });
 
@@ -147,8 +147,8 @@ public static class MessagingKernelExtensions
                         options.RetryDeltaInterval
                     ));
 
-                    rmq.UseConsumeFilter(typeof(ValidationFilter<>), context);
                     rmq.UseConsumeFilter(typeof(GlobalExceptionFilter<>), context);
+                    rmq.UseConsumeFilter(typeof(ValidationFilter<>), context);
 
                     rmq.ConfigureEndpoints(context);
                 });

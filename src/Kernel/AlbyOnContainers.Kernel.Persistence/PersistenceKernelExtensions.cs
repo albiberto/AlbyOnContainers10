@@ -1,19 +1,16 @@
-using AlbyOnContainers.Kernel.Persistence.Interceptors;
-using AlbyOnContainers.Kernel.Persistence.Options;
+namespace AlbyOnContainers.Kernel.Persistence;
+
+using System;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-
-namespace AlbyOnContainers.Kernel.Persistence;
+using Options;
 
 public static class PersistenceKernelExtensions
 {
-    extension (IKernelBuilder builder)
+    extension(IKernelBuilder builder)
     {
-        // ==============================================================================
-        // STRICTLY TDbContext OVERLOADS ONLY
-        // ==============================================================================
-
         public IKernelBuilder WithPersistence<TDbContext>(Action<IServiceProvider, DbContextOptionsBuilder> configureDbContext, string? section = null) where TDbContext : DbContext
         {
             builder.BindOptions(section);
@@ -27,10 +24,6 @@ public static class PersistenceKernelExtensions
             BuildAndConfigurePersistence<TDbContext>(builder.Host.Services, configureDbContext);
             return builder;
         }
-
-        // ==============================================================================
-        // PRIVATE HELPERS
-        // ==============================================================================
 
         private void BindOptions(string? section)
         {
@@ -50,25 +43,28 @@ public static class PersistenceKernelExtensions
                 .ValidateOnStart();
         }
 
-        private static void BuildAndConfigurePersistence<TDbContext>(
-            IServiceCollection services, 
-            Action<IServiceProvider, DbContextOptionsBuilder> configureDbContext)
-            where TDbContext : DbContext
+        private static void BuildAndConfigurePersistence<TDbContext>(IServiceCollection services, Action<IServiceProvider, DbContextOptionsBuilder> configureDbContext) where TDbContext : DbContext
         {
-            services.AddSingleton<AuditableEntityInterceptor>();
-            services.AddSingleton<DomainEventDispatcherInterceptor>();
+            services.PostConfigure<PersistenceOptions>(options =>
+            {
+                if (string.IsNullOrWhiteSpace(options.MetricPrefix)) options.MetricPrefix = typeof(TDbContext).Name.ToLowerInvariant();
+            });
+
+            services.Scan(scan => scan
+                .FromAssemblyOf<PersistenceOptions>()
+                .AddClasses(classes => classes.AssignableTo<IInterceptor>())
+                .AsImplementedInterfaces()
+                .WithSingletonLifetime()
+            );
 
             services.AddDbContext<TDbContext>((sp, options) =>
             {
-                // Defer provider configuration (e.g. Npgsql) to the caller
                 configureDbContext(sp, options);
 
-                var persistenceOptions = sp.GetRequiredService<IOptions<PersistenceOptions>>().Value;
+                var interceptors = sp.GetServices<IInterceptor>();
+                options.AddInterceptors(interceptors);
 
-                options.AddInterceptors(
-                    sp.GetRequiredService<AuditableEntityInterceptor>(),
-                    sp.GetRequiredService<DomainEventDispatcherInterceptor>()
-                );
+                var persistenceOptions = sp.GetRequiredService<IOptions<PersistenceOptions>>().Value;
 
                 if (persistenceOptions.EnableSensitiveDataLogging)
                     options.EnableSensitiveDataLogging();

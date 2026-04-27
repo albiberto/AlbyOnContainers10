@@ -46,6 +46,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AlbyonContainers.AppHost", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AlbyOnContainers.Kernel.Messaging", "src\Kernel\AlbyOnContainers.Kernel.Messaging\AlbyOnContainers.Kernel.Messaging.csproj", "{C951291A-78D5-4463-90B3-3B043FF84AF1}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AlbyOnContainers.Kernel.Localization", "src\Kernel\AlbyOnContainers.Kernel.Localization\AlbyOnContainers.Kernel.Localization.csproj", "{D808D791-D4D8-48E0-9968-9A6F465CD6F9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -248,6 +250,18 @@ Global
 		{7BFA2AD6-1D3F-41F4-996B-B286D5543314}.Release|x64.Build.0 = Release|Any CPU
 		{7BFA2AD6-1D3F-41F4-996B-B286D5543314}.Release|x86.ActiveCfg = Release|Any CPU
 		{7BFA2AD6-1D3F-41F4-996B-B286D5543314}.Release|x86.Build.0 = Release|Any CPU
+		{D808D791-D4D8-48E0-9968-9A6F465CD6F9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D808D791-D4D8-48E0-9968-9A6F465CD6F9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D808D791-D4D8-48E0-9968-9A6F465CD6F9}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{D808D791-D4D8-48E0-9968-9A6F465CD6F9}.Debug|x64.Build.0 = Debug|Any CPU
+		{D808D791-D4D8-48E0-9968-9A6F465CD6F9}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{D808D791-D4D8-48E0-9968-9A6F465CD6F9}.Debug|x86.Build.0 = Debug|Any CPU
+		{D808D791-D4D8-48E0-9968-9A6F465CD6F9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D808D791-D4D8-48E0-9968-9A6F465CD6F9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D808D791-D4D8-48E0-9968-9A6F465CD6F9}.Release|x64.ActiveCfg = Release|Any CPU
+		{D808D791-D4D8-48E0-9968-9A6F465CD6F9}.Release|x64.Build.0 = Release|Any CPU
+		{D808D791-D4D8-48E0-9968-9A6F465CD6F9}.Release|x86.ActiveCfg = Release|Any CPU
+		{D808D791-D4D8-48E0-9968-9A6F465CD6F9}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -269,5 +283,6 @@ Global
 		{EE9406B2-93ED-22E9-272C-31E76D030FDA} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{302500B6-AB7B-47AE-A51B-E961B2761DB4} = {EE9406B2-93ED-22E9-272C-31E76D030FDA}
 		{C951291A-78D5-4463-90B3-3B043FF84AF1} = {72AD5FF9-9596-4B21-9AF1-06284CBFC4C9}
+		{D808D791-D4D8-48E0-9968-9A6F465CD6F9} = {72AD5FF9-9596-4B21-9AF1-06284CBFC4C9}
 	EndGlobalSection
 EndGlobal

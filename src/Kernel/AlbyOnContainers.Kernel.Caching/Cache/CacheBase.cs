@@ -62,7 +62,7 @@ public abstract class CacheBase<TDto>(IFusionCache cache, IServiceScopeFactory s
         await cache.RemoveAsync(key, token: cancellationToken);
     }
 
-    public async Task InvalidateByIdAsync(string id, CancellationToken cancellationToken = default)
+    public async Task InvalidateByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var key = new DefaultCacheKey<TDto>(id).Value;
         await cache.RemoveAsync(key, token: cancellationToken);

@@ -1,18 +1,14 @@
 using System.ComponentModel.DataAnnotations;
+using AlbyOnContainers.Kernel.Options;
 
 namespace AlbyOnContainers.Kernel.Localization.Options;
 
-public class LocalizationOptions
+public sealed class LocalizationOptions : KernelOptions<LocalizationOptions>
 {
-    public const string SectionName = "Localization";
+    [Required(AllowEmptyStrings = false)]
+    public string DefaultCulture { get; set; } = "en";
 
     [Required]
-    public string ResourcesPath { get; set; } = "Resources";
-
-    [Required]
-    public string DefaultCulture { get; set; } = "it";
-
-    [Required]
-    [MinLength(1)]
-    public string[] SupportedCultures { get; set; } = ["en", "it"];
+    [MinLength(1, ErrorMessage = "At least one supported culture must be defined.")]
+    public string[] SupportedCultures { get; set; } = ["it", "en"];
 }

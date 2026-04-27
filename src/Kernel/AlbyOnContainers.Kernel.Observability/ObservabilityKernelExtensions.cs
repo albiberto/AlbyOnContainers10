@@ -1,11 +1,10 @@
-using System;
+using AlbyOnContainers.Kernel.Observability.Detectors;
 using AlbyOnContainers.Kernel.Observability.Options;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
@@ -15,148 +14,129 @@ namespace AlbyOnContainers.Kernel.Observability;
 
 public static class ObservabilityKernelExtensions
 {
-    public static IKernelBuilder WithObservability(this IKernelBuilder builder, string sectionName = ObservabilityOptions.SectionName)
+    extension(IKernelBuilder builder)
     {
-        builder.Host.Services.AddOptions<ObservabilityOptions>()
-            .BindConfiguration(sectionName)
-            .ValidateDataAnnotations()
-            .ValidateOnStart();
+        public IKernelBuilder WithObservability(string? section = null)
+        {
+            builder.Host.Services.AddOptions<ObservabilityOptions>()
+                .BindConfiguration(section ?? ObservabilityOptions.Section)
+                .ValidateDataAnnotations()
+                .ValidateOnStart();
 
-        builder.AddInternalObservability(typeof(ObservabilityKernelExtensions).Assembly);
-        return builder;
-    }
+            builder.AddInternalObservability(typeof(ObservabilityKernelExtensions).Assembly);
+            return builder;
+        }
 
-    public static IKernelBuilder WithObservability(this IKernelBuilder builder, Action<ObservabilityOptions> configureOptions)
-    {
-        builder.Host.Services.AddOptions<ObservabilityOptions>()
-            .Configure(configureOptions)
-            .ValidateDataAnnotations()
-            .ValidateOnStart();
+        public IKernelBuilder WithObservability(Action<ObservabilityOptions> configureOptions)
+        {
+            builder.Host.Services
+                .AddOptions<ObservabilityOptions>()
+                .Configure(configureOptions)
+                .ValidateDataAnnotations()
+                .ValidateOnStart();
 
-        builder.AddInternalObservability(typeof(ObservabilityKernelExtensions).Assembly);
-        return builder;
-    }
+            builder.AddInternalObservability(typeof(ObservabilityKernelExtensions).Assembly);
+            return builder;
+        }
 
-    public static IKernelBuilder WithObservability<TMarker>(this IKernelBuilder builder, string sectionName = ObservabilityOptions.SectionName)
-    {
-        builder.Host.Services.AddOptions<ObservabilityOptions>()
-            .BindConfiguration(sectionName)
-            .ValidateDataAnnotations()
-            .ValidateOnStart();
+        public IKernelBuilder WithObservability<TMarker>(string? section = null)
+        {
+            builder.Host.Services
+                .AddOptions<ObservabilityOptions>()
+                .BindConfiguration(section ?? ObservabilityOptions.Section)
+                .ValidateDataAnnotations()
+                .ValidateOnStart();
 
-        builder.AddInternalObservability(typeof(TMarker).Assembly);
-        return builder;
-    }
+            builder.AddInternalObservability(typeof(TMarker).Assembly);
+            return builder;
+        }
 
-    private static IKernelBuilder AddInternalObservability(this IKernelBuilder builder, System.Reflection.Assembly scanAssembly)
-    {
-        builder.ConfigureOpenTelemetry(scanAssembly);
-        builder.AddDefaultHealthChecks();
+        private IKernelBuilder AddInternalObservability(System.Reflection.Assembly scanAssembly)
+        {
+            builder.ConfigureOpenTelemetry(scanAssembly);
+            builder.AddDefaultHealthChecks();
         
-        builder.Host.Services.AddServiceDiscovery();
-        builder.Host.Services.ConfigureHttpClientDefaults(http =>
-        {
-            http.AddStandardResilienceHandler();
-            http.AddServiceDiscovery();
-        });
-
-        return builder;
-    }
-
-    private static IKernelBuilder ConfigureOpenTelemetry(this IKernelBuilder builder, System.Reflection.Assembly scanAssembly)
-    {
-        builder.Host.Logging.AddOpenTelemetry(logging =>
-        {
-            logging.IncludeFormattedMessage = true;
-            logging.IncludeScopes = true;
-            logging.ParseStateValues = true;
-        });
-
-        builder.Host.Services.AddOpenTelemetry()
-            .ConfigureResource(resource =>
+            builder.Host.Services.AddServiceDiscovery();
+            builder.Host.Services.ConfigureHttpClientDefaults(http =>
             {
-                var sp = builder.Host.Services.BuildServiceProvider();
-                var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<ObservabilityOptions>>().Value;
+                http.AddStandardResilienceHandler();
+                http.AddServiceDiscovery();
+            });
 
-                resource.AddService(
-                    serviceName: options.ServiceName,
-                    serviceNamespace: options.Namespace,
-                    serviceInstanceId: System.Environment.MachineName);
-                
-                resource.AddEnvironmentVariableDetector();
-            })
-            .WithMetrics(metrics =>
+            return builder;
+        }
+
+        private IKernelBuilder ConfigureOpenTelemetry(System.Reflection.Assembly scanAssembly)
+        {
+            builder.Host.Logging.AddOpenTelemetry(logging =>
             {
-                metrics.AddAspNetCoreInstrumentation()
-                    .AddHttpClientInstrumentation()
-                    .AddRuntimeInstrumentation();
+                logging.IncludeFormattedMessage = true;
+                logging.IncludeScopes = true;
+                logging.ParseStateValues = true;
+            });
 
-                var sp = builder.Host.Services.BuildServiceProvider();
-                var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<ObservabilityOptions>>().Value;
-
-                foreach (var meter in options.CustomMeters)
+            builder.Host.Services.AddOpenTelemetry()
+                .ConfigureResource(resource =>
                 {
-                    metrics.AddMeter(meter);
-                }
+                    resource.AddDetector(sp => new OptionsResourceDetector(sp.GetRequiredService<IOptions<ObservabilityOptions>>().Value));
+                    resource.AddEnvironmentVariableDetector();
+                })
+                .WithMetrics(_ => { /* Configurato lazy sotto */ })
+                .WithTracing(_ => { /* Configurato lazy sotto */ });
+
+            builder.Host.Services.ConfigureOpenTelemetryMeterProvider((sp, metrics) =>
+            {
+                var options = sp.GetRequiredService<IOptions<ObservabilityOptions>>().Value;
+                
+                metrics.AddAspNetCoreInstrumentation().AddRuntimeInstrumentation();
+                if (options.EnableHttpClientTracing) metrics.AddHttpClientInstrumentation();
+                
+                foreach (var meter in options.CustomMeters) metrics.AddMeter(meter);
                 
                 if (scanAssembly.GetName().Name is { } assemblyName && !options.CustomMeters.Contains(assemblyName))
-                {
                     metrics.AddMeter(assemblyName);
-                }
-            })
-            .WithTracing(tracing =>
-            {
-                tracing.AddAspNetCoreInstrumentation()
-                    .AddHttpClientInstrumentation()
-                    .AddEntityFrameworkCoreInstrumentation();
+            });
 
-                var sp = builder.Host.Services.BuildServiceProvider();
-                var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<ObservabilityOptions>>().Value;
+            builder.Host.Services.ConfigureOpenTelemetryTracerProvider((sp, tracing) =>
+            {
+                var options = sp.GetRequiredService<IOptions<ObservabilityOptions>>().Value;
+
+                tracing.AddAspNetCoreInstrumentation();
+                if (options.EnableHttpClientTracing) tracing.AddHttpClientInstrumentation();
+                if (options.EnableEntityFrameworkTracing) tracing.AddEntityFrameworkCoreInstrumentation();
 
                 tracing.AddSource(options.ServiceName);
+                foreach (var source in options.DefaultTracingSources) tracing.AddSource(source);
+                foreach (var source in options.CustomTracingSources) tracing.AddSource(source);
 
-                foreach (var source in options.CustomTracingSources)
-                {
-                    tracing.AddSource(source);
-                }
-                
-                if (scanAssembly.GetName().Name is { } assemblyName && !options.CustomTracingSources.Contains(assemblyName))
+                if (scanAssembly.GetName().Name is { } assemblyName && 
+                    !options.CustomTracingSources.Contains(assemblyName) && 
+                    !options.DefaultTracingSources.Contains(assemblyName))
                 {
                     tracing.AddSource(assemblyName);
                 }
             });
 
-        var spExporter = builder.Host.Services.BuildServiceProvider();
-        var opt = spExporter.GetRequiredService<Microsoft.Extensions.Options.IOptions<ObservabilityOptions>>().Value;
-        
-        var hasEndpoint = !string.IsNullOrWhiteSpace(opt.OtlpEndpoint) || !string.IsNullOrWhiteSpace(builder.Host.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]);
-        if (opt.EnableOtlpExporter && hasEndpoint)
-        {
+            // L'attivazione di OTLP può dipendere dalla config a runtime
             builder.Host.Services.AddOpenTelemetry().UseOtlpExporter();
+
+            return builder;
         }
 
-        return builder;
+        private void AddDefaultHealthChecks() =>
+            builder.Host.Services
+                .AddHealthChecks()
+                .AddCheck("self", () => HealthCheckResult.Healthy(), ["live"]);
     }
 
-    private static IKernelBuilder AddDefaultHealthChecks(this IKernelBuilder builder)
-    {
-        builder.Host.Services.AddHealthChecks()
-            .AddCheck("self", () => HealthCheckResult.Healthy(), ["live"]);
-
-        return builder;
-    }
-
-    // Metodo di estensione per mappare gli endpoint nell'app (es. /health)
     public static WebApplication MapKernelObservabilityEndpoints(this WebApplication app)
     {
-        if (app.Environment.IsDevelopment())
+        app.MapHealthChecks("/health");
+        app.MapHealthChecks("/alive", new()
         {
-            app.MapHealthChecks("/health");
-            app.MapHealthChecks("/alive", new HealthCheckOptions
-            {
-                Predicate = r => r.Tags.Contains("live")
-            });
-        }
+            Predicate = r => r.Tags.Contains("live")
+        });
+        
         return app;
     }
 }
