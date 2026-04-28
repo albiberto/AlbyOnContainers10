@@ -5,34 +5,41 @@ using Medallion.Threading;
 using Medallion.Threading.Redis;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 using StackExchange.Redis;
 
 namespace AlbyOnContainers.Plugins.DistributedLocks;
 
+using HostedServices;
+
 public static class DistributedLocksPluginExtensions
 {
-    public static IKernelBuilder WithDistributedLocks(this IKernelBuilder builder, Action<DistributedLockOptions> configureOptions)
+    extension(IKernelBuilder builder)
     {
-        builder.Host.Services.AddOptions<DistributedLockOptions>()
-            .Configure(configureOptions)
-            .ValidateDataAnnotations()
-            .ValidateOnStart();
+        public IKernelBuilder WithDistributedLocks(Action<DistributedLockOptions> configureOptions)
+        {
+            builder.Host.Services.AddOptions<DistributedLockOptions>()
+                .Configure(configureOptions)
+                .ValidateDataAnnotations()
+                .ValidateOnStart();
 
-        builder.Host.Services.AddCoreDistributedLocks(builder.Host.Configuration);
+            builder.Host.Services.AddCoreDistributedLocks(builder.Host.Configuration);
     
-        return builder;
-    }
+            return builder;
+        }
 
-    public static IKernelBuilder WithDistributedLocks(this IKernelBuilder builder, string sectionName = "DistributedLock")
-    {
-        builder.Host.Services.AddOptions<DistributedLockOptions>()
-            .Bind(builder.Host.Configuration.GetSection(sectionName))
-            .ValidateDataAnnotations()
-            .ValidateOnStart();
+        public IKernelBuilder WithDistributedLocks(string sectionName = "DistributedLock")
+        {
+            builder.Host.Services.AddOptions<DistributedLockOptions>()
+                .Bind(builder.Host.Configuration.GetSection(sectionName))
+                .ValidateDataAnnotations()
+                .ValidateOnStart();
 
-        builder.Host.Services.AddCoreDistributedLocks(builder.Host.Configuration);
+            builder.Host.Services.AddCoreDistributedLocks(builder.Host.Configuration);
 
-        return builder;
+            return builder;
+        }
     }
 
     private static void AddCoreDistributedLocks(this IServiceCollection services, IConfiguration configuration)
@@ -44,9 +51,14 @@ public static class DistributedLocksPluginExtensions
             options.RedisChannel = $"{projectName}-locks".ToLowerInvariant();
         });
         
-        var redisConnection = configuration.GetConnectionString("cache") ?? throw new InvalidOperationException("Connection string 'cache' not found. Distributed Locks cannot be established.");
-
-        services.AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(redisConnection));
+        services.TryAddSingleton<IConnectionMultiplexer>(sp =>
+        {
+            var options = sp.GetRequiredService<IOptions<DistributedLockOptions>>().Value;
+            var redisConnection = configuration.GetConnectionString(options.ConnectionStringName) 
+                ?? throw new InvalidOperationException($"Connection string '{options.ConnectionStringName}' not found. Distributed Locks cannot be established.");
+            
+            return ConnectionMultiplexer.Connect(redisConnection);
+        });
 
         services.AddSingleton<IDistributedLockProvider>(sp =>
         {
@@ -57,6 +69,6 @@ public static class DistributedLocksPluginExtensions
         services.AddSingleton<DistributedLockHostedService>();
         services.AddHostedService(sp => sp.GetRequiredService<DistributedLockHostedService>());
         services.AddSingleton(typeof(LockTracker<>));
-        services.AddScoped(typeof(LockNotifier<>));
+        services.AddSingleton(typeof(LockNotifier<>));
     }
 }

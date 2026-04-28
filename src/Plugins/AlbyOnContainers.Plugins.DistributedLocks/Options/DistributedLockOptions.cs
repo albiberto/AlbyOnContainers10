@@ -2,9 +2,12 @@
 
 namespace AlbyOnContainers.Plugins.DistributedLocks.Options;
 
-public class DistributedLockOptions
+using Kernel.Options;
+
+public class DistributedLockOptions : KernelOptions<DistributedLockOptions>
 {
-    [Required(ErrorMessage = "The Redis Pub/Sub channel is required.")]
+    public string ConnectionStringName { get; set; } = "cache";
+
     [MinLength(3, ErrorMessage = "The Redis channel name must be at least 3 characters long.")]
     public string? RedisChannel { get; set; }
 

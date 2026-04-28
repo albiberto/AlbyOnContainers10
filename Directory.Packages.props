@@ -54,6 +54,8 @@
     <PackageVersion Include="ZiggyCreatures.FusionCache.Backplane.StackExchangeRedis" Version="2.6.0" />
     <PackageVersion Include="ZiggyCreatures.FusionCache.Serialization.NeueccMessagePack" Version="2.6.0" />
     <!-- Other -->
+    <PackageVersion Include="MessagePack" Version="3.1.4" />
+    <PackageVersion Include="MessagePack.Annotations" Version="3.1.4" />
     <PackageVersion Include="Polly.Core" Version="8.6.6" />
     <PackageVersion Include="Scrutor" Version="7.0.0" />
     <PackageVersion Include="System.Reactive" Version="6.1.0" />

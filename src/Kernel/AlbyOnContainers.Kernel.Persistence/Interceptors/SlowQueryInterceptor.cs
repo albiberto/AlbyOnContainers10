@@ -21,6 +21,9 @@ internal sealed partial class SlowQueryInterceptor : DbCommandInterceptor
     {
         _logger = logger;
         _options = options.Value;
+        
+        ArgumentException.ThrowIfNullOrWhiteSpace(_options.MetricPrefix);
+        
         _logPrefix = $"[{_options.MetricPrefix.ToUpperInvariant()} PERSISTENCE]";
 
         var meter = meterFactory.Create(new("AlbyOnContainers.Kernel.Persistence"));
