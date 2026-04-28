@@ -52,8 +52,20 @@ public sealed class DomainEventDispatcherInterceptor(ILogger<DomainEventDispatch
         // 3. Pubblicazione nell'Outbox (aggiunge entità al ChangeTracker)
         foreach (var domainEvent in domainEvents)
         {
+            logger.LogDebug("Processing Domain Event: {EventName}", domainEvent.GetType().Name);
+        
             var integrationMessages = mapper?.Map(domainEvent)?.ToList() ?? [];
-            foreach (var message in integrationMessages) await publishEndpoint.Publish(message, message.GetType(), cancellationToken);
+        
+            if (integrationMessages.Count == 0)
+            {
+                logger.LogDebug("Domain Event {EventName} produced no Integration Messages.", domainEvent.GetType().Name);
+                continue;
+            }
+
+            foreach (var message in integrationMessages) 
+            {
+                await publishEndpoint.Publish(message, message.GetType(), cancellationToken);
+            }
         }
 
         // 4. Esecuzione del commit SQL (Entità Business + Righe Outbox in un'unica transazione)

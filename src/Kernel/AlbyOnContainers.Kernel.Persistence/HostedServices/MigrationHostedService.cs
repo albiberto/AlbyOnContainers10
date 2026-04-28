@@ -52,11 +52,14 @@ public sealed class MigrationHostedService<TDbContext>(
 
         try
         {
-            using var scope = serviceProvider.CreateScope();
-            var dbContext = scope.ServiceProvider.GetRequiredService<TDbContext>();
-
-            // Execute the migration wrapped in the resilience pipeline
-            await retryPipeline.ExecuteAsync(async token => { await dbContext.Database.MigrateAsync(token); }, stoppingToken);
+            await retryPipeline.ExecuteAsync(static async (sp, token) => 
+            { 
+                await using var scope = sp.CreateAsyncScope();
+                var dbContext = scope.ServiceProvider.GetRequiredService<TDbContext>();
+                
+                await dbContext.Database.MigrateAsync(token); 
+                
+            }, serviceProvider, stoppingToken).ConfigureAwait(false);
 
             logger.LogInformation("EF Core migrations for {DbContext} applied successfully.", typeof(TDbContext).Name);
         }
