@@ -13,8 +13,8 @@ public sealed class ObservabilityOptions : KernelOptions<ObservabilityOptions>
 
     public bool EnableHttpClientTracing { get; set; } = true;
     public bool EnableEntityFrameworkTracing { get; set; } = true;
+    public bool EnableOtlpExporter { get; set; } = false;
 
     public string[] CustomMeters { get; set; } = [];
     public string[] CustomTracingSources { get; set; } = [];
-    public string[] DefaultTracingSources { get; set; } = ["MassTransit"];
 }

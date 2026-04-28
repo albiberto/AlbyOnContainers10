@@ -2,7 +2,6 @@ using AlbyOnContainers.Kernel;
 using AlbyOnContainers.Kernel.Caching;
 using AlbyOnContainers.Kernel.Messaging;
 using AlbyOnContainers.Kernel.Observability;
-using MassTransit;
 using Microsoft.FluentUI.AspNetCore.Components;
 using ProductInformationManager.Application;
 using ProductInformationManager.Application.Cache;

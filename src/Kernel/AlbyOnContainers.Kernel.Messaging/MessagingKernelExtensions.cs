@@ -142,14 +142,10 @@ public static class MessagingKernelExtensions
         Action<IEntityFrameworkOutboxConfigurator> configureOutbox)
         where TDbContext : DbContext
     {
-        BuildAndConfigureMassTransit(services, markers, cfg =>
-        {
-            cfg.AddEntityFrameworkOutbox<TDbContext>(o =>
-            {
-                configureOutbox(o);
-                o.UseBusOutbox();
-            });
-        });
+        // ARCHITECTURAL NOTE: The caller is now responsible for calling 
+        // 'o.UseBusOutbox()' manually if they want the outbox to publish 
+        // to the message broker automatically.
+        BuildAndConfigureMassTransit(services, markers, cfg => cfg.AddEntityFrameworkOutbox<TDbContext>(configureOutbox));
     }
 
     private static void BuildAndConfigureMassTransit(

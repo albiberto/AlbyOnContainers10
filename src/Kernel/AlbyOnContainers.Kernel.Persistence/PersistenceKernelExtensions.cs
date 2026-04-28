@@ -1,80 +1,27 @@
-using System;
-using AlbyOnContainers.Kernel.Persistence.HostedServices;
-using AlbyOnContainers.Kernel.Persistence.Options;
+namespace AlbyOnContainers.Kernel.Persistence;
+
+using HostedServices;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-
-namespace AlbyOnContainers.Kernel.Persistence;
+using Options;
 
 public static class PersistenceKernelExtensions
 {
-    // ==============================================================================
-    // PUBLIC API (Fluent Builder)
-    // ==============================================================================
-
-    extension(IKernelBuilder builder)
-    {
-        public IKernelBuilder WithPersistence<TDbContext>(
-            Action<IServiceProvider, DbContextOptionsBuilder> configureDbContext, 
-            string? section = null) 
-            where TDbContext : DbContext
-        {
-            builder.BindOptions(section);
-            BuildAndConfigurePersistence<TDbContext>(builder.Host.Services, configureDbContext);
-            return builder;
-        }
-
-        public IKernelBuilder WithPersistence<TDbContext>(
-            Action<IServiceProvider, DbContextOptionsBuilder> configureDbContext, 
-            Action<PersistenceOptions> configureOptions) 
-            where TDbContext : DbContext
-        {
-            builder.ConfigureOptions(configureOptions);
-            BuildAndConfigurePersistence<TDbContext>(builder.Host.Services, configureDbContext);
-            return builder;
-        }
-
-        // ==============================================================================
-        // INTERNAL OPTIONS HELPERS
-        // ==============================================================================
-
-        private void BindOptions(string? section)
-        {
-            builder.Host.Services
-                .AddOptions<PersistenceOptions>()
-                .BindConfiguration(section ?? PersistenceOptions.Section)
-                .ValidateDataAnnotations()
-                .ValidateOnStart();
-        }
-
-        private void ConfigureOptions(Action<PersistenceOptions> configure)
-        {
-            builder.Host.Services
-                .AddOptions<PersistenceOptions>()
-                .Configure(configure)
-                .ValidateDataAnnotations()
-                .ValidateOnStart();
-        }
-    }
-
     // ==============================================================================
     // PRIVATE STATIC HELPERS & LOGIC
     // ==============================================================================
 
     private static void BuildAndConfigurePersistence<TDbContext>(
-        IServiceCollection services, 
-        Action<IServiceProvider, DbContextOptionsBuilder> configureDbContext) 
+        IServiceCollection services,
+        Action<IServiceProvider, DbContextOptionsBuilder> configureDbContext)
         where TDbContext : DbContext
     {
         // 1. Configure Metric Prefix Default
         services.PostConfigure<PersistenceOptions>(options =>
         {
-            if (string.IsNullOrWhiteSpace(options.MetricPrefix)) 
-            {
-                options.MetricPrefix = typeof(TDbContext).Name.ToLowerInvariant();
-            }
+            if (string.IsNullOrWhiteSpace(options.MetricPrefix)) options.MetricPrefix = typeof(TDbContext).Name.ToLowerInvariant();
         });
 
         // 2. Auto-Discovery for EF Core Interceptors
@@ -110,5 +57,53 @@ public static class PersistenceKernelExtensions
         // 5. Register Auto-Migration Hosted Service
         // ARCHITECTURAL NOTE: The execution of migrations is controlled via PersistenceOptions.RunMigrationsOnStartup
         services.AddHostedService<MigrationHostedService<TDbContext>>();
+    }
+    // ==============================================================================
+    // PUBLIC API (Fluent Builder)
+    // ==============================================================================
+
+    extension(IKernelBuilder builder)
+    {
+        public IKernelBuilder WithPersistence<TDbContext>(
+            Action<IServiceProvider, DbContextOptionsBuilder> configureDbContext,
+            string? section = null)
+            where TDbContext : DbContext
+        {
+            builder.BindOptions(section);
+            BuildAndConfigurePersistence<TDbContext>(builder.Host.Services, configureDbContext);
+            return builder;
+        }
+
+        public IKernelBuilder WithPersistence<TDbContext>(
+            Action<IServiceProvider, DbContextOptionsBuilder> configureDbContext,
+            Action<PersistenceOptions> configureOptions)
+            where TDbContext : DbContext
+        {
+            builder.ConfigureOptions(configureOptions);
+            BuildAndConfigurePersistence<TDbContext>(builder.Host.Services, configureDbContext);
+            return builder;
+        }
+
+        // ==============================================================================
+        // INTERNAL OPTIONS HELPERS
+        // ==============================================================================
+
+        private void BindOptions(string? section)
+        {
+            builder.Host.Services
+                .AddOptions<PersistenceOptions>()
+                .BindConfiguration(section ?? PersistenceOptions.Section)
+                .ValidateDataAnnotations()
+                .ValidateOnStart();
+        }
+
+        private void ConfigureOptions(Action<PersistenceOptions> configure)
+        {
+            builder.Host.Services
+                .AddOptions<PersistenceOptions>()
+                .Configure(configure)
+                .ValidateDataAnnotations()
+                .ValidateOnStart();
+        }
     }
 }

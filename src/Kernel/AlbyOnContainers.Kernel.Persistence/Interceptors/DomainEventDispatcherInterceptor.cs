@@ -1,9 +1,5 @@
 namespace AlbyOnContainers.Kernel.Persistence.Interceptors;
 
-using System;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Domain.SeedWork;
 using MassTransit;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -23,50 +19,44 @@ public sealed class DomainEventDispatcherInterceptor(ILogger<DomainEventDispatch
         var dbContext = eventData.Context;
         if (dbContext is null) return await base.SavingChangesAsync(eventData, result, cancellationToken);
 
-        var entities = dbContext.ChangeTracker
+        // 1. Identifica gli aggregati con eventi
+        var entitiesWithEvents = dbContext.ChangeTracker
             .Entries<AggregateRoot>()
             .Where(e => e.Entity.DomainEvents.Count != 0)
             .Select(e => e.Entity)
             .ToList();
 
-        var domainEvents = entities.SelectMany(e => e.DomainEvents).ToList();
-        if (domainEvents.Count == 0) return await base.SavingChangesAsync(eventData, result, cancellationToken);
+        if (entitiesWithEvents.Count == 0) return await base.SavingChangesAsync(eventData, result, cancellationToken);
+
+        // 2. ESTRAZIONE E PULIZIA IMMEDIATA (Idempotenza garantita)
+        // Se SavingChanges fallisce e viene richiamato, non ri-processeremo questi eventi.
+        var domainEvents = entitiesWithEvents
+            .SelectMany(e =>
+            {
+                var events = e.DomainEvents.ToList();
+                e.ClearDomainEvents();
+                return events;
+            })
+            .ToList();
 
         var scopedProvider = dbContext.GetInfrastructure();
-
         var publishEndpoint = scopedProvider.GetService<IPublishEndpoint>();
+        var mapper = scopedProvider.GetService<IDomainEventMapper>();
+
         if (publishEndpoint is null)
         {
-            logger.LogWarning("IPublishEndpoint not available in the current scope. {Count} Domain Event(s) were NOT published.", domainEvents.Count);
+            logger.LogWarning("IPublishEndpoint not available. {Count} events cleared but not published.", domainEvents.Count);
             return await base.SavingChangesAsync(eventData, result, cancellationToken);
         }
 
-        var mapper = scopedProvider.GetService<IDomainEventMapper>();
-
-        // 1. Publish all events to MassTransit.
+        // 3. Pubblicazione nell'Outbox (aggiunge entità al ChangeTracker)
         foreach (var domainEvent in domainEvents)
         {
-            logger.LogDebug("Processing Domain Event: {EventName}", domainEvent.GetType().Name);
-
             var integrationMessages = mapper?.Map(domainEvent)?.ToList() ?? [];
-            if (integrationMessages.Count == 0)
-            {
-                logger.LogDebug("Domain Event {EventName} produced no Integration Messages...", domainEvent.GetType().Name);
-                continue;
-            }
-
-            foreach (var message in integrationMessages) 
-            {
-                await publishEndpoint.Publish(message, message.GetType(), cancellationToken);
-            }
+            foreach (var message in integrationMessages) await publishEndpoint.Publish(message, message.GetType(), cancellationToken);
         }
 
-        // 2. Commit the underlying SQL transaction (Business Entities + Outbox Messages simultaneously).
-        var saveResult = await base.SavingChangesAsync(eventData, result, cancellationToken);
-
-        // 3. Clear events from memory ONLY after a successful database commit.
-        foreach (var entity in entities) entity.ClearDomainEvents();
-
-        return saveResult;
+        // 4. Esecuzione del commit SQL (Entità Business + Righe Outbox in un'unica transazione)
+        return await base.SavingChangesAsync(eventData, result, cancellationToken);
     }
 }

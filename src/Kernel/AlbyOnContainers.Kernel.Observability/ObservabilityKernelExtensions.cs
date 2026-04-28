@@ -1,11 +1,8 @@
-using System;
 using AlbyOnContainers.Kernel.Observability.Detectors;
 using AlbyOnContainers.Kernel.Observability.Options;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using OpenTelemetry;
@@ -14,6 +11,8 @@ using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 
 namespace AlbyOnContainers.Kernel.Observability;
+
+using Microsoft.Extensions.Configuration;
 
 public static class ObservabilityKernelExtensions
 {
@@ -118,20 +117,31 @@ public static class ObservabilityKernelExtensions
                 if (options.EnableHttpClientTracing) tracing.AddHttpClientInstrumentation();
                 if (options.EnableEntityFrameworkTracing) tracing.AddEntityFrameworkCoreInstrumentation();
 
+                // 1. Aggiunta Service Name
                 tracing.AddSource(options.ServiceName);
-                foreach (var source in options.DefaultTracingSources) tracing.AddSource(source);
+
+                // 2. SCELTA SUPERIORE: I default inamovibili di piattaforma sono cablati qui
+                tracing.AddSource("MassTransit");
+
+                // 3. Aggiunta sorgenti custom del microservizio
                 foreach (var source in options.CustomTracingSources) tracing.AddSource(source);
 
+                // 4. Auto-discovery dell'assembly corrente
                 if (scanAssembly.GetName().Name is { } assemblyName && 
                     !options.CustomTracingSources.Contains(assemblyName) && 
-                    !options.DefaultTracingSources.Contains(assemblyName))
+                    assemblyName != "MassTransit")
                 {
                     tracing.AddSource(assemblyName);
                 }
             });
 
-            var useOtlp = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT"));
-            if (useOtlp)
+            var config = builder.Host.Configuration
+                .GetSection(ObservabilityOptions.Section)
+                .Get<ObservabilityOptions>() ?? new ObservabilityOptions();
+
+            var hasOtlpEnvVar = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT"));
+
+            if (config.EnableOtlpExporter || hasOtlpEnvVar)
             {
                 builder.Host.Services.AddOpenTelemetry().UseOtlpExporter();
             }

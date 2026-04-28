@@ -1,4 +1,3 @@
-using System.Threading.Tasks;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;

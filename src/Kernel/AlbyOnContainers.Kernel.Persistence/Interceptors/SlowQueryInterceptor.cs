@@ -1,12 +1,8 @@
 ﻿namespace AlbyOnContainers.Kernel.Persistence.Interceptors;
 
-using System;
 using System.Data.Common;
 using System.Diagnostics.Metrics;
-using System.Linq;
 using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Logging;
@@ -33,7 +29,7 @@ internal sealed partial class SlowQueryInterceptor : DbCommandInterceptor
 
         _slowQueryCounter = meter.CreateCounter<long>(
             metricName,
-            "{query}",
+            string.Empty,
             "Total number of database queries exceeding the slow query threshold.");
     }
 

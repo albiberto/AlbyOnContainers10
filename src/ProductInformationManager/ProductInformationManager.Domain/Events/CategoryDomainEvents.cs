@@ -1,5 +1,3 @@
-using AlbyOnContainers.Kernel.Domain.SeedWork;
-
 namespace ProductInformationManager.Domain.Events;
 
 public sealed record CategoryCreatedDomainEvent(

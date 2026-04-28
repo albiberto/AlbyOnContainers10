@@ -12,6 +12,6 @@ public sealed class PersistenceOptions : KernelOptions<PersistenceOptions>
     public int SlowQueryThresholdMs { get; set; } = 500;
 
     public string MetricPrefix { get; set; } = string.Empty;
-    
+
     public bool RunMigrationsOnStartup { get; set; } = true;
 }

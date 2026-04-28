@@ -1,8 +1,5 @@
 namespace AlbyOnContainers.Kernel.Persistence.Interceptors;
 
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 using Domain.SeedWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;

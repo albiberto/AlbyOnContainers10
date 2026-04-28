@@ -2,7 +2,6 @@ using MassTransit;
 using Microsoft.Extensions.Logging;
 using ProductInformationManager.Application.Cache;
 using ProductInformationManager.Contracts;
-using ProductInformationManager.Messages;
 
 namespace ProductInformationManager.Application.Consumers;
 

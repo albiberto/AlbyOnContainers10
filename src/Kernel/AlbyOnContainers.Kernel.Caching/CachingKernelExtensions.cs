@@ -1,4 +1,3 @@
-using System;
 using AlbyOnContainers.Kernel.Caching.Cache;
 using AlbyOnContainers.Kernel.Caching.Options;
 using Microsoft.Extensions.DependencyInjection;
