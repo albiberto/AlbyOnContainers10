@@ -1,5 +1,3 @@
-using System;
-using System.Linq;
 using System.Reflection;
 using AlbyOnContainers.Kernel.Messaging.Attributes;
 using AlbyOnContainers.Kernel.Messaging.Filters;
@@ -26,36 +24,45 @@ public static class MessagingKernelExtensions
 
         // --- BASE IMPLEMENTATION (PARAMS ARRAY) ---
 
-        public IKernelBuilder WithMessaging<TDbContext>(string? section, params Type[] assemblyMarkers)
+        public IKernelBuilder WithMessaging<TDbContext>(Action<IEntityFrameworkOutboxConfigurator> configureOutbox, 
+            string? section, 
+            params Type[] assemblyMarkers)
             where TDbContext : DbContext
         {
             ValidateMarkers(assemblyMarkers);
             builder.BindOptions(section);
-            BuildAndConfigureMassTransit<TDbContext>(builder.Host.Services, assemblyMarkers);
+            BuildAndConfigureMassTransit<TDbContext>(builder.Host.Services, assemblyMarkers, configureOutbox);
             return builder;
         }
 
-        public IKernelBuilder WithMessaging<TDbContext>(Action<MessagingOptions> configureOptions, params Type[] assemblyMarkers)
+        public IKernelBuilder WithMessaging<TDbContext>(
+            Action<MessagingOptions> configureOptions, 
+            Action<IEntityFrameworkOutboxConfigurator> configureOutbox, 
+            params Type[] assemblyMarkers)
             where TDbContext : DbContext
         {
             ValidateMarkers(assemblyMarkers);
             builder.ConfigureOptions(configureOptions);
-            BuildAndConfigureMassTransit<TDbContext>(builder.Host.Services, assemblyMarkers);
+            BuildAndConfigureMassTransit<TDbContext>(builder.Host.Services, assemblyMarkers, configureOutbox);
             return builder;
         }
 
         // --- SINGLE MARKER SYNTACTIC SUGAR (<TDbContext, TMarker>) ---
 
-        public IKernelBuilder WithMessaging<TDbContext, TMarker>(string? section = null)
+        public IKernelBuilder WithMessaging<TDbContext, TMarker>(
+            Action<IEntityFrameworkOutboxConfigurator> configureOutbox, 
+            string? section = null)
             where TDbContext : DbContext
         {
-            return builder.WithMessaging<TDbContext>(section, [typeof(TMarker)]);
+            return builder.WithMessaging<TDbContext>(configureOutbox, section, [typeof(TMarker)]);
         }
 
-        public IKernelBuilder WithMessaging<TDbContext, TMarker>(Action<MessagingOptions> configureOptions)
+        public IKernelBuilder WithMessaging<TDbContext, TMarker>(
+            Action<MessagingOptions> configureOptions, 
+            Action<IEntityFrameworkOutboxConfigurator> configureOutbox)
             where TDbContext : DbContext
         {
-            return builder.WithMessaging<TDbContext>(configureOptions, [typeof(TMarker)]);
+            return builder.WithMessaging<TDbContext>(configureOptions, configureOutbox, [typeof(TMarker)]);
         }
 
         // ==============================================================================
@@ -129,14 +136,17 @@ public static class MessagingKernelExtensions
         }
     }
 
-    private static void BuildAndConfigureMassTransit<TDbContext>(IServiceCollection services, Type[] markers)
+    private static void BuildAndConfigureMassTransit<TDbContext>(
+        IServiceCollection services, 
+        Type[] markers, 
+        Action<IEntityFrameworkOutboxConfigurator> configureOutbox)
         where TDbContext : DbContext
     {
         BuildAndConfigureMassTransit(services, markers, cfg =>
         {
             cfg.AddEntityFrameworkOutbox<TDbContext>(o =>
             {
-                o.UsePostgres();
+                configureOutbox(o);
                 o.UseBusOutbox();
             });
         });
