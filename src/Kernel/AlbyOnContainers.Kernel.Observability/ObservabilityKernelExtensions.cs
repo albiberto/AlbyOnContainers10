@@ -1,8 +1,11 @@
+using System;
 using AlbyOnContainers.Kernel.Observability.Detectors;
 using AlbyOnContainers.Kernel.Observability.Options;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using OpenTelemetry;
@@ -51,6 +54,18 @@ public static class ObservabilityKernelExtensions
             return builder;
         }
 
+        public IKernelBuilder WithObservability<TMarker>(Action<ObservabilityOptions> configureOptions)
+        {
+            builder.Host.Services
+                .AddOptions<ObservabilityOptions>()
+                .Configure(configureOptions)
+                .ValidateDataAnnotations()
+                .ValidateOnStart();
+
+            builder.AddInternalObservability(typeof(TMarker).Assembly);
+            return builder;
+        }
+
         private IKernelBuilder AddInternalObservability(System.Reflection.Assembly scanAssembly)
         {
             builder.ConfigureOpenTelemetry(scanAssembly);
@@ -80,9 +95,7 @@ public static class ObservabilityKernelExtensions
                 {
                     resource.AddDetector(sp => new OptionsResourceDetector(sp.GetRequiredService<IOptions<ObservabilityOptions>>().Value));
                     resource.AddEnvironmentVariableDetector();
-                })
-                .WithMetrics(_ => { /* Configurato lazy sotto */ })
-                .WithTracing(_ => { /* Configurato lazy sotto */ });
+                });
 
             builder.Host.Services.ConfigureOpenTelemetryMeterProvider((sp, metrics) =>
             {
@@ -117,16 +130,22 @@ public static class ObservabilityKernelExtensions
                 }
             });
 
-            // L'attivazione di OTLP può dipendere dalla config a runtime
-            builder.Host.Services.AddOpenTelemetry().UseOtlpExporter();
+            var useOtlp = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT"));
+            if (useOtlp)
+            {
+                builder.Host.Services.AddOpenTelemetry().UseOtlpExporter();
+            }
 
             return builder;
         }
 
-        private void AddDefaultHealthChecks() =>
-            builder.Host.Services
-                .AddHealthChecks()
+        private IKernelBuilder AddDefaultHealthChecks()
+        {
+            builder.Host.Services.AddHealthChecks()
                 .AddCheck("self", () => HealthCheckResult.Healthy(), ["live"]);
+
+            return builder;
+        }
     }
 
     public static WebApplication MapKernelObservabilityEndpoints(this WebApplication app)

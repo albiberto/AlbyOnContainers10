@@ -46,8 +46,14 @@ public sealed class DomainEventDispatcherInterceptor(ILogger<DomainEventDispatch
         // 1. Publish all events to MassTransit.
         foreach (var domainEvent in domainEvents)
         {
+            logger.LogDebug("Processing Domain Event: {EventName}", domainEvent.GetType().Name);
+
             var integrationMessages = mapper?.Map(domainEvent)?.ToList() ?? [];
-            if (integrationMessages.Count == 0) continue;
+            if (integrationMessages.Count == 0)
+            {
+                logger.LogDebug("Domain Event {EventName} produced no Integration Messages...", domainEvent.GetType().Name);
+                continue;
+            }
 
             foreach (var message in integrationMessages) 
             {

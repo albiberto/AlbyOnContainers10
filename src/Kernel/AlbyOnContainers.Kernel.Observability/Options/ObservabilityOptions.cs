@@ -1,31 +1,20 @@
-namespace AlbyOnContainers.Kernel.Observability.Options;
-
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using AlbyOnContainers.Kernel.Options;
 
-public class ObservabilityOptions : KernelOptions<ObservabilityOptions>
+namespace AlbyOnContainers.Kernel.Observability.Options;
+
+public sealed class ObservabilityOptions : KernelOptions<ObservabilityOptions>
 {
-    [Required]
-    public string ServiceName { get; set; } = string.Empty;
+    [Required(AllowEmptyStrings = false)]
+    public string ServiceName { get; set; } = "AlbyOnContainers.UnknownService";
 
-    [Required]
-    public string Namespace { get; set; } = string.Empty;
+    [Required(AllowEmptyStrings = false)]
+    public string Namespace { get; set; } = "AlbyOnContainers";
 
-    public string? OtlpEndpoint { get; set; }
-
-    // Sorgenti standard incluse automaticamente dalla piattaforma
-    public List<string> DefaultTracingSources { get; set; } = ["MassTransit"];
-    
-    // Sorgenti specifiche fornite dalla singola microservice
-    public List<string> CustomTracingSources { get; set; } = [];
-
-    // --- External Instrumentations (Bytecode/DiagnosticSource based) ---
-    public bool EnableEntityFrameworkTracing { get; set; } = true;
     public bool EnableHttpClientTracing { get; set; } = true;
+    public bool EnableEntityFrameworkTracing { get; set; } = true;
 
-    // --- Metrics ---
-    public List<string> CustomMeters { get; set; } = ["MassTransit", "Microsoft.EntityFrameworkCore"];
-
-    public bool EnableOtlpExporter { get; set; } = true;
+    public string[] CustomMeters { get; set; } = [];
+    public string[] CustomTracingSources { get; set; } = [];
+    public string[] DefaultTracingSources { get; set; } = ["MassTransit"];
 }
