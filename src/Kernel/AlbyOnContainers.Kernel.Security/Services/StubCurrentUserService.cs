@@ -9,6 +9,8 @@ public sealed class StubCurrentUserService : ICurrentUserService
     public string Email => "admin@albyoncontainers.local";
     public bool IsAuthenticated => true;
 
+    public IReadOnlyCollection<string> Roles { get; } = ["Administrator"];
+
     // Mocks Keycloak response using standard JWT keys
     public string? GetClaim(string claimType) =>
         claimType switch
@@ -21,4 +23,6 @@ public sealed class StubCurrentUserService : ICurrentUserService
             "family_name" => "Admin",
             _ => null
         };
+
+    public bool IsInRole(string role) => Roles.Contains(role);
 }

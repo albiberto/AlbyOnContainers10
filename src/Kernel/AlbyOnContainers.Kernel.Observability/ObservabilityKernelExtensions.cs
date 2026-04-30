@@ -19,58 +19,65 @@ public static class ObservabilityKernelExtensions
     // ==============================================================================
     // PUBLIC API (Fluent Builder)
     // ==============================================================================
-    
+
     extension(IKernelBuilder builder)
     {
         public IKernelBuilder WithObservability(string? section = null)
         {
-            builder.Host.Services.AddOptions<ObservabilityOptions>()
-                .BindConfiguration(section ?? ObservabilityOptions.Section)
-                .ValidateDataAnnotations()
-                .ValidateOnStart();
-
-            var options = EvaluateOptions(builder, null, section);
-
-            return AddInternalObservability(builder, typeof(ObservabilityKernelExtensions).Assembly, options);
+            builder.BindOptions(section);
+            return AddInternalObservability(
+                builder,
+                typeof(ObservabilityKernelExtensions).Assembly,
+                ResolveStartupOptions(builder, section, configure: null));
         }
 
         public IKernelBuilder WithObservability(Action<ObservabilityOptions> configureOptions)
         {
-            builder.Host.Services
-                .AddOptions<ObservabilityOptions>()
-                .Configure(configureOptions)
-                .ValidateDataAnnotations()
-                .ValidateOnStart();
-
-            var options = EvaluateOptions(builder, configureOptions, null);
-
-            return AddInternalObservability(builder, typeof(ObservabilityKernelExtensions).Assembly, options);
+            builder.ConfigureOptions(configureOptions);
+            return AddInternalObservability(
+                builder,
+                typeof(ObservabilityKernelExtensions).Assembly,
+                ResolveStartupOptions(builder, section: null, configureOptions));
         }
 
         public IKernelBuilder WithObservability<TMarker>(string? section = null)
+        {
+            builder.BindOptions(section);
+            return AddInternalObservability(
+                builder,
+                typeof(TMarker).Assembly,
+                ResolveStartupOptions(builder, section, configure: null));
+        }
+
+        public IKernelBuilder WithObservability<TMarker>(Action<ObservabilityOptions> configureOptions)
+        {
+            builder.ConfigureOptions(configureOptions);
+            return AddInternalObservability(
+                builder,
+                typeof(TMarker).Assembly,
+                ResolveStartupOptions(builder, section: null, configureOptions));
+        }
+
+        // ==============================================================================
+        // INTERNAL OPTIONS HELPERS
+        // ==============================================================================
+
+        private void BindOptions(string? section)
         {
             builder.Host.Services
                 .AddOptions<ObservabilityOptions>()
                 .BindConfiguration(section ?? ObservabilityOptions.Section)
                 .ValidateDataAnnotations()
                 .ValidateOnStart();
-
-            var options = EvaluateOptions(builder, null, section);
-
-            return AddInternalObservability(builder, typeof(TMarker).Assembly, options);
         }
 
-        public IKernelBuilder WithObservability<TMarker>(Action<ObservabilityOptions> configureOptions)
+        private void ConfigureOptions(Action<ObservabilityOptions> configure)
         {
             builder.Host.Services
                 .AddOptions<ObservabilityOptions>()
-                .Configure(configureOptions)
+                .Configure(configure)
                 .ValidateDataAnnotations()
                 .ValidateOnStart();
-
-            var options = EvaluateOptions(builder, configureOptions, null);
-
-            return AddInternalObservability(builder, typeof(TMarker).Assembly, options);
         }
     }
 
@@ -80,12 +87,21 @@ public static class ObservabilityKernelExtensions
 
     public static WebApplication MapKernelObservabilityEndpoints(this WebApplication app)
     {
-        app.MapHealthChecks("/health");
+        // Liveness: process is up (cheap probe).
         app.MapHealthChecks("/alive", new()
         {
             Predicate = r => r.Tags.Contains("live")
         });
-        
+
+        // Readiness: process is up AND all dependencies (DB, broker, ...) are reachable.
+        app.MapHealthChecks("/ready", new()
+        {
+            Predicate = r => r.Tags.Contains("ready")
+        });
+
+        // Aggregated probe.
+        app.MapHealthChecks("/health");
+
         return app;
     }
 
@@ -93,7 +109,16 @@ public static class ObservabilityKernelExtensions
     // PRIVATE STATIC HELPERS
     // ==============================================================================
 
-    private static ObservabilityOptions EvaluateOptions(IKernelBuilder builder, Action<ObservabilityOptions>? configure, string? section)
+    /// <summary>
+    /// Materializes the ObservabilityOptions ONCE at registration time, so we can take
+    /// startup-only decisions (e.g. enabling the OTLP exporter) without ribindering the
+    /// options section twice. The runtime DI binding remains the source of truth for
+    /// runtime behavior — this snapshot is only used for build-time wiring.
+    /// </summary>
+    private static ObservabilityOptions ResolveStartupOptions(
+        IKernelBuilder builder,
+        string? section,
+        Action<ObservabilityOptions>? configure)
     {
         var options = new ObservabilityOptions();
         builder.Host.Configuration.GetSection(section ?? ObservabilityOptions.Section).Bind(options);
@@ -101,11 +126,14 @@ public static class ObservabilityKernelExtensions
         return options;
     }
 
-    private static IKernelBuilder AddInternalObservability(IKernelBuilder builder, System.Reflection.Assembly scanAssembly, ObservabilityOptions options)
+    private static IKernelBuilder AddInternalObservability(
+        IKernelBuilder builder,
+        System.Reflection.Assembly scanAssembly,
+        ObservabilityOptions startupOptions)
     {
-        ConfigureOpenTelemetry(builder, scanAssembly, options);
+        ConfigureOpenTelemetry(builder, scanAssembly, startupOptions);
         AddDefaultHealthChecks(builder);
-    
+
         builder.Host.Services.AddServiceDiscovery();
         builder.Host.Services.ConfigureHttpClientDefaults(http =>
         {
@@ -116,7 +144,10 @@ public static class ObservabilityKernelExtensions
         return builder;
     }
 
-    private static void ConfigureOpenTelemetry(IKernelBuilder builder, System.Reflection.Assembly scanAssembly, ObservabilityOptions options)
+    private static void ConfigureOpenTelemetry(
+        IKernelBuilder builder,
+        System.Reflection.Assembly scanAssembly,
+        ObservabilityOptions startupOptions)
     {
         builder.Host.Logging.AddOpenTelemetry(logging =>
         {
@@ -135,12 +166,15 @@ public static class ObservabilityKernelExtensions
         builder.Host.Services.ConfigureOpenTelemetryMeterProvider((sp, metrics) =>
         {
             var runtimeOptions = sp.GetRequiredService<IOptions<ObservabilityOptions>>().Value;
-            
-            metrics.AddAspNetCoreInstrumentation().AddRuntimeInstrumentation();
+
+            metrics
+                .AddAspNetCoreInstrumentation()
+                .AddRuntimeInstrumentation();
+
             if (runtimeOptions.EnableHttpClientTracing) metrics.AddHttpClientInstrumentation();
-            
+
             foreach (var meter in runtimeOptions.CustomMeters) metrics.AddMeter(meter);
-            
+
             if (scanAssembly.GetName().Name is { } assemblyName && !runtimeOptions.CustomMeters.Contains(assemblyName))
                 metrics.AddMeter(assemblyName);
         });
@@ -154,28 +188,26 @@ public static class ObservabilityKernelExtensions
             if (runtimeOptions.EnableEntityFrameworkTracing) tracing.AddEntityFrameworkCoreInstrumentation();
 
             tracing.AddSource(runtimeOptions.ServiceName);
-            
+
             if (runtimeOptions.EnableMassTransitTracing)
-            {
                 tracing.AddSource("MassTransit");
-            }
 
             foreach (var source in runtimeOptions.CustomTracingSources) tracing.AddSource(source);
 
-            if (scanAssembly.GetName().Name is { } assemblyName && 
-                !runtimeOptions.CustomTracingSources.Contains(assemblyName) && 
+            if (scanAssembly.GetName().Name is { } assemblyName &&
+                !runtimeOptions.CustomTracingSources.Contains(assemblyName) &&
                 assemblyName != "MassTransit")
             {
                 tracing.AddSource(assemblyName);
             }
         });
 
+        // OTLP exporter wiring is a startup-time decision. We use the snapshot resolved at
+        // registration time + the standard OTEL env var. This is the only correct moment to
+        // decide because UseOtlpExporter() must be called before the host is built.
         var hasOtlpEnvVar = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT"));
-
-        if (options.EnableOtlpExporter || hasOtlpEnvVar)
-        {
+        if (startupOptions.EnableOtlpExporter || hasOtlpEnvVar)
             builder.Host.Services.AddOpenTelemetry().UseOtlpExporter();
-        }
     }
 
     private static void AddDefaultHealthChecks(IKernelBuilder builder)

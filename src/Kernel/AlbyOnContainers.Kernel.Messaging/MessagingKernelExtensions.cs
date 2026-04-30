@@ -22,10 +22,8 @@ public static class MessagingKernelExtensions
         // 1. OVERLOADS CON OUTBOX PATTERN (Multi-Assembly Support)
         // ==============================================================================
 
-        // --- BASE IMPLEMENTATION (PARAMS ARRAY) ---
-
-        public IKernelBuilder WithMessaging<TDbContext>(Action<IEntityFrameworkOutboxConfigurator> configureOutbox, 
-            string? section, 
+        public IKernelBuilder WithMessaging<TDbContext>(Action<IEntityFrameworkOutboxConfigurator> configureOutbox,
+            string? section,
             params Type[] assemblyMarkers)
             where TDbContext : DbContext
         {
@@ -36,8 +34,8 @@ public static class MessagingKernelExtensions
         }
 
         public IKernelBuilder WithMessaging<TDbContext>(
-            Action<MessagingOptions> configureOptions, 
-            Action<IEntityFrameworkOutboxConfigurator> configureOutbox, 
+            Action<MessagingOptions> configureOptions,
+            Action<IEntityFrameworkOutboxConfigurator> configureOutbox,
             params Type[] assemblyMarkers)
             where TDbContext : DbContext
         {
@@ -47,10 +45,8 @@ public static class MessagingKernelExtensions
             return builder;
         }
 
-        // --- SINGLE MARKER SYNTACTIC SUGAR (<TDbContext, TMarker>) ---
-
         public IKernelBuilder WithMessaging<TDbContext, TMarker>(
-            Action<IEntityFrameworkOutboxConfigurator> configureOutbox, 
+            Action<IEntityFrameworkOutboxConfigurator> configureOutbox,
             string? section = null)
             where TDbContext : DbContext
         {
@@ -58,7 +54,7 @@ public static class MessagingKernelExtensions
         }
 
         public IKernelBuilder WithMessaging<TDbContext, TMarker>(
-            Action<MessagingOptions> configureOptions, 
+            Action<MessagingOptions> configureOptions,
             Action<IEntityFrameworkOutboxConfigurator> configureOutbox)
             where TDbContext : DbContext
         {
@@ -68,8 +64,6 @@ public static class MessagingKernelExtensions
         // ==============================================================================
         // 2. OVERLOADS SENZA OUTBOX (Multi-Assembly Support)
         // ==============================================================================
-
-        // --- BASE IMPLEMENTATION (PARAMS ARRAY) ---
 
         public IKernelBuilder WithMessaging(string? section, params Type[] assemblyMarkers)
         {
@@ -86,8 +80,6 @@ public static class MessagingKernelExtensions
             BuildAndConfigureMassTransit(builder.Host.Services, assemblyMarkers);
             return builder;
         }
-
-        // --- SINGLE MARKER SYNTACTIC SUGAR (<TMarker>) ---
 
         public IKernelBuilder WithMessaging<TMarker>(string? section = null)
         {
@@ -129,22 +121,19 @@ public static class MessagingKernelExtensions
     private static void ValidateMarkers(Type[] markers)
     {
         ArgumentNullException.ThrowIfNull(markers);
-        
+
         if (markers.Length == 0)
-        {
             throw new ArgumentException("At least one marker type must be provided to scan for consumers.", nameof(markers));
-        }
     }
 
     private static void BuildAndConfigureMassTransit<TDbContext>(
-        IServiceCollection services, 
-        Type[] markers, 
+        IServiceCollection services,
+        Type[] markers,
         Action<IEntityFrameworkOutboxConfigurator> configureOutbox)
         where TDbContext : DbContext
     {
-        // ARCHITECTURAL NOTE: The caller is now responsible for calling 
-        // 'o.UseBusOutbox()' manually if they want the outbox to publish 
-        // to the message broker automatically.
+        // ARCHITECTURAL NOTE: The caller is responsible for invoking 'o.UseBusOutbox()'
+        // on the configurator if they want the outbox to publish to the broker automatically.
         BuildAndConfigureMassTransit(services, markers, cfg => cfg.AddEntityFrameworkOutbox<TDbContext>(configureOutbox));
     }
 
@@ -189,14 +178,21 @@ public static class MessagingKernelExtensions
                 {
                     h.Username(options.Username);
                     h.Password(options.Password);
+
+                    if (options.UseSsl)
+                        h.UseSsl(_ => { });
                 });
 
-                rmq.UseMessageRetry(r => r.Exponential(
-                    options.RetryCount,
-                    options.RetryInitialInterval,
-                    options.RetryMaxInterval,
-                    options.RetryDeltaInterval
-                ));
+                // GUARD: MassTransit's UseMessageRetry throws if RetryCount == 0.
+                if (options.RetryCount > 0)
+                {
+                    rmq.UseMessageRetry(r => r.Exponential(
+                        options.RetryCount,
+                        options.RetryInitialInterval,
+                        options.RetryMaxInterval,
+                        options.RetryDeltaInterval
+                    ));
+                }
 
                 rmq.UseConsumeFilter(typeof(GlobalExceptionFilter<>), context);
                 rmq.UseConsumeFilter(typeof(ValidationFilter<>), context);

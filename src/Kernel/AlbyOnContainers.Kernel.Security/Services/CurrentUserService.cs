@@ -13,5 +13,10 @@ public sealed class CurrentUserService(IHttpContextAccessor httpContextAccessor)
     public string? Email => User?.FindFirstValue(JwtClaims.Email);
     public bool IsAuthenticated => User?.Identity?.IsAuthenticated ?? false;
 
+    public IReadOnlyCollection<string> Roles =>
+        User?.FindAll(JwtClaims.Roles).Select(c => c.Value).ToArray() ?? [];
+
     public string? GetClaim(string claimType) => User?.FindFirstValue(claimType);
+
+    public bool IsInRole(string role) => User?.IsInRole(role) ?? false;
 }

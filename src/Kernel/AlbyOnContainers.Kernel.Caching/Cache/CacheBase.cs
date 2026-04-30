@@ -16,7 +16,6 @@ public abstract class CacheBase<TDto>(IFusionCache cache, IServiceScopeFactory s
     {
         var key = new DefaultCacheKey<TDto>().Value;
 
-        // FIXED: Explicitly defined <List<TDto>> to help the C# compiler infer the lambda context
         return await cache.GetOrSetAsync<List<TDto>>(
             key,
             async (_, ct) =>
@@ -25,7 +24,7 @@ public abstract class CacheBase<TDto>(IFusionCache cache, IServiceScopeFactory s
                 return await FetchAllFromDbAsync(scope.ServiceProvider, ct);
             },
             options: EntryOptions,
-            token: cancellationToken) ?? [];
+            token: cancellationToken);
     }
 
     protected abstract Task<List<TDto>> FetchAllFromDbAsync(IServiceProvider sp, CancellationToken ct);
@@ -38,7 +37,6 @@ public abstract class CacheBase<TDto>(IFusionCache cache, IServiceScopeFactory s
     {
         var key = new DefaultCacheKey<TDto>(id).Value;
 
-        // FIXED: Explicitly defined <TDto?> to resolve ambiguity
         return await cache.GetOrSetAsync<TDto?>(
             key,
             async (_, ct) =>
@@ -56,15 +54,15 @@ public abstract class CacheBase<TDto>(IFusionCache cache, IServiceScopeFactory s
     // INVALIDATION
     // ==============================================================================
 
-    public async Task InvalidateAllAsync(CancellationToken cancellationToken = default)
+    public Task InvalidateAllAsync(CancellationToken cancellationToken = default)
     {
         var key = new DefaultCacheKey<TDto>().Value;
-        await cache.RemoveAsync(key, token: cancellationToken);
+        return cache.RemoveAsync(key, token: cancellationToken).AsTask();
     }
 
-    public async Task InvalidateByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    public Task InvalidateByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var key = new DefaultCacheKey<TDto>(id).Value;
-        await cache.RemoveAsync(key, token: cancellationToken);
+        return cache.RemoveAsync(key, token: cancellationToken).AsTask();
     }
 }

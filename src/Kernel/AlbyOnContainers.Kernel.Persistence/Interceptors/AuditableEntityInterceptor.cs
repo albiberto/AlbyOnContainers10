@@ -5,28 +5,39 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Security.Abstractions;
 
-public sealed class AuditableEntityInterceptor : SaveChangesInterceptor
+public sealed class AuditableEntityInterceptor(ILogger<AuditableEntityInterceptor> logger) : SaveChangesInterceptor
 {
-    public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result) => throw new InvalidOperationException("Synchronous SaveChanges is strictly prohibited. You MUST use SaveChangesAsync().");
+    public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result) =>
+        throw new InvalidOperationException("Synchronous SaveChanges is strictly prohibited. You MUST use SaveChangesAsync().");
 
     public override ValueTask<InterceptionResult<int>> SavingChangesAsync(DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
     {
         var dbContext = eventData.Context;
-        if (dbContext is null) return base.SavingChangesAsync(eventData, result, cancellationToken);
+        if (dbContext is null)
+        {
+            logger.LogWarning("AuditableEntityInterceptor invoked without a DbContext. Skipping audit metadata write.");
+            return base.SavingChangesAsync(eventData, result, cancellationToken);
+        }
 
         var scopedProvider = dbContext.GetInfrastructure();
         var currentUserService = scopedProvider.GetService<ICurrentUserService>();
 
         var userId = currentUserService?.UserId ?? "System";
 
-        var entries = dbContext.ChangeTracker.Entries<AuditableEntity>();
-
-        foreach (var entry in entries)
+        foreach (var entry in dbContext.ChangeTracker.Entries<AuditableEntity>())
         {
-            if (entry.State == EntityState.Added) entry.Entity.SetCreationInfo(userId);
-            if (entry.State == EntityState.Modified) entry.Entity.SetUpdateInfo(userId);
+            switch (entry.State)
+            {
+                case EntityState.Added:
+                    entry.Entity.SetCreationInfo(userId);
+                    break;
+                case EntityState.Modified:
+                    entry.Entity.SetUpdateInfo(userId);
+                    break;
+            }
         }
 
         return base.SavingChangesAsync(eventData, result, cancellationToken);

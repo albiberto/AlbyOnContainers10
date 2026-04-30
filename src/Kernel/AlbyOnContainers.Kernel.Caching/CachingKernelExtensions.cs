@@ -15,20 +15,43 @@ public static class CachingKernelExtensions
 
     extension(IKernelBuilder builder)
     {
+        /// <summary>
+        /// Registers FusionCache (L1 memory + L2 Redis backplane) and auto-discovers
+        /// every <see cref="CacheBase{TDto}"/> in the assembly of <typeparamref name="TMarker"/>.
+        /// </summary>
         public IKernelBuilder WithCaching<TMarker>(string? section = null)
         {
             builder.BindOptions(section);
-            builder.ConfigureCaching<TMarker>();
+            builder.ConfigureCaching([typeof(TMarker)]);
             return builder;
         }
 
         public IKernelBuilder WithCaching<TMarker>(Action<CachingOptions> configureOptions)
         {
             builder.ConfigureOptions(configureOptions);
-            builder.ConfigureCaching<TMarker>();
+            builder.ConfigureCaching([typeof(TMarker)]);
             return builder;
         }
-        
+
+        /// <summary>
+        /// Multi-assembly variant: scans every assembly identified by <paramref name="assemblyMarkers"/>.
+        /// </summary>
+        public IKernelBuilder WithCaching(string? section, params Type[] assemblyMarkers)
+        {
+            ValidateMarkers(assemblyMarkers);
+            builder.BindOptions(section);
+            builder.ConfigureCaching(assemblyMarkers);
+            return builder;
+        }
+
+        public IKernelBuilder WithCaching(Action<CachingOptions> configureOptions, params Type[] assemblyMarkers)
+        {
+            ValidateMarkers(assemblyMarkers);
+            builder.ConfigureOptions(configureOptions);
+            builder.ConfigureCaching(assemblyMarkers);
+            return builder;
+        }
+
         // ==============================================================================
         // PRIVATE BOILERPLATE HELPERS
         // ==============================================================================
@@ -51,15 +74,16 @@ public static class CachingKernelExtensions
                 .ValidateOnStart();
         }
 
-        private void ConfigureCaching<TMarker>()
+        private void ConfigureCaching(Type[] assemblyMarkers)
         {
             var services = builder.Host.Services;
+            var assemblies = assemblyMarkers.Select(t => t.Assembly).Distinct().ToArray();
 
             // 1. Redis Backplane Configuration (Mapped from CachingOptions)
             services.AddOptions<RedisBackplaneOptions>()
-                .Configure<IOptions<CachingOptions>>((redis, opt) => 
-                { 
-                    redis.Configuration = opt.Value.RedisConnectionString; 
+                .Configure<IOptions<CachingOptions>>((redis, opt) =>
+                {
+                    redis.Configuration = opt.Value.RedisConnectionString;
                 });
 
             // 2. FusionCache Options Mapping
@@ -79,12 +103,19 @@ public static class CachingKernelExtensions
             services.AddFusionCache()
                 .WithRegisteredBackplane();
 
-            // 4. Auto-Discovery: Scan the assembly for classes inheriting from CacheBase<T>
+            // 4. Auto-Discovery: scan ALL marker assemblies for classes inheriting from CacheBase<>
             services.Scan(scan => scan
-                .FromAssembliesOf(typeof(TMarker))
+                .FromAssemblies(assemblies)
                 .AddClasses(classes => classes.AssignableTo(typeof(CacheBase<>)))
                 .AsSelf()
                 .WithSingletonLifetime());
         }
+    }
+
+    private static void ValidateMarkers(Type[] markers)
+    {
+        ArgumentNullException.ThrowIfNull(markers);
+        if (markers.Length == 0)
+            throw new ArgumentException("At least one marker type must be provided to scan for cache classes.", nameof(markers));
     }
 }

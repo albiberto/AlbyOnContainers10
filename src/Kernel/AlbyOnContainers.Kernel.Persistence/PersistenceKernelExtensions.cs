@@ -1,6 +1,7 @@
 namespace AlbyOnContainers.Kernel.Persistence;
 
 using HostedServices;
+using Interceptors;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
@@ -18,19 +19,20 @@ public static class PersistenceKernelExtensions
         Action<IServiceProvider, DbContextOptionsBuilder> configureDbContext)
         where TDbContext : DbContext
     {
-        // 1. Configure Metric Prefix Default
-        services.PostConfigure<PersistenceOptions>(options =>
-        {
-            if (string.IsNullOrWhiteSpace(options.MetricPrefix)) options.MetricPrefix = typeof(TDbContext).Name.ToLowerInvariant();
-        });
-
-        // 2. Auto-Discovery for EF Core Interceptors
+        // 1. Auto-Discovery for SHARED EF Core Interceptors (singleton, type-agnostic).
+        //    SlowQueryInterceptor<TDbContext> is intentionally EXCLUDED from auto-discovery
+        //    because it is generic and per-DbContext (different metric prefix per context).
         services.Scan(scan => scan
             .FromAssemblyOf<PersistenceOptions>()
-            .AddClasses(classes => classes.AssignableTo<IInterceptor>())
+            .AddClasses(classes => classes
+                .AssignableTo<IInterceptor>()
+                .Where(t => !t.IsGenericTypeDefinition))
             .AsImplementedInterfaces()
             .WithSingletonLifetime()
         );
+
+        // 2. Per-DbContext SlowQueryInterceptor.
+        services.AddSingleton<SlowQueryInterceptor<TDbContext>>();
 
         // 3. Register DbContext
         services.AddDbContext<TDbContext>((sp, options) =>
@@ -38,9 +40,10 @@ public static class PersistenceKernelExtensions
             // Delegate the DB Provider choice (e.g., UseNpgsql, UseSqlServer) to the caller
             configureDbContext(sp, options);
 
-            // Inject Kernel Interceptors (AuditableEntityInterceptor, DomainEventDispatcher, SlowQuery)
-            var interceptors = sp.GetServices<IInterceptor>();
-            options.AddInterceptors(interceptors);
+            // Inject Kernel Interceptors (AuditableEntityInterceptor, DomainEventDispatcher)
+            // plus the per-context SlowQueryInterceptor.
+            options.AddInterceptors(sp.GetServices<IInterceptor>());
+            options.AddInterceptors(sp.GetRequiredService<SlowQueryInterceptor<TDbContext>>());
 
             var persistenceOptions = sp.GetRequiredService<IOptions<PersistenceOptions>>().Value;
 
@@ -54,10 +57,11 @@ public static class PersistenceKernelExtensions
         // 4. Register Health Checks
         services.AddHealthChecks().AddDbContextCheck<TDbContext>();
 
-        // 5. Register Auto-Migration Hosted Service
-        // ARCHITECTURAL NOTE: The execution of migrations is controlled via PersistenceOptions.RunMigrationsOnStartup
+        // 5. Register Auto-Migration Hosted Service.
+        //    Runs in IHostedService.StartAsync, so it BLOCKS the bootstrap until migrations succeed.
         services.AddHostedService<MigrationHostedService<TDbContext>>();
     }
+
     // ==============================================================================
     // PUBLIC API (Fluent Builder)
     // ==============================================================================
