@@ -29,10 +29,10 @@ public static class DistributedLocksPluginExtensions
             return builder;
         }
 
-        public IKernelBuilder WithDistributedLocks(string sectionName = "DistributedLock")
+        public IKernelBuilder WithDistributedLocks(string? sectionName = null)
         {
             builder.Host.Services.AddOptions<DistributedLockOptions>()
-                .Bind(builder.Host.Configuration.GetSection(sectionName))
+                .Bind(builder.Host.Configuration.GetSection(sectionName ?? DistributedLockOptions.Section))
                 .ValidateDataAnnotations()
                 .ValidateOnStart();
 
