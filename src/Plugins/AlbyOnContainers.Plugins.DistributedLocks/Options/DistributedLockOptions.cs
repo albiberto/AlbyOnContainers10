@@ -19,4 +19,7 @@ public class DistributedLockOptions : KernelOptions<DistributedLockOptions>
     
     [Range(1, 256, ErrorMessage = "RecoveryMaxDegreeOfParallelism must be strictly between 1 and 256.")]
     public int RecoveryMaxDegreeOfParallelism { get; set; } = 32;
+    
+    [Required]
+    public TimeSpan ReconciliationInterval { get; set; } = TimeSpan.FromMinutes(5);
 }
