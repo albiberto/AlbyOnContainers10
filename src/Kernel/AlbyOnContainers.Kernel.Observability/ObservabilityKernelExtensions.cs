@@ -1,4 +1,3 @@
-using System;
 using AlbyOnContainers.Kernel.Observability.Detectors;
 using AlbyOnContainers.Kernel.Observability.Options;
 using Microsoft.AspNetCore.Builder;
