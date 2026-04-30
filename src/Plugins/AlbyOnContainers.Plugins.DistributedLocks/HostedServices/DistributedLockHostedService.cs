@@ -1,11 +1,12 @@
 ﻿namespace AlbyOnContainers.Plugins.DistributedLocks.HostedServices;
 
 using System;
+using System.Collections.Concurrent;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Threading;
 using System.Threading.Tasks;
-using Medallion.Threading; 
+using Medallion.Threading;
 using Model;
 using Options;
 using Microsoft.Extensions.Hosting;
@@ -25,9 +26,11 @@ public sealed class DistributedLockHostedService(
     
     private readonly ISubject<Emit> _notifications = Subject.Synchronize(new Subject<Emit>());
     
+    private readonly ConcurrentDictionary<string, string> _activeLocksDeduplicator = new();
+
     private readonly string _channelName = options.Value.RedisChannel!;
     private readonly string _hashKey = $"{options.Value.KeyPrefix}active-locks";
-    private readonly string _keyPrefix = options.Value.KeyPrefix ?? string.Empty;
+    private readonly string _keyPrefix = options.Value.KeyPrefix;
 
     public IObservable<Emit> Notifications => _notifications.AsObservable();
 
@@ -46,16 +49,17 @@ public sealed class DistributedLockHostedService(
 
                 if (payload.IsLocked)
                 {
-                    if (payload.Username is null)
+                    if (string.IsNullOrWhiteSpace(payload.Username))
                     {
                         logger.LogWarning("Received 'Locked' event without a Username for {EntityType}:{EntityId}", payload.EntityType, payload.EntityId);
                         return;
                     }
-                    _notifications.OnNext(new Emit.Locked(payload.EntityType, payload.EntityId, payload.Username));
+                    
+                    TryEmitLocked(payload.EntityType, payload.EntityId, payload.Username);
                 }
                 else
                 {
-                    _notifications.OnNext(new Emit.Unlocked(payload.EntityType, payload.EntityId));
+                    TryEmitUnlocked(payload.EntityType, payload.EntityId);
                 }
             }
             catch (Exception ex)
@@ -67,11 +71,59 @@ public sealed class DistributedLockHostedService(
         await RecoverStateFromRedisAsync(cancellationToken);
     }
 
+    // -------------------------------------------------------------------------
+    // DEDUPLICATION ENGINE
+    // -------------------------------------------------------------------------
+    
+    private void TryEmitLocked(string entityType, string entityId, string username)
+    {
+        var key = $"{entityType}:{entityId}";
+        var shouldEmit = false;
+
+        _activeLocksDeduplicator.AddOrUpdate(
+            key,
+            addValueFactory: _ => 
+            { 
+                // New lock detected
+                shouldEmit = true; 
+                return username; 
+            },
+            updateValueFactory: (_, existingUsername) =>
+            {
+                // Edge case: Lock hijacked or overwritten by a different user
+                if (!existingUsername.Equals(username, StringComparison.Ordinal))
+                {
+                    shouldEmit = true;
+                }
+                return username;
+            });
+
+        if (shouldEmit)
+        {
+            _notifications.OnNext(new Emit.Locked(entityType, entityId, username));
+        }
+    }
+
+    private void TryEmitUnlocked(string entityType, string entityId)
+    {
+        var key = $"{entityType}:{entityId}";
+        
+        // Only emit if we actually removed an existing lock
+        if (_activeLocksDeduplicator.TryRemove(key, out _))
+        {
+            _notifications.OnNext(new Emit.Unlocked(entityType, entityId));
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // INFRASTRUCTURE METHODS
+    // -------------------------------------------------------------------------
+
     internal async Task NotifyLockedAsync(string entityType, string entityId, string username)
     {
         if (_subscriber is null)
         {
-            logger.LogWarning("DistributedLockHostedService is not fully started. Notification for locking {EntityType}:{EntityId} dropped.", entityType, entityId);
+            logger.LogWarning("DistributedLockHostedService is not fully started. Notification dropped.");
             return;
         }
 
@@ -87,7 +139,7 @@ public sealed class DistributedLockHostedService(
     {
         if (_subscriber is null)
         {
-            logger.LogWarning("DistributedLockHostedService is not fully started. Notification for unlocking {EntityType}:{EntityId} dropped.", entityType, entityId);
+            logger.LogWarning("DistributedLockHostedService is not fully started. Notification dropped.");
             return;
         }
 
@@ -98,28 +150,18 @@ public sealed class DistributedLockHostedService(
         await _database.HashDeleteAsync(_hashKey, hashField);
         await _subscriber.PublishAsync(RedisChannel.Literal(_channelName), bytes);
     }
-
-    public async Task StopAsync(CancellationToken ct)
-    {
-        if (_subscriber is not null) 
-        {
-            await _subscriber.UnsubscribeAllAsync();
-        }
-    }
     
     private async Task RecoverStateFromRedisAsync(CancellationToken cancellationToken)
     {
         try
         {
             var entries = await _database.HashGetAllAsync(_hashKey);
-            
             if (entries.Length == 0) return;
 
             var recoveredCount = 0;
-
             var parallelOptions = new ParallelOptions 
             { 
-                MaxDegreeOfParallelism = Environment.ProcessorCount * 2, // Conservative but fast limit
+                MaxDegreeOfParallelism = Environment.ProcessorCount * 2,
                 CancellationToken = cancellationToken 
             };
 
@@ -159,25 +201,34 @@ public sealed class DistributedLockHostedService(
         var lockName = $"{_keyPrefix}{entityType}:{entityId}";
 
         var acquiredLock = await lockProvider.TryAcquireLockAsync(lockName, TimeSpan.Zero, ct);
-        
         if (acquiredLock is not null)
         {
             logger.LogInformation("Detected stale ghost-lock state for {LockName}. Cleaning up.", lockName);
-            
             await acquiredLock.DisposeAsync();
             await _database.HashDeleteAsync(_hashKey, entry.Name);
             return false;
         }
 
-        // Emit is safely thread-synchronized thanks to Subject.Synchronize()
-        _notifications.OnNext(new Emit.Locked(entityType, entityId, username));
+        // Pass through the deduplication engine. If Pub/Sub already emitted this during the gap, it will be skipped.
+        TryEmitLocked(entityType, entityId, username);
         return true;
+    }
+
+    public async Task StopAsync(CancellationToken ct)
+    {
+        if (_subscriber is not null) 
+        {
+            await _subscriber.UnsubscribeAllAsync();
+        }
     }
 
     public ValueTask DisposeAsync()
     {
         _notifications.OnCompleted();
-        if (_notifications is IDisposable disposable) disposable.Dispose();
+        if (_notifications is IDisposable disposable)
+        {
+            disposable.Dispose();
+        }
         
         return ValueTask.CompletedTask;
     }
