@@ -8,14 +8,19 @@ using Microsoft.Extensions.Options;
 using Options;
 using Polly;
 
+/// <summary>
+/// Applies EF Core migrations during application bootstrap.
+/// Implemented as a synchronous-blocking <see cref="IHostedService"/> (not <see cref="BackgroundService"/>)
+/// so that the host does NOT start serving requests until migrations have been applied.
+/// </summary>
 public sealed class MigrationHostedService<TDbContext>(
     IServiceProvider serviceProvider,
     IOptions<PersistenceOptions> options,
     IHostApplicationLifetime lifetime,
-    ILogger<MigrationHostedService<TDbContext>> logger) : BackgroundService
+    ILogger<MigrationHostedService<TDbContext>> logger) : IHostedService
     where TDbContext : DbContext
 {
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    public async Task StartAsync(CancellationToken cancellationToken)
     {
         if (!options.Value.RunMigrationsOnStartup)
         {
@@ -25,16 +30,13 @@ public sealed class MigrationHostedService<TDbContext>(
 
         logger.LogInformation("Applying EF Core migrations for {DbContext}...", typeof(TDbContext).Name);
 
-        // Define a Polly v8 Resilience Pipeline for startup retries
+        // Polly v8 resilience pipeline: 5 retries with exponential backoff (2s, 4s, 8s, 16s, 32s).
         var retryPipeline = new ResiliencePipelineBuilder()
             .AddRetry(new()
             {
-                // Number of retry attempts before giving up
                 MaxRetryAttempts = 5,
-                // Exponential backoff: 2s, 4s, 8s, 16s...
                 Delay = TimeSpan.FromSeconds(2),
                 BackoffType = DelayBackoffType.Exponential,
-                // Handle any exception (usually connection or timeout issues at boot)
                 ShouldHandle = new PredicateBuilder().Handle<Exception>(),
                 OnRetry = args =>
                 {
@@ -52,24 +54,23 @@ public sealed class MigrationHostedService<TDbContext>(
 
         try
         {
-            await retryPipeline.ExecuteAsync(static async (sp, token) => 
-            { 
+            await retryPipeline.ExecuteAsync(static async (sp, token) =>
+            {
                 await using var scope = sp.CreateAsyncScope();
                 var dbContext = scope.ServiceProvider.GetRequiredService<TDbContext>();
-                
-                await dbContext.Database.MigrateAsync(token); 
-                
-            }, serviceProvider, stoppingToken).ConfigureAwait(false);
+                await dbContext.Database.MigrateAsync(token);
+            }, serviceProvider, cancellationToken).ConfigureAwait(false);
 
             logger.LogInformation("EF Core migrations for {DbContext} applied successfully.", typeof(TDbContext).Name);
         }
         catch (Exception ex)
         {
-            // If it fails after all 5 retries, the DB is truly unreachable or there is a SQL syntax error in the migration.
-            // At this point, it is safe to crash the application.
+            // After all retries: DB is unreachable or migration is broken. Crash the app on purpose.
             logger.LogCritical(ex, "Migration failed for {DbContext} after multiple retries. Stopping application.", typeof(TDbContext).Name);
             lifetime.StopApplication();
             throw;
         }
     }
+
+    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 }

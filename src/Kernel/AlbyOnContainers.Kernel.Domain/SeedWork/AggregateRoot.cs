@@ -15,6 +15,11 @@ public abstract class AggregateRoot : AuditableEntity
     protected void AppendEvent(IDomainEvent domainEvent)
         => _domainEvents.Add(domainEvent);
 
-    public void ClearDomainEvents()
+    /// <summary>
+    /// Clears the domain events collection. Intentionally <c>internal</c>: only the
+    /// persistence-layer DomainEventDispatcherInterceptor is allowed to invoke this
+    /// after extracting the events for outbox publication.
+    /// </summary>
+    internal void ClearDomainEvents()
         => _domainEvents.Clear();
 }

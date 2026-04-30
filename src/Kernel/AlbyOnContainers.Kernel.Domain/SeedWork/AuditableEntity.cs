@@ -7,13 +7,21 @@ public abstract class AuditableEntity
     public string? CreatedBy { get; private set; }
     public string? UpdatedBy { get; private set; }
 
-    public void SetCreationInfo(string createdBy)
+    /// <summary>
+    /// Sets creation audit metadata. Intentionally <c>internal</c>: must only be invoked
+    /// by the persistence-layer interceptor (AuditableEntityInterceptor), never by domain
+    /// code or callers outside the kernel.
+    /// </summary>
+    internal void SetCreationInfo(string createdBy)
     {
         CreatedBy = createdBy;
         CreatedAt = DateTimeOffset.UtcNow;
     }
 
-    public void SetUpdateInfo(string updatedBy)
+    /// <summary>
+    /// Sets update audit metadata. Same encapsulation contract as <see cref="SetCreationInfo"/>.
+    /// </summary>
+    internal void SetUpdateInfo(string updatedBy)
     {
         UpdatedBy = updatedBy;
         UpdatedAt = DateTimeOffset.UtcNow;
