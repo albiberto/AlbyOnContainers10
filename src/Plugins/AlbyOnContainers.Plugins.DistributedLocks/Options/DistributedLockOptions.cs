@@ -16,4 +16,7 @@ public class DistributedLockOptions : KernelOptions<DistributedLockOptions>
     
     [Required(AllowEmptyStrings = false, ErrorMessage = "The Redis KeyPrefix cannot be empty.")]
     public string KeyPrefix { get; set; } = "global-lock:";
+    
+    [Range(1, 256, ErrorMessage = "RecoveryMaxDegreeOfParallelism must be strictly between 1 and 256.")]
+    public int RecoveryMaxDegreeOfParallelism { get; set; } = 32;
 }
