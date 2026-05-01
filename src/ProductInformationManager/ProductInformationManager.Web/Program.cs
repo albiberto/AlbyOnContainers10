@@ -4,6 +4,7 @@ using AlbyOnContainers.Kernel.Messaging;
 using AlbyOnContainers.Kernel.Observability;
 using AlbyOnContainers.Kernel.Persistence;
 using AlbyOnContainers.Kernel.Security;
+using AlbyOnContainers.Plugins.DistributedLocks;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.FluentUI.AspNetCore.Components;
@@ -31,6 +32,7 @@ builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
 {
     ["Caching:RedisConnectionString"] = redisConn,
     ["Messaging:Host"]                = amqpUri.Host,
+    ["Messaging:Port"]                = amqpUri.Port.ToString(),
     ["Messaging:Username"]            = Uri.UnescapeDataString(amqpUserInfo[0]),
     ["Messaging:Password"]            = Uri.UnescapeDataString(amqpUserInfo.Length > 1 ? amqpUserInfo[1] : string.Empty),
 });
@@ -40,12 +42,13 @@ builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
 //  - Persistence: choosing the EF Core provider (UseNpgsql).
 //  - Messaging:   wiring the MassTransit Outbox.
 // Everything else is bound from appsettings.json sections (Observability, Keycloak,
-// Persistence, Caching, Messaging).
+// Persistence, Caching, DistributedLock, Messaging).
 builder.AddKernel()
     .WithObservability()
     .WithSecurity()
     .WithPersistence<ProductContext>((_, opt) => opt.UseNpgsql(pgConn))
     .WithCaching<CategoryCache>()
+    .WithDistributedLocks()
     .WithMessaging<ProductContext, CreateCategoryConsumer>(outbox =>
     {
         outbox.UsePostgres();

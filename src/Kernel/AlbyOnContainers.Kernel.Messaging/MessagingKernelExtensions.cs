@@ -174,7 +174,7 @@ public static class MessagingKernelExtensions
             {
                 var options = context.GetRequiredService<IOptions<MessagingOptions>>().Value;
 
-                rmq.Host(options.Host, h =>
+                rmq.Host(options.Host, (ushort)options.Port, "/", h =>
                 {
                     h.Username(options.Username);
                     h.Password(options.Password);

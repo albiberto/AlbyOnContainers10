@@ -6,6 +6,14 @@ namespace AlbyOnContainers.Kernel.Messaging.Options;
 public sealed class MessagingOptions : KernelOptions<MessagingOptions>
 {
     [Required] public string Host { get; set; } = null!;
+
+    /// <summary>
+    /// AMQP port. Defaults to 5672 (or 5671 with TLS). Aspire injects a dynamic port,
+    /// so the bootstrap layer is expected to populate this from the connection string.
+    /// </summary>
+    [Range(1, 65535)]
+    public int Port { get; set; } = 5672;
+
     [Required] public string Username { get; set; } = null!;
     [Required] public string Password { get; set; } = null!;
 

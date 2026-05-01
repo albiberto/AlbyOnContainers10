@@ -1,3 +1,4 @@
+using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using ProductInformationManager.Domain;
@@ -30,6 +31,14 @@ public class ProductContext(DbContextOptions<ProductContext> options) : DbContex
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        // === MassTransit Transactional Outbox/Inbox (EF Core integration) ===
+        // Required by WithMessaging<TDbContext>(outbox => outbox.UsePostgres()) — without
+        // these mappings the InboxCleanupService throws:
+        //   "Cannot create a DbSet for 'InboxState' because this type is not included in the model"
+        modelBuilder.AddInboxStateEntity();
+        modelBuilder.AddOutboxMessageEntity();
+        modelBuilder.AddOutboxStateEntity();
 
         // Abilitazione estensione ltree e sequence per SKU
         modelBuilder.HasPostgresExtension("ltree");
