@@ -162,11 +162,11 @@
     private async Task LoadData() {
         _loading = true;
 
-        var catResponse = await GetCategoriesClient.GetResponse<SearchCategoriesResult>(new SearchCategories());
+        var catResponse = await GetCategoriesClient.GetResponse<SearchCategoriesResult>(new());
         _allCategories = catResponse.Message.Categories.ToList();
 
         if (Id.HasValue) {
-            var response = await GetClient.GetResponse<GetDescriptionTypeByIdResult>(new GetDescriptionTypeById(Id.Value));
+            var response = await GetClient.GetResponse<GetDescriptionTypeByIdResult>(new(Id.Value));
             _dt = response.Message.DescriptionType;
 
             if (_dt is not null) {
@@ -195,7 +195,7 @@
         _creating = true;
 
         var createResp = await CreateClient.GetResponse<CreateDescriptionTypeResult>(
-            new CreateDescriptionType(_formName, _formDescription));
+            new(_formName, _formDescription));
 
         if (!createResp.Message.Success) {
             ToastService.ShowError(createResp.Message.ErrorMessage ?? "Error during creation");
@@ -213,7 +213,7 @@
     private async Task HandleNameChanged() {
         if (_dt is null || string.IsNullOrWhiteSpace(_formName) || _formName == _dt.Name) return;
         var resp = await UpdateClient.GetResponse<UpdateDescriptionTypeResult>(
-            new UpdateDescriptionType(_dt.Id, _formName, _formDescription));
+            new(_dt.Id, _formName, _formDescription));
         if (!resp.Message.Success) {
             ToastService.ShowError(resp.Message.ErrorMessage ?? "Name update failed");
             _formName = _dt.Name;
@@ -223,7 +223,7 @@
     private async Task HandleDescChanged() {
         if (_dt is null || _formDescription == _dt.Description) return;
         var resp = await UpdateClient.GetResponse<UpdateDescriptionTypeResult>(
-            new UpdateDescriptionType(_dt.Id, _formName, _formDescription));
+            new(_dt.Id, _formName, _formDescription));
         if (!resp.Message.Success) {
             ToastService.ShowError(resp.Message.ErrorMessage ?? "Description update failed");
             _formDescription = _dt.Description;
@@ -233,7 +233,7 @@
     private async Task HandleGlobalChanged() {
         if (_dt is null || _formIsGlobal == _dt.IsGlobal) return;
         var resp = await SetGlobalClient.GetResponse<SetDescriptionTypeGlobalResult>(
-            new SetDescriptionTypeGlobal(_dt.Id, _formIsGlobal));
+            new(_dt.Id, _formIsGlobal));
         if (!resp.Message.Success) {
             ToastService.ShowError(resp.Message.ErrorMessage ?? "Global flag update failed");
             _formIsGlobal = _dt.IsGlobal;
@@ -248,7 +248,7 @@
 
         if (_originalCategoryId.HasValue) {
             var rmResp = await RemoveRuleClient.GetResponse<RemoveCategoryDescriptionRuleResult>(
-                new RemoveCategoryDescriptionRule(_originalCategoryId.Value, _dt.Id));
+                new(_originalCategoryId.Value, _dt.Id));
             if (!rmResp.Message.Success) {
                 ToastService.ShowError(rmResp.Message.ErrorMessage ?? "Error removing previous category");
                 RevertCategory();
@@ -258,7 +258,7 @@
 
         if (newCatId.HasValue) {
             var adResp = await AddRuleClient.GetResponse<AddCategoryDescriptionRuleResult>(
-                new AddCategoryDescriptionRule(newCatId.Value, _dt.Id, false));
+                new(newCatId.Value, _dt.Id, false));
             if (!adResp.Message.Success) {
                 ToastService.ShowError(adResp.Message.ErrorMessage ?? "Error assigning new category");
                 RevertCategory();
@@ -285,7 +285,7 @@
 
         _addingValue = true;
         var resp = await AddValueClient.GetResponse<AddDescriptionValueResult>(
-            new AddDescriptionValue(_dt.Id, trimmed));
+            new(_dt.Id, trimmed));
         if (!resp.Message.Success) {
             ToastService.ShowError(resp.Message.ErrorMessage ?? "Error adding value");
         } else {
@@ -297,7 +297,7 @@
 
     private async Task RemoveValue(Guid valueId) {
         var resp = await DeleteValueClient.GetResponse<DeleteDescriptionValueResult>(
-            new DeleteDescriptionValue(valueId));
+            new(valueId));
         if (!resp.Message.Success) {
             ToastService.ShowError(resp.Message.ErrorMessage ?? "Error removing value");
         } else {

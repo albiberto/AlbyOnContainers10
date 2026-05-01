@@ -12,6 +12,6 @@ public class ProductContextFactory : IDesignTimeDbContextFactory<ProductContext>
         // We use a dummy PostgreSQL connection string here to satisfy the Npgsql provider.
         optionsBuilder.UseNpgsql("Host=localhost;Database=dummy;Username=postgres;Password=dummy");
 
-        return new ProductContext(optionsBuilder.Options);
+        return new(optionsBuilder.Options);
     }
 }

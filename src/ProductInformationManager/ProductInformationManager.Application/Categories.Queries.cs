@@ -1,9 +1,11 @@
+using AlbyOnContainers.Kernel.Messaging.Attributes;
 using MassTransit;
 using ProductInformationManager.Application.Cache;
 using ProductInformationManager.Messages;
 
 namespace ProductInformationManager.Application;
 
+[MediatorConsumer]
 public class GetRootCategoriesConsumer(CategoryCache cache) : IConsumer<GetRootCategories>
 {
     public async Task Consume(ConsumeContext<GetRootCategories> context)
@@ -19,6 +21,7 @@ public class GetRootCategoriesConsumer(CategoryCache cache) : IConsumer<GetRootC
     }
 }
 
+[MediatorConsumer]
 public class GetChildCategoriesConsumer(CategoryCache cache) : IConsumer<GetChildCategories>
 {
     public async Task Consume(ConsumeContext<GetChildCategories> context)
@@ -34,6 +37,7 @@ public class GetChildCategoriesConsumer(CategoryCache cache) : IConsumer<GetChil
     }
 }
 
+[MediatorConsumer]
 public class GetCategoryByIdConsumer(CategoryCache cache) : IConsumer<GetCategoryById>
 {
     public async Task Consume(ConsumeContext<GetCategoryById> context)
@@ -48,6 +52,7 @@ public class GetCategoryByIdConsumer(CategoryCache cache) : IConsumer<GetCategor
     }
 }
 
+[MediatorConsumer]
 public class SearchCategoriesConsumer(CategoryCache cache) : IConsumer<SearchCategories>
 {
     public async Task Consume(ConsumeContext<SearchCategories> context)

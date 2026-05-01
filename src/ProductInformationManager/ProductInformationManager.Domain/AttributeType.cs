@@ -46,7 +46,7 @@ public class AttributeType : AuditableEntity
                                  a.Value.Equals(value, StringComparison.OrdinalIgnoreCase)))
             return;
 
-        _attributes.Add(new Attribute(this.Id, name, value));
+        _attributes.Add(new(Id, name, value));
     }
 
     public void RemoveAttribute(AttributeId attributeId)

@@ -6,7 +6,7 @@ using Attribute = ProductInformationManager.Domain.Attribute;
 
 namespace ProductInformationManager.Infrastructure;
 
-public class ProductContext(DbContextOptions<ProductContext> options) : DbContext(options), IUnitOfWork
+public class ProductContext(DbContextOptions<ProductContext> options) : DbContext(options)
 {
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<DescriptionType> DescriptionTypes => Set<DescriptionType>();
@@ -154,9 +154,9 @@ public class ProductContext(DbContextOptions<ProductContext> options) : DbContex
 // ====================================================================
 // VALUE CONVERTERS (Traducono gli Strongly-Typed IDs per Postgres)
 // ====================================================================
-public class ProductIdConverter() : ValueConverter<ProductId, Guid>(id => id.Value, value => new ProductId(value));
-public class CategoryIdConverter() : ValueConverter<CategoryId, Guid>(id => id.Value, value => new CategoryId(value));
-public class AttributeIdConverter() : ValueConverter<AttributeId, Guid>(id => id.Value, value => new AttributeId(value));
-public class AttributeTypeIdConverter() : ValueConverter<AttributeTypeId, Guid>(id => id.Value, value => new AttributeTypeId(value));
-public class DescriptionTypeIdConverter() : ValueConverter<DescriptionTypeId, Guid>(id => id.Value, value => new DescriptionTypeId(value));
-public class DescriptionValueIdConverter() : ValueConverter<DescriptionValueId, Guid>(id => id.Value, value => new DescriptionValueId(value));
+public class ProductIdConverter() : ValueConverter<ProductId, Guid>(id => id.Value, value => new(value));
+public class CategoryIdConverter() : ValueConverter<CategoryId, Guid>(id => id.Value, value => new(value));
+public class AttributeIdConverter() : ValueConverter<AttributeId, Guid>(id => id.Value, value => new(value));
+public class AttributeTypeIdConverter() : ValueConverter<AttributeTypeId, Guid>(id => id.Value, value => new(value));
+public class DescriptionTypeIdConverter() : ValueConverter<DescriptionTypeId, Guid>(id => id.Value, value => new(value));
+public class DescriptionValueIdConverter() : ValueConverter<DescriptionValueId, Guid>(id => id.Value, value => new(value));

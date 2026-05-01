@@ -1,13 +1,15 @@
+namespace ProductInformationManager.Application;
+
+using AlbyOnContainers.Kernel.Messaging.Attributes;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using ProductInformationManager.Domain;
-using ProductInformationManager.Domain.ValueObjects;
-using ProductInformationManager.Infrastructure;
-using ProductInformationManager.Messages;
+using Domain;
+using Domain.ValueObjects;
+using Infrastructure;
+using Messages;
 
-namespace ProductInformationManager.Application.Consumers;
-
+[MediatorConsumer]
 public class CreateCategoryConsumer(
     ProductContext db,
     ILogger<CreateCategoryConsumer> logger) : IConsumer<CreateCategory>
@@ -37,6 +39,7 @@ public class CreateCategoryConsumer(
     }
 }
 
+[MediatorConsumer]
 public class UpdateCategoryConsumer(ProductContext db, ILogger<UpdateCategoryConsumer> logger) : IConsumer<UpdateCategory>
 {
     public async Task Consume(ConsumeContext<UpdateCategory> context)
@@ -55,6 +58,7 @@ public class UpdateCategoryConsumer(ProductContext db, ILogger<UpdateCategoryCon
     }
 }
 
+[MediatorConsumer]
 public class DeleteCategoryConsumer(
     ProductContext db,
     ILogger<DeleteCategoryConsumer> logger) : IConsumer<DeleteCategory>

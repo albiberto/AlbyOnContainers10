@@ -1,3 +1,4 @@
+using AlbyOnContainers.Kernel.Messaging.Attributes;
 using MassTransit;
 using Microsoft.Extensions.Logging;
 using ProductInformationManager.Application.Cache;
@@ -5,6 +6,7 @@ using ProductInformationManager.Contracts;
 
 namespace ProductInformationManager.Application.Consumers;
 
+[EventConsumer]
 public class CategoryConsumer(CategoryCache cache, ILogger<CategoryConsumer> logger) :
     IConsumer<CategoryCreatedEvent>,
     IConsumer<CategoryUpdatedEvent>,

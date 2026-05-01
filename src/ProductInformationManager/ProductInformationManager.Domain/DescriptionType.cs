@@ -63,7 +63,7 @@ public class DescriptionType : AuditableEntity
         if (_values.Any(v => v.Value.Equals(value, StringComparison.OrdinalIgnoreCase))) 
             return;
 
-        _values.Add(new DescriptionValue(value, this.Id));
+        _values.Add(new(value, Id));
     }
 
     public void RemoveValue(DescriptionValueId valueId)

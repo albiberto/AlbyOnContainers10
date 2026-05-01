@@ -117,7 +117,7 @@
 
     private async Task LoadData() {
         _loading = true;
-        var response = await DescriptionTypesClient.GetResponse<GetDescriptionTypesResult>(new GetDescriptionTypes());
+        var response = await DescriptionTypesClient.GetResponse<GetDescriptionTypesResult>(new());
         _descriptionTypes = response.Message.DescriptionTypes;
         _loading = false;
     }
@@ -133,7 +133,7 @@
     private async Task HandleDelete() {
         if (_typeToDelete is null) return;
         _deleting = true;
-        var response = await DeleteClient.GetResponse<DeleteDescriptionTypeResult>(new DeleteDescriptionType(_typeToDelete.Id));
+        var response = await DeleteClient.GetResponse<DeleteDescriptionTypeResult>(new(_typeToDelete.Id));
         if (response.Message.Success) {
             ToastService.ShowSuccess($"'{_typeToDelete.Name}' deleted.");
             await LoadData();

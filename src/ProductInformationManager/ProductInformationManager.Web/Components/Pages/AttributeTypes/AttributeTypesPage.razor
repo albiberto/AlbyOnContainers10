@@ -194,7 +194,7 @@
 
     private async Task LoadData() {
         _loading = true;
-        var response = await AttributeTypesClient.GetResponse<GetAttributeTypesResult>(new GetAttributeTypes());
+        var response = await AttributeTypesClient.GetResponse<GetAttributeTypesResult>(new());
         _attributeTypes = response.Message.AttributeTypes;
         _loading = false;
     }
@@ -217,13 +217,13 @@
         if (string.IsNullOrWhiteSpace(_formName)) return;
         _saving = true;
         if (_editing is not null) {
-            var response = await UpdateTypeClient.GetResponse<UpdateAttributeTypeResult>(new UpdateAttributeType(_editing.Id, _formName, _formDescription));
+            var response = await UpdateTypeClient.GetResponse<UpdateAttributeTypeResult>(new(_editing.Id, _formName, _formDescription));
             if (response.Message.Success)
                 ToastService.ShowSuccess("Attribute type updated.");
             else
                 ToastService.ShowError(response.Message.ErrorMessage ?? "Failed to update attribute type.");
         } else {
-            var response = await CreateTypeClient.GetResponse<CreateAttributeTypeResult>(new CreateAttributeType(_formName, _formDescription));
+            var response = await CreateTypeClient.GetResponse<CreateAttributeTypeResult>(new(_formName, _formDescription));
             if (response.Message.Success)
                 ToastService.ShowSuccess("Attribute type created.");
             else
@@ -243,7 +243,7 @@
     private async Task HandleDeleteType() {
         if (_typeToDelete is null) return;
         _deleting = true;
-        var response = await DeleteTypeClient.GetResponse<DeleteAttributeTypeResult>(new DeleteAttributeType(_typeToDelete.Id));
+        var response = await DeleteTypeClient.GetResponse<DeleteAttributeTypeResult>(new(_typeToDelete.Id));
         if (response.Message.Success) {
             ToastService.ShowSuccess($"'{_typeToDelete.Name}' deleted.");
             await LoadData();
@@ -257,7 +257,7 @@
 
     private async Task HandleAddAttribute(Guid typeId) {
         if (string.IsNullOrWhiteSpace(_newAttrName) || string.IsNullOrWhiteSpace(_newAttrValue)) return;
-        var response = await CreateAttributeClient.GetResponse<CreateAttributeResult>(new CreateAttribute(_newAttrName, _newAttrValue, typeId));
+        var response = await CreateAttributeClient.GetResponse<CreateAttributeResult>(new(_newAttrName, _newAttrValue, typeId));
         if (response.Message.Success)
             ToastService.ShowSuccess("Attribute added.");
         else
@@ -274,7 +274,7 @@
 
     private async Task HandleDeleteAttribute() {
         _deletingAttr = true;
-        var response = await DeleteAttributeClient.GetResponse<DeleteAttributeResult>(new DeleteAttribute(_attrToDeleteId));
+        var response = await DeleteAttributeClient.GetResponse<DeleteAttributeResult>(new(_attrToDeleteId));
         if (response.Message.Success) {
             ToastService.ShowSuccess("Attribute deleted.");
             await LoadData();
