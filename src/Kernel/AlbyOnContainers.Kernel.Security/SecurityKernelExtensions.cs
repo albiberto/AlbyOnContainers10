@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -60,11 +61,33 @@ public static class SecurityKernelExtensions
                 var logger = sp.GetRequiredService<ILogger<CurrentUserService>>();
 
                 if (!opts.EnableStub) return new CurrentUserService(sp.GetRequiredService<IHttpContextAccessor>());
-                
+
                 logger.LogWarning("SECURITY ALERT: Running in STUB mode. Authentication claims are completely mocked. DO NOT use this in Production.");
                 return new StubCurrentUserService();
-
             });
+
+            // Resolve a snapshot of KeycloakOptions at registration time so we can take
+            // build-time decisions (e.g. skip the OIDC scheme entirely in Stub mode).
+            // OpenIdConnectOptions.Validate() requires a non-empty ClientId; registering
+            // the OIDC scheme in Stub mode (where ClientId is intentionally empty) crashes
+            // on the very first authenticated request — see ArgumentNullException 'ClientId'.
+            var startup = new KeycloakOptions();
+            builder.Host.Configuration.GetSection(KeycloakOptions.Section).Bind(startup);
+
+            if (startup.EnableStub)
+            {
+                // Stub mode: only the Cookie scheme is registered. Default & Challenge are
+                // both Cookie, so AuthenticationMiddleware never tries to materialize OIDC.
+                services.AddAuthentication(authOptions =>
+                    {
+                        authOptions.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                        authOptions.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                    })
+                    .AddCookie();
+
+                services.AddAuthorization();
+                return;
+            }
 
             services.AddAuthentication(authOptions =>
                 {
@@ -87,10 +110,6 @@ public static class SecurityKernelExtensions
                 {
                     var cfg = keycloakAccessor.Value;
 
-                    // Bail out completely if we are running the Stub. 
-                    // This prevents OpenIdConnectHandler from trying to contact an empty Authority.
-                    if (cfg.EnableStub) return;
-        
                     oidc.Authority = cfg.Authority;
                     oidc.ClientId = cfg.ClientId;
                     oidc.ClientSecret = cfg.ClientSecret;
