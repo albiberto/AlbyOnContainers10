@@ -155,58 +155,66 @@ public static class ObservabilityKernelExtensions
             logging.ParseStateValues = true;
         });
 
-        builder.Host.Services.AddOpenTelemetry()
+        // ARCHITECTURAL NOTE:
+        // Instrumentation registrations (AddAspNetCoreInstrumentation, AddHttpClientInstrumentation,
+        // AddRuntimeInstrumentation, AddEntityFrameworkCoreInstrumentation) internally call
+        // TracerProviderBuilder.ConfigureServices(...) / MeterProviderBuilder.ConfigureServices(...),
+        // which is ONLY valid during the OpenTelemetry builder phase (WithTracing/WithMetrics) —
+        // i.e. BEFORE the IServiceProvider is built.
+        //
+        // Using ConfigureOpenTelemetryTracerProvider / ConfigureOpenTelemetryMeterProvider (which
+        // run AFTER SP construction) for these calls throws:
+        //   "Services cannot be configured after ServiceProvider has been created."
+        //
+        // We therefore register instrumentation at build-time using the resolved 'startupOptions'
+        // snapshot. The runtime IOptions<ObservabilityOptions> binding is still used by the
+        // ResourceDetector (resolved from the SP at build time, which is allowed).
+        var otel = builder.Host.Services.AddOpenTelemetry()
             .ConfigureResource(resource =>
             {
                 resource.AddDetector(sp => new OptionsResourceDetector(sp.GetRequiredService<IOptions<ObservabilityOptions>>().Value));
                 resource.AddEnvironmentVariableDetector();
-            });
-
-        builder.Host.Services.ConfigureOpenTelemetryMeterProvider((sp, metrics) =>
-        {
-            var runtimeOptions = sp.GetRequiredService<IOptions<ObservabilityOptions>>().Value;
-
-            metrics
-                .AddAspNetCoreInstrumentation()
-                .AddRuntimeInstrumentation();
-
-            if (runtimeOptions.EnableHttpClientTracing) metrics.AddHttpClientInstrumentation();
-
-            foreach (var meter in runtimeOptions.CustomMeters) metrics.AddMeter(meter);
-
-            if (scanAssembly.GetName().Name is { } assemblyName && !runtimeOptions.CustomMeters.Contains(assemblyName))
-                metrics.AddMeter(assemblyName);
-        });
-
-        builder.Host.Services.ConfigureOpenTelemetryTracerProvider((sp, tracing) =>
-        {
-            var runtimeOptions = sp.GetRequiredService<IOptions<ObservabilityOptions>>().Value;
-
-            tracing.AddAspNetCoreInstrumentation();
-            if (runtimeOptions.EnableHttpClientTracing) tracing.AddHttpClientInstrumentation();
-            if (runtimeOptions.EnableEntityFrameworkTracing) tracing.AddEntityFrameworkCoreInstrumentation();
-
-            tracing.AddSource(runtimeOptions.ServiceName);
-
-            if (runtimeOptions.EnableMassTransitTracing)
-                tracing.AddSource("MassTransit");
-
-            foreach (var source in runtimeOptions.CustomTracingSources) tracing.AddSource(source);
-
-            if (scanAssembly.GetName().Name is { } assemblyName &&
-                !runtimeOptions.CustomTracingSources.Contains(assemblyName) &&
-                assemblyName != "MassTransit")
+            })
+            .WithMetrics(metrics =>
             {
-                tracing.AddSource(assemblyName);
-            }
-        });
+                metrics
+                    .AddAspNetCoreInstrumentation()
+                    .AddRuntimeInstrumentation();
+
+                if (startupOptions.EnableHttpClientTracing) metrics.AddHttpClientInstrumentation();
+
+                foreach (var meter in startupOptions.CustomMeters) metrics.AddMeter(meter);
+
+                if (scanAssembly.GetName().Name is { } assemblyName && !startupOptions.CustomMeters.Contains(assemblyName))
+                    metrics.AddMeter(assemblyName);
+            })
+            .WithTracing(tracing =>
+            {
+                tracing.AddAspNetCoreInstrumentation();
+                if (startupOptions.EnableHttpClientTracing) tracing.AddHttpClientInstrumentation();
+                if (startupOptions.EnableEntityFrameworkTracing) tracing.AddEntityFrameworkCoreInstrumentation();
+
+                tracing.AddSource(startupOptions.ServiceName);
+
+                if (startupOptions.EnableMassTransitTracing)
+                    tracing.AddSource("MassTransit");
+
+                foreach (var source in startupOptions.CustomTracingSources) tracing.AddSource(source);
+
+                if (scanAssembly.GetName().Name is { } assemblyName &&
+                    !startupOptions.CustomTracingSources.Contains(assemblyName) &&
+                    assemblyName != "MassTransit")
+                {
+                    tracing.AddSource(assemblyName);
+                }
+            });
 
         // OTLP exporter wiring is a startup-time decision. We use the snapshot resolved at
         // registration time + the standard OTEL env var. This is the only correct moment to
         // decide because UseOtlpExporter() must be called before the host is built.
         var hasOtlpEnvVar = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT"));
         if (startupOptions.EnableOtlpExporter || hasOtlpEnvVar)
-            builder.Host.Services.AddOpenTelemetry().UseOtlpExporter();
+            otel.UseOtlpExporter();
     }
 
     private static void AddDefaultHealthChecks(IKernelBuilder builder)
