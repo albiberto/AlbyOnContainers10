@@ -23,6 +23,7 @@
       <ProjectReference Include="..\ProductInformationManager.Application\ProductInformationManager.Application.csproj" />
       <ProjectReference Include="..\ProductInformationManager.Infrastructure\ProductInformationManager.Infrastructure.csproj" />
       <ProjectReference Include="..\..\Kernel\AlbyOnContainers.Kernel\AlbyOnContainers.Kernel.csproj" />
+      <ProjectReference Include="..\..\Kernel\AlbyOnContainers.Kernel.Localization\AlbyOnContainers.Kernel.Localization.csproj" />
       <ProjectReference Include="..\..\Plugins\AlbyOnContainers.Plugins.DistributedLocks\AlbyOnContainers.Plugins.DistributedLocks.csproj" />
     </ItemGroup>
 

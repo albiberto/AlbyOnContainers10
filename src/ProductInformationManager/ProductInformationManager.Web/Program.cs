@@ -1,5 +1,6 @@
 using AlbyOnContainers.Kernel;
 using AlbyOnContainers.Kernel.Caching;
+using AlbyOnContainers.Kernel.Localization;
 using AlbyOnContainers.Kernel.Messaging;
 using AlbyOnContainers.Kernel.Observability;
 using AlbyOnContainers.Kernel.Persistence;
@@ -42,13 +43,14 @@ builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
 //  - Persistence: choosing the EF Core provider (UseNpgsql).
 //  - Messaging:   wiring the MassTransit Outbox.
 // Everything else is bound from appsettings.json sections (Observability, Keycloak,
-// Persistence, Caching, DistributedLock, Messaging).
+// Persistence, Caching, DistributedLock, Localization, Messaging).
 builder.AddKernel()
     .WithObservability()
     .WithSecurity()
     .WithPersistence<ProductContext>((_, opt) => opt.UseNpgsql(pgConn))
     .WithCaching<CategoryCache>()
     .WithDistributedLocks()
+    .WithLocalization()
     .WithMessaging<ProductContext, CreateCategoryConsumer>(outbox =>
     {
         outbox.UsePostgres();
@@ -85,6 +87,8 @@ if (!app.Environment.IsDevelopment())
 
 app.UseStaticFiles();
 app.UseAntiforgery();
+
+app.UseKernelLocalization();
 
 app.UseAuthentication();
 app.UseAuthorization();
