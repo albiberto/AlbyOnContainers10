@@ -3,6 +3,7 @@ using AlbyOnContainers.Kernel.Caching;
 using AlbyOnContainers.Kernel.Messaging;
 using AlbyOnContainers.Kernel.Observability;
 using AlbyOnContainers.Kernel.Persistence;
+using AlbyOnContainers.Kernel.Security;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.FluentUI.AspNetCore.Components;
@@ -32,6 +33,7 @@ builder.AddKernel()
         opt.ServiceName = "ProductInformationManager.Web";
         opt.Namespace = "AlbyOnContainers";
     })
+    .WithSecurity(opt => opt.EnableStub = true)
     .WithPersistence<ProductContext>((_, opt) => opt.UseNpgsql(pgConn))
     .WithCaching<CategoryCache>(opt => opt.RedisConnectionString = redisConn)
     .WithMessaging<ProductContext, CreateCategoryConsumer>(
