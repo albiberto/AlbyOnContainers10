@@ -2,7 +2,7 @@
 
 using System.Collections.Concurrent;
 using System.Reactive.Linq;
-using HostedServices;
+using Abstractions;
 using Microsoft.Extensions.Logging;
 using Model;
 
@@ -11,9 +11,9 @@ public sealed class LockTracker<TEntity> : IAsyncDisposable
     private readonly ConcurrentDictionary<string, string> _locks = new();
     private readonly IDisposable _subscription;
 
-    public LockTracker(DistributedLockHostedService hostedService, ILogger<LockTracker<TEntity>> logger)
+    public LockTracker(ILockStateTracker stateTracker, ILogger<LockTracker<TEntity>> logger)
     {
-        _subscription = hostedService.Notifications
+        _subscription = stateTracker.Notifications
             .Where(n => n.EntityType == typeof(TEntity).Name)
             .Subscribe(
                 onNext: notification =>

@@ -3,12 +3,12 @@ namespace AlbyOnContainers.Kernel.Persistence.Interceptors;
 using Domain.SeedWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
-using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Security.Abstractions;
 
-public sealed class AuditableEntityInterceptor(ILogger<AuditableEntityInterceptor> logger) : SaveChangesInterceptor
+public sealed class AuditableEntityInterceptor(
+    ILogger<AuditableEntityInterceptor> logger,
+    ICurrentUserService? currentUserService = null) : SaveChangesInterceptor
 {
     public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result) =>
         throw new InvalidOperationException("Synchronous SaveChanges is strictly prohibited. You MUST use SaveChangesAsync().");
@@ -22,8 +22,6 @@ public sealed class AuditableEntityInterceptor(ILogger<AuditableEntityIntercepto
             return base.SavingChangesAsync(eventData, result, cancellationToken);
         }
 
-        var scopedProvider = dbContext.GetInfrastructure();
-        var currentUserService = scopedProvider.GetService<ICurrentUserService>();
 
         var userId = currentUserService?.UserId ?? "System";
 

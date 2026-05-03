@@ -11,7 +11,10 @@ using StackExchange.Redis;
 
 namespace AlbyOnContainers.Plugins.DistributedLocks;
 
+using Abstractions;
 using HostedServices;
+using Messaging;
+using State;
 
 public static class DistributedLocksPluginExtensions
 {
@@ -66,8 +69,13 @@ public static class DistributedLocksPluginExtensions
             return new RedisDistributedSynchronizationProvider(connection.GetDatabase());
         });
 
+        services.AddSingleton<IRedisLockMessaging, RedisLockMessaging>();
+        services.AddSingleton<ILockStateTracker, LockStateTracker>();
+
         services.AddSingleton<DistributedLockHostedService>();
         services.AddHostedService(sp => sp.GetRequiredService<DistributedLockHostedService>());
+        services.AddHostedService<LockReconciliationWorker>();
+
         services.AddSingleton(typeof(LockTracker<>));
         services.AddSingleton(typeof(LockNotifier<>));
     }

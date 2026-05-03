@@ -3,11 +3,13 @@ namespace AlbyOnContainers.Kernel.Persistence.Interceptors;
 using Domain.SeedWork;
 using MassTransit;
 using Microsoft.EntityFrameworkCore.Diagnostics;
-using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-public sealed class DomainEventDispatcherInterceptor(ILogger<DomainEventDispatcherInterceptor> logger) : SaveChangesInterceptor
+public sealed class DomainEventDispatcherInterceptor(
+    ILogger<DomainEventDispatcherInterceptor> logger,
+    IPublishEndpoint? publishEndpoint = null,
+    IDomainEventMapper? mapper = null)
+    : SaveChangesInterceptor
 {
     public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result) =>
         throw new InvalidOperationException("Synchronous SaveChanges is strictly prohibited. You MUST use SaveChangesAsync() to ensure Domain Events are dispatched correctly without blocking threads.");
@@ -47,9 +49,6 @@ public sealed class DomainEventDispatcherInterceptor(ILogger<DomainEventDispatch
             })
             .ToList();
 
-        var scopedProvider = dbContext.GetInfrastructure();
-        var publishEndpoint = scopedProvider.GetService<IPublishEndpoint>();
-        var mapper = scopedProvider.GetService<IDomainEventMapper>();
 
         if (publishEndpoint is null)
         {

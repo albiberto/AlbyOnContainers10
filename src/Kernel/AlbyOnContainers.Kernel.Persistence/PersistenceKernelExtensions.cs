@@ -19,7 +19,11 @@ public static class PersistenceKernelExtensions
         Action<IServiceProvider, DbContextOptionsBuilder> configureDbContext)
         where TDbContext : DbContext
     {
-        // 1. Auto-Discovery for SHARED EF Core Interceptors (singleton, type-agnostic).
+        // 1. Auto-Discovery for SHARED EF Core Interceptors.
+        //    SCOPED lifetime is mandatory: interceptors must access the SAME DI scope as the
+        //    DbContext (e.g. IPublishEndpoint, ICurrentUserService are scoped). Singleton would
+        //    force resolution via dbContext.GetInfrastructure() (EF internal SP) which does
+        //    NOT forward to the application scope — yielding silent nulls and dropped events.
         //    SlowQueryInterceptor<TDbContext> is intentionally EXCLUDED from auto-discovery
         //    because it is generic and per-DbContext (different metric prefix per context).
         services.Scan(scan => scan
@@ -28,10 +32,11 @@ public static class PersistenceKernelExtensions
                 .AssignableTo<IInterceptor>()
                 .Where(t => !t.IsGenericTypeDefinition))
             .AsImplementedInterfaces()
-            .WithSingletonLifetime()
+            .AsSelf()
+            .WithScopedLifetime()
         );
 
-        // 2. Per-DbContext SlowQueryInterceptor.
+        // 2. Per-DbContext SlowQueryInterceptor (singleton: pure metric emitter, no scoped deps).
         services.AddSingleton<SlowQueryInterceptor<TDbContext>>();
 
         // 3. Register DbContext

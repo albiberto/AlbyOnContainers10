@@ -2,13 +2,12 @@
 using Medallion.Threading;
 using Microsoft.Extensions.Options;
 using System.Reactive.Linq;
+using AlbyOnContainers.Plugins.DistributedLocks.Abstractions;
 using AlbyOnContainers.Plugins.DistributedLocks.Model;
 using AlbyOnContainers.Plugins.DistributedLocks.Options;
 using Microsoft.Extensions.Logging;
 
 namespace AlbyOnContainers.Plugins.DistributedLocks;
-
-using HostedServices;
 
 /// <summary>
 /// Per-entity distributed lock notifier.
@@ -19,7 +18,8 @@ using HostedServices;
 /// </summary>
 public sealed class LockNotifier<TEntity>(
     IDistributedLockProvider lockProvider,
-    DistributedLockHostedService hostedService,
+    IRedisLockMessaging messaging,
+    ILockStateTracker stateTracker,
     LockTracker<TEntity> tracker,
     IOptions<DistributedLockOptions> options,
     ILogger<LockNotifier<TEntity>> logger)
@@ -29,7 +29,7 @@ public sealed class LockNotifier<TEntity>(
     private readonly string _entityType = typeof(TEntity).Name;
     private readonly ConcurrentDictionary<string, IDistributedSynchronizationHandle> _locks = new();
 
-    public IObservable<Emit> Changes => hostedService.Notifications.Where(n => n.EntityType == _entityType);
+    public IObservable<Emit> Changes => stateTracker.Notifications.Where(n => n.EntityType == _entityType);
 
     public bool IsLockedBy(string entityId, out string? username) => tracker.IsLocked(entityId, out username);
 
@@ -49,7 +49,7 @@ public sealed class LockNotifier<TEntity>(
         // (theoretically impossible, but kept for safety).
         if (_locks.TryAdd(entityId, handle))
         {
-            await hostedService.NotifyLockedAsync(_entityType, entityId, username);
+            await messaging.NotifyLockedAsync(_entityType, entityId, username);
             return true;
         }
 
@@ -62,7 +62,7 @@ public sealed class LockNotifier<TEntity>(
         if (!_locks.TryRemove(entityId, out var handle)) return;
 
         await handle.DisposeAsync();
-        await hostedService.NotifyUnlockedAsync(_entityType, entityId);
+        await messaging.NotifyUnlockedAsync(_entityType, entityId);
     }
 
     public async ValueTask DisposeAsync()
@@ -72,7 +72,7 @@ public sealed class LockNotifier<TEntity>(
             try
             {
                 await kvp.Value.DisposeAsync();
-                await hostedService.NotifyUnlockedAsync(_entityType, kvp.Key);
+                await messaging.NotifyUnlockedAsync(_entityType, kvp.Key);
             }
             catch (Exception ex)
             {
