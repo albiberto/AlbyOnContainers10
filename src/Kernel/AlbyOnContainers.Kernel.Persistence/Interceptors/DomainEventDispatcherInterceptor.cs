@@ -1,79 +1,81 @@
 namespace AlbyOnContainers.Kernel.Persistence.Interceptors;
 
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Abstractions;
 using Domain.SeedWork;
 using MassTransit;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Polly;
+using Resilience.Enums;
 
-public sealed class DomainEventDispatcherInterceptor(
-    ILogger<DomainEventDispatcherInterceptor> logger,
-    IPublishEndpoint? publishEndpoint = null,
-    IDomainEventMapper? mapper = null)
-    : SaveChangesInterceptor
+public sealed partial class DomainEventDispatcherInterceptor(ILogger<DomainEventDispatcherInterceptor> logger, [FromKeyedServices(ResilienceKey.Messaging)] ResiliencePipeline pipeline) : SaveChangesInterceptorBase
 {
-    public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result) =>
-        throw new InvalidOperationException("Synchronous SaveChanges is strictly prohibited. You MUST use SaveChangesAsync() to ensure Domain Events are dispatched correctly without blocking threads.");
-
-    public override async ValueTask<InterceptionResult<int>> SavingChangesAsync(
-        DbContextEventData eventData,
-        InterceptionResult<int> result,
-        CancellationToken cancellationToken = default)
+    public override async ValueTask<InterceptionResult<int>> SavingChangesAsync(DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
     {
+        // Guard: if the context is unavailable, skip processing and delegate to the base interceptor.
         var dbContext = eventData.Context;
         if (dbContext is null) return await base.SavingChangesAsync(eventData, result, cancellationToken);
 
-        // 1. Identifica gli aggregati con eventi.
+        // Phase 1 — Discovery: find all tracked AggregateRoots that have raised at least one domain event.
         var entitiesWithEvents = dbContext.ChangeTracker
             .Entries<AggregateRoot>()
             .Where(e => e.Entity.DomainEvents.Count != 0)
             .Select(e => e.Entity)
             .ToList();
 
+        // Short-circuit: nothing to dispatch, proceed normally.
         if (entitiesWithEvents.Count == 0) return await base.SavingChangesAsync(eventData, result, cancellationToken);
 
-        // 2. EXTRACT & CLEAR PRE-COMMIT.
-        // Rationale:
-        //   - With EF Outbox enabled, publishEndpoint.Publish writes outbox rows in the SAME
-        //     transaction as the aggregate. If SaveChangesAsync fails, both are rolled back at SQL level.
-        //   - Clearing in-memory events before SaveChanges is therefore safe for OUTBOX scenarios:
-        //     even if SaveChanges fails, no event reaches the broker (outbox rows are rolled back),
-        //     and the aggregate is no longer in memory after the unit-of-work ends.
-        //   - For NON-OUTBOX scenarios (publish-direct), this becomes at-most-once on retry: the
-        //     in-memory events are lost on the second SaveChanges attempt. ALWAYS use the outbox.
+        // Phase 2 — Collection: flatten all domain events into a single list.
+        // Events are intentionally NOT cleared yet — if publishing fails, the entities
+        // retain their events and no data is silently lost.
         var domainEvents = entitiesWithEvents
-            .SelectMany(e =>
-            {
-                var events = e.DomainEvents.ToList();
-                e.ClearDomainEvents();
-                return events;
-            })
+            .SelectMany(e => e.DomainEvents)
             .ToList();
 
+        // Resolve infrastructure services from the DbContext's service provider.
+        var publishEndpoint = dbContext.GetService<IPublishEndpoint>();
+        var mapper = dbContext.GetService<IDomainEventMapper>();
 
-        if (publishEndpoint is null)
-        {
-            logger.LogWarning("IPublishEndpoint not available. {Count} events cleared but not published.", domainEvents.Count);
-            return await base.SavingChangesAsync(eventData, result, cancellationToken);
-        }
-
-        // 3. Pubblicazione nell'Outbox (aggiunge entità OutboxMessage al ChangeTracker).
+        // Phase 3 — Mapping & Publishing: translate each domain event into zero or more
+        // integration messages and publish them to the message broker.
+        // Each publish is individually wrapped in the messaging resilience pipeline
+        // to handle transient broker failures with retry and timeout.
         foreach (var domainEvent in domainEvents)
         {
-            logger.LogDebug("Processing Domain Event: {EventName}", domainEvent.GetType().Name);
+            var eventName = domainEvent.GetType().Name;
 
-            var integrationMessages = mapper?.Map(domainEvent)?.ToList() ?? [];
+            LogProcessingDomainEvent(eventName);
+
+            // Map the domain event to integration messages.
+            // If the mapper produces no messages, the event is skipped.
+            var integrationMessages = mapper.Map(domainEvent).ToList();
 
             if (integrationMessages.Count == 0)
             {
-                logger.LogDebug("Domain Event {EventName} produced no Integration Messages.", domainEvent.GetType().Name);
+                LogNoIntegrationMessagesProduced(eventName);
                 continue;
             }
 
             foreach (var message in integrationMessages)
-                await publishEndpoint.Publish(message, message.GetType(), cancellationToken);
+            {
+                await pipeline.ExecuteAsync(
+                    static async (state, token) => await state.Endpoint.Publish(state.Message, state.Message.GetType(), token),
+                    (Endpoint: publishEndpoint, Message: message),
+                    cancellationToken);
+            }
         }
 
-        // 4. Esecuzione del commit SQL (entità business + righe outbox in un'unica transazione).
+        // Phase 4 — Cleanup: clear domain events only after all messages have been
+        // successfully published. This ensures events survive any exception thrown
+        // during the publish phase.
+        foreach (var entity in entitiesWithEvents) entity.ClearDomainEvents();
+
         return await base.SavingChangesAsync(eventData, result, cancellationToken);
     }
 }

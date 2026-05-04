@@ -1,72 +1,80 @@
-﻿namespace AlbyOnContainers.Kernel.Persistence.HostedServices;
+namespace AlbyOnContainers.Kernel.Persistence.HostedServices;
 
+using System;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Options;
+using Resilience.Enums;
+using Medallion.Threading;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Options;
 using Polly;
 
-/// <summary>
-/// Applies EF Core migrations during application bootstrap.
-/// Implemented as a synchronous-blocking <see cref="IHostedService"/> (not <see cref="BackgroundService"/>)
-/// so that the host does NOT start serving requests until migrations have been applied.
-/// </summary>
-public sealed class MigrationHostedService<TDbContext>(
-    IServiceProvider serviceProvider,
+public sealed partial class MigrationHostedService<TDbContext>(
+    IServiceScopeFactory scopeFactory,
     IOptions<PersistenceOptions> options,
     IHostApplicationLifetime lifetime,
-    ILogger<MigrationHostedService<TDbContext>> logger) : IHostedService
-    where TDbContext : DbContext
+    IDistributedLockProvider lockProvider,
+    ILogger<MigrationHostedService<TDbContext>> logger,
+    [FromKeyedServices(ResilienceKey.Database)] ResiliencePipeline pipeline)
+    : IHostedService where TDbContext : DbContext
 {
+    private readonly PersistenceOptions _options = options.Value;
+
+    // Architectural Note: Consider moving this into PersistenceOptions 
+    // to fully embrace the Dual-Method Options Pattern and Fail-Fast principles.
+    private static readonly TimeSpan LockTimeout = TimeSpan.FromSeconds(30);
+
+    private readonly record struct MigrationExecutionState(
+        IServiceScopeFactory ScopeFactory,
+        IDistributedLockProvider LockProvider,
+        string LockName,
+        string DbName,
+        MigrationHostedService<TDbContext> ServiceInstance);
+
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        if (!options.Value.RunMigrationsOnStartup)
-        {
-            logger.LogInformation("Auto-migrations are disabled in PersistenceOptions. Skipping for {DbContext}.", typeof(TDbContext).Name);
-            return;
-        }
+        if (!_options.RunMigrationsOnStartup) return;
 
-        logger.LogInformation("Applying EF Core migrations for {DbContext}...", typeof(TDbContext).Name);
+        var dbName = typeof(TDbContext).Name;
+        var lockName = $"ef_migration_lock_{dbName.ToLowerInvariant()}";
 
-        // Polly v8 resilience pipeline: 5 retries with exponential backoff (2s, 4s, 8s, 16s, 32s).
-        var retryPipeline = new ResiliencePipelineBuilder()
-            .AddRetry(new()
-            {
-                MaxRetryAttempts = 5,
-                Delay = TimeSpan.FromSeconds(2),
-                BackoffType = DelayBackoffType.Exponential,
-                ShouldHandle = new PredicateBuilder().Handle<Exception>(),
-                OnRetry = args =>
-                {
-                    logger.LogWarning(
-                        args.Outcome.Exception,
-                        "Migration attempt {AttemptNumber} for {DbContext} failed. Retrying in {RetryDelay}...",
-                        args.AttemptNumber + 1,
-                        typeof(TDbContext).Name,
-                        args.RetryDelay);
-
-                    return default;
-                }
-            })
-            .Build();
+        var executionState = new MigrationExecutionState(
+            scopeFactory,
+            lockProvider,
+            lockName,
+            dbName,
+            this);
 
         try
         {
-            await retryPipeline.ExecuteAsync(static async (sp, token) =>
+            await pipeline.ExecuteAsync(static async (state, token) =>
             {
-                await using var scope = sp.CreateAsyncScope();
+                await using var scope = state.ScopeFactory.CreateAsyncScope();
                 var dbContext = scope.ServiceProvider.GetRequiredService<TDbContext>();
-                await dbContext.Database.MigrateAsync(token);
-            }, serviceProvider, cancellationToken).ConfigureAwait(false);
 
-            logger.LogInformation("EF Core migrations for {DbContext} applied successfully.", typeof(TDbContext).Name);
+                await using var distributedLock = await state.LockProvider.AcquireLockAsync(
+                    state.LockName,
+                    timeout: LockTimeout,
+                    cancellationToken: token);
+
+                var pendingMigrations = await dbContext.Database.GetPendingMigrationsAsync(token);
+                var migrationsToApply = pendingMigrations.ToList();
+
+                if (migrationsToApply.Count != 0)
+                {
+                    state.ServiceInstance.LogApplyingMigrations(migrationsToApply.Count, state.DbName);
+                    await dbContext.Database.MigrateAsync(token);
+                }
+            }, executionState, cancellationToken); // Removed redundant ConfigureAwait(false)
         }
         catch (Exception ex)
         {
-            // After all retries: DB is unreachable or migration is broken. Crash the app on purpose.
-            logger.LogCritical(ex, "Migration failed for {DbContext} after multiple retries. Stopping application.", typeof(TDbContext).Name);
+            LogMigrationCriticalFailure(ex, dbName);
             lifetime.StopApplication();
             throw;
         }

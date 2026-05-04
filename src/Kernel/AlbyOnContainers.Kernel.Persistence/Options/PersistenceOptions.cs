@@ -5,17 +5,15 @@ using Kernel.Options;
 
 public sealed class PersistenceOptions : KernelOptions<PersistenceOptions>
 {
-    public bool EnableSensitiveDataLogging { get; set; } = false;
-    public bool EnableDetailedErrors { get; set; } = false;
+    [Required(ErrorMessage = "The database connection string is strictly required."), MinLength(10, ErrorMessage = "The connection string must be at least 10 characters long.")]
+    public string ConnectionString { get; set; } = string.Empty;
 
-    [Range(100, 10000)]
-    public int SlowQueryThresholdMs { get; set; } = 500;
-
-    /// <summary>
-    /// Optional override for the metric prefix used by SlowQueryInterceptor.
-    /// When empty (default), the prefix is automatically derived from the TDbContext type name.
-    /// </summary>
+    [Required(ErrorMessage = "The metric prefix is required to ensure proper OpenTelemetry/Prometheus namespace grouping."), RegularExpression(@"^[a-zA-Z_][a-zA-Z0-9_]*$", ErrorMessage = "The metric prefix must contain only alphanumeric characters or underscores, and cannot start with a number.")]
     public string MetricPrefix { get; set; } = string.Empty;
 
-    public bool RunMigrationsOnStartup { get; set; } = true;
+    public bool EnableSensitiveDataLogging { get; set; } = false;
+
+    public bool EnableDetailedErrors { get; set; } = false;
+
+    public bool RunMigrationsOnStartup { get; set; } = false;
 }
