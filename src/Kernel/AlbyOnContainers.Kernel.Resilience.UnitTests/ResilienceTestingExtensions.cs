@@ -1,7 +1,5 @@
 ﻿namespace AlbyOnContainers.Kernel.Resilience.UnitTests;
 
-using System;
-using System.Collections.Generic;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -9,13 +7,12 @@ using Microsoft.Extensions.Options;
 using Options;
 using Polly;
 using Polly.Registry;
-using NUnit.Framework;
 
 public static class ResilienceTestingExtensions
 {
     /// <summary>
-    /// Dynamically generates an IConfigurationRoot for multiple resilience profiles
-    /// and injects it into the HostBuilder. This perfectly supports chained tests.
+    ///     Dynamically generates an IConfigurationRoot for multiple resilience profiles
+    ///     and injects it into the HostBuilder. This perfectly supports chained tests.
     /// </summary>
     public static void AddInMemoryResilienceConfiguration(this IHostApplicationBuilder hostBuilder, IDictionary<string, ResilienceOptions> profiles)
     {
@@ -37,7 +34,7 @@ public static class ResilienceTestingExtensions
     }
 
     /// <summary>
-    /// Evaluates the entire DI container state for a specific resilience profile.
+    ///     Evaluates the entire DI container state for a specific resilience profile.
     /// </summary>
     public static void AssertResilienceProfile(this IServiceProvider serviceProvider, string expectedKey, ResilienceOptions expectedOptions)
     {
@@ -60,7 +57,7 @@ public static class ResilienceTestingExtensions
     }
 
     /// <summary>
-    /// Validates that the Fail-Fast mechanism threw the correct OptionsValidationException.
+    ///     Validates that the Fail-Fast mechanism threw the correct OptionsValidationException.
     /// </summary>
     public static void AssertValidationException(this OptionsValidationException? exception, string expectedProfileKey, string expectedPropertyName)
     {

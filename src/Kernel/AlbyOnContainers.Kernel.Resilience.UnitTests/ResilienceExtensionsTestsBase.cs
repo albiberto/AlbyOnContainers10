@@ -1,7 +1,6 @@
 ﻿namespace AlbyOnContainers.Kernel.Resilience.UnitTests;
 
 using Microsoft.Extensions.Hosting;
-using NUnit.Framework;
 
 /// <summary>
 ///     Base class for resilience tests.
@@ -10,7 +9,7 @@ using NUnit.Framework;
 public abstract class ResilienceTestBase
 {
     private IHost? _host;
-    
+
     protected HostApplicationBuilder HostBuilder = null!;
     protected IKernelBuilder KernelBuilder = null!;
 

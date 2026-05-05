@@ -11,20 +11,23 @@ public sealed class ResilienceExtensionsTests : ResilienceTestBase
     ///     Generates a dynamic set of deterministic test profiles to stress-test
     ///     the DI container's Keyed Services isolation and options binding.
     ///     Uses Guids to prove keys are completely arbitrary, and algorithmic math
-    ///     to ensure test data remains 100% deterministic across CI/CD runs.
+    ///     to ensure test data remains strictly within DataAnnotation boundaries.
     /// </summary>
     private static Dictionary<string, ResilienceOptions> GenerateTestProfiles(int profileCount = 5) =>
         Enumerable
             .Range(1, profileCount)
             .ToDictionary(
                 _ => $"Profile_{Guid.NewGuid():N}",
+
+                // Algorithmic data generation ensuring DataAnnotations validity
                 index => new ResilienceOptions
                 {
-                    MaxRetryAttempts = index * 2, // e.g., 2, 4, 6...
-                    InitialDelay = TimeSpan.FromMilliseconds(index * 250), // e.g., 250ms, 500ms...
-                    OverallTimeout = TimeSpan.FromSeconds(index * 10), // e.g., 10s, 20s...
-                    UseExponentialBackoff = index % 2 == 0 // Alternates false/true
+                    MaxRetryAttempts = index,
+                    InitialDelay = TimeSpan.FromSeconds(index),
+                    OverallTimeout = TimeSpan.FromSeconds(10 + index),
+                    UseExponentialBackoff = index % 2 == 0
                 });
+
 
     [Test]
     public void WithResilience_ChainedRegistrations_UsingConfiguration_ShouldBindAllProfilesCorrectly()
@@ -34,7 +37,7 @@ public sealed class ResilienceExtensionsTests : ResilienceTestBase
         HostBuilder.AddInMemoryResilienceConfiguration(profiles);
 
         // Act
-        foreach (var key in profiles.Keys) KernelBuilder.WithResilience(key);
+        foreach (var profileKey in profiles.Keys) KernelBuilder.WithResilience(profileKey);
 
         var host = BuildHost();
 
@@ -65,26 +68,32 @@ public sealed class ResilienceExtensionsTests : ResilienceTestBase
     }
 
     [Test]
-    public void ValidateOnStart_WhenRetryIsLessThanOne_ShouldThrowOptionsValidationExceptionOnBuild()
+    public void ValidateOnStart_WhenRetryIsLessThanOne_ShouldThrowOptionsValidationException()
     {
         // Arrange
-        var key = $"{Guid.NewGuid()}";
-        KernelBuilder.WithResilience(key, opt => opt.MaxRetryAttempts = 0);
+        var key = $"FaultyProfile_{Guid.NewGuid():N}";
+
+        KernelBuilder.WithResilience(key, opt => opt.MaxRetryAttempts = 0); // Invalid boundary
+
+        var host = BuildHost();
 
         // Act & Assert
-        var exception = Assert.Throws<OptionsValidationException>(() => BuildHost());
+        var exception = Assert.Throws<OptionsValidationException>(() => host.Services.GetRequiredService<IOptionsMonitor<ResilienceOptions>>().Get(key));
         exception.AssertValidationException(key, nameof(ResilienceOptions.MaxRetryAttempts));
     }
 
     [Test]
-    public void ValidateOnStart_WhenTimeoutIsZero_ShouldThrowOptionsValidationExceptionOnBuild()
+    public void ValidateOnStart_WhenTimeoutIsZero_ShouldThrowOptionsValidationException()
     {
         // Arrange
-        var key = $"{Guid.NewGuid()}";
-        KernelBuilder.WithResilience(key, opt => opt.OverallTimeout = TimeSpan.Zero);
+        var key = $"FaultyProfile_{Guid.NewGuid():N}";
+
+        KernelBuilder.WithResilience(key, opt => opt.OverallTimeout = TimeSpan.Zero); // Invalid boundary
+
+        var host = BuildHost();
 
         // Act & Assert
-        var exception = Assert.Throws<OptionsValidationException>(() => BuildHost());
+        var exception = Assert.Throws<OptionsValidationException>(() => host.Services.GetRequiredService<IOptionsMonitor<ResilienceOptions>>().Get(key));
         exception.AssertValidationException(key, nameof(ResilienceOptions.OverallTimeout));
     }
 }
