@@ -20,6 +20,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\..\Kernel\AlbyOnContainers.Kernel.Resilience\AlbyOnContainers.Kernel.Resilience.csproj" />
         <ProjectReference Include="..\ProductInformationManager.Application\ProductInformationManager.Application.csproj"/>
         <ProjectReference Include="..\ProductInformationManager.Infrastructure\ProductInformationManager.Infrastructure.csproj"/>
         <ProjectReference Include="..\..\Kernel\AlbyOnContainers.Kernel\AlbyOnContainers.Kernel.csproj"/>

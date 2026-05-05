@@ -4,6 +4,7 @@ using AlbyOnContainers.Kernel.Localization;
 using AlbyOnContainers.Kernel.Messaging;
 using AlbyOnContainers.Kernel.Observability;
 using AlbyOnContainers.Kernel.Persistence;
+using AlbyOnContainers.Kernel.Resilience;
 using AlbyOnContainers.Kernel.Security;
 using AlbyOnContainers.Plugins.DistributedLocks;
 using MassTransit;

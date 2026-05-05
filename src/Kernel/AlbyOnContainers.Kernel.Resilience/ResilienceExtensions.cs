@@ -1,8 +1,10 @@
-﻿namespace AlbyOnContainers.Kernel.Resilience;
+﻿// ReSharper disable once CheckNamespace
 
-using Enums;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
+namespace Microsoft.Extensions.DependencyInjection;
+
+using AlbyOnContainers.Kernel;
+using AlbyOnContainers.Kernel.Resilience.Enums;
+using AlbyOnContainers.Kernel.Resilience.Options;
 using Options;
 using Polly;
 using Polly.Registry;
