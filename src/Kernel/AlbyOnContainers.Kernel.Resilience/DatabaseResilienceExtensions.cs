@@ -9,7 +9,7 @@ using Options;
 using Polly;
 using Polly.Registry;
 
-public static class ResilienceExtensions
+public static class DatabaseResilienceExtensions
 {
     extension(IKernelBuilder builder)
     {
