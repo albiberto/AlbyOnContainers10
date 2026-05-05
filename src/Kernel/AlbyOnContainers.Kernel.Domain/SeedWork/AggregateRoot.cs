@@ -12,14 +12,12 @@ public abstract class AggregateRoot : AuditableEntity
 
     public IReadOnlyCollection<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
 
-    protected void AppendEvent(IDomainEvent domainEvent)
-        => _domainEvents.Add(domainEvent);
+    protected void AppendEvent(IDomainEvent domainEvent) => _domainEvents.Add(domainEvent);
 
     /// <summary>
     /// Clears the domain events collection. Intentionally <c>internal</c>: only the
     /// persistence-layer DomainEventDispatcherInterceptor is allowed to invoke this
     /// after extracting the events for outbox publication.
     /// </summary>
-    internal void ClearDomainEvents()
-        => _domainEvents.Clear();
+    internal void ClearDomainEvents() => _domainEvents.Clear();
 }

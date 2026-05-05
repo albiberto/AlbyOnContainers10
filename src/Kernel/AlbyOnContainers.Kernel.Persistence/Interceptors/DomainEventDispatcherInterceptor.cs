@@ -17,7 +17,7 @@ public sealed partial class DomainEventDispatcherInterceptor(ILogger<DomainEvent
 {
     public override async ValueTask<InterceptionResult<int>> SavingChangesAsync(DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
     {
-        // Guard: if the context is unavailable, skip processing and delegate to the base interceptor.
+        // Guard: if the context is unavailable, skip processing.
         var dbContext = eventData.Context;
         if (dbContext is null) return await base.SavingChangesAsync(eventData, result, cancellationToken);
 
@@ -73,7 +73,7 @@ public sealed partial class DomainEventDispatcherInterceptor(ILogger<DomainEvent
 
         // Phase 4 — Cleanup: clear domain events only after all messages have been
         // successfully published. This ensures events survive any exception thrown
-        // during the publish phase.
+        // during the publishing phase.
         foreach (var entity in entitiesWithEvents) entity.ClearDomainEvents();
 
         return await base.SavingChangesAsync(eventData, result, cancellationToken);
