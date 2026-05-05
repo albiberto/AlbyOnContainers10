@@ -3,42 +3,37 @@
 namespace Microsoft.Extensions.DependencyInjection;
 
 using AlbyOnContainers.Kernel;
-using AlbyOnContainers.Kernel.Resilience.Enums;
 using AlbyOnContainers.Kernel.Resilience.Options;
 using Options;
 using Polly;
 using Polly.Registry;
 
-public static class DatabaseResilienceExtensions
+public static class ResilienceExtensions
 {
+    // --- PUBLIC FACADE LOGIC ---
+
     extension(IKernelBuilder builder)
     {
-        // --- DATABASE RESILIENCE ---
-        public IKernelBuilder WithDatabaseResilience(string? configurationSection = null) => builder.ApplyResilienceCore(ResilienceKey.Database, configurationSection);
-
-        public IKernelBuilder WithDatabaseResilience(Action<ResilienceOptions> configureOptions) => builder.ApplyResilienceCore(ResilienceKey.Database, configureOptions);
-
-        // --- MESSAGING RESILIENCE ---
-        public IKernelBuilder WithMessagingResilience(string? configurationSection = null) => builder.ApplyResilienceCore(ResilienceKey.Messaging, configurationSection);
-
-        public IKernelBuilder WithMessagingResilience(Action<ResilienceOptions> configureOptions) => builder.ApplyResilienceCore(ResilienceKey.Messaging, configureOptions);
-
-        // --- PRIVATE CORE LOGIC ---
-        private IKernelBuilder ApplyResilienceCore(ResilienceKey key, string? configurationSection)
+        public IKernelBuilder WithResilience(string key, string? configurationSection = null)
         {
+            ArgumentException.ThrowIfNullOrWhiteSpace(key);
+
             var section = configurationSection ?? $"{ResilienceOptions.Section}:{key}";
 
             builder.Services.BindOptions(key, section);
-            builder.Services.AddResiliencePipeline(key);
+            builder.Services.AddResiliencePipelineInternal(key);
             builder.Services.AddKeyedBridge(key);
 
             return builder;
         }
 
-        private IKernelBuilder ApplyResilienceCore(ResilienceKey key, Action<ResilienceOptions> configureOptions)
+        public IKernelBuilder WithResilience(string key, Action<ResilienceOptions> configureOptions)
         {
+            ArgumentException.ThrowIfNullOrWhiteSpace(key);
+            ArgumentNullException.ThrowIfNull(configureOptions);
+
             builder.Services.ConfigureOptions(key, configureOptions);
-            builder.Services.AddResiliencePipeline(key);
+            builder.Services.AddResiliencePipelineInternal(key);
             builder.Services.AddKeyedBridge(key);
 
             return builder;
@@ -46,36 +41,38 @@ public static class DatabaseResilienceExtensions
     }
 
     // --- PRIVATE INFRASTRUCTURE HELPERS ---
+
     extension(IServiceCollection services)
     {
-        private void BindOptions(ResilienceKey key, string section) =>
-            services.AddOptions<ResilienceOptions>($"{key}")
+        private void BindOptions(string key, string section) =>
+            services.AddOptions<ResilienceOptions>(key)
                 .BindConfiguration(section)
                 .ValidateDataAnnotations()
                 .ValidateOnStart();
 
-        private void ConfigureOptions(ResilienceKey key, Action<ResilienceOptions> configureOptions) =>
-            services.AddOptions<ResilienceOptions>($"{key}")
+        private void ConfigureOptions(string key, Action<ResilienceOptions> configureOptions) =>
+            services.AddOptions<ResilienceOptions>(key)
                 .Configure(configureOptions)
                 .ValidateDataAnnotations()
                 .ValidateOnStart();
 
-        private void AddKeyedBridge(ResilienceKey key) =>
+        private void AddKeyedBridge(string key) =>
             services.AddKeyedSingleton<ResiliencePipeline>(key, (provider, injectionKey) =>
                 provider
-                    .GetRequiredService<ResiliencePipelineProvider<ResilienceKey>>()
-                    .GetPipeline((ResilienceKey)injectionKey!));
+                    .GetRequiredService<ResiliencePipelineProvider<string>>()
+                    .GetPipeline((string)injectionKey!));
 
-        private void AddResiliencePipeline(ResilienceKey key)
-        {
-            var keyName = $"{key}";
-
+        private void AddResiliencePipelineInternal(string key) =>
             services.AddResiliencePipeline(key, (builder, context) =>
             {
-                var options = context.ServiceProvider.GetRequiredService<IOptionsMonitor<ResilienceOptions>>().Get(keyName);
+                var optionsMonitor = context.ServiceProvider.GetRequiredService<IOptionsMonitor<ResilienceOptions>>();
+                var options = optionsMonitor.Get(key);
 
+                // Polly v8 execution order is outer-to-inner (top-to-bottom).
+                // 1. Overall Timeout (encompasses all retries)
                 builder.AddTimeout(options.OverallTimeout);
 
+                // 2. Retry Strategy
                 builder.AddRetry(new()
                 {
                     MaxRetryAttempts = options.MaxRetryAttempts,
@@ -84,6 +81,5 @@ public static class DatabaseResilienceExtensions
                     ShouldHandle = new PredicateBuilder().Handle<Exception>()
                 });
             });
-        }
     }
 }
