@@ -51,10 +51,7 @@ public static class PersistenceKernelExtensions
             return builder;
         }
 
-        public IKernelBuilder WithPersistence<TDbContext>(
-            Action<IServiceProvider, DbContextOptionsBuilder> configureDbContext,
-            Action<PersistenceOptions> configureOptions)
-            where TDbContext : DbContext
+        public IKernelBuilder WithPersistence<TDbContext>(Action<IServiceProvider, DbContextOptionsBuilder> configureDbContext, Action<PersistenceOptions> configureOptions) where TDbContext : DbContext
         {
             builder.ConfigureOptions(configureOptions);
             BuildAndConfigurePersistence<TDbContext>(builder.Host.Services, configureDbContext);

@@ -17,45 +17,14 @@ using ProductInformationManager.Web.Notifiers;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// --- Bridge Aspire connection strings to kernel option sections ---
-// Aspire injects ConnectionStrings:{name}; the kernel binds typed options from sections
-// (Caching, Messaging, ...). We materialize the bridge ONCE here, so the rest of the
-// kernel chain stays 100% declarative (no per-module lambdas for plain config).
-var pgConn = builder.Configuration.GetConnectionString("productdb")
-    ?? throw new InvalidOperationException("Missing connection string 'productdb'.");
-var redisConn = builder.Configuration.GetConnectionString("cache")
-    ?? throw new InvalidOperationException("Missing connection string 'cache'.");
-var amqpUri = new Uri(builder.Configuration.GetConnectionString("messaging")
-    ?? throw new InvalidOperationException("Missing connection string 'messaging'."));
-var amqpUserInfo = amqpUri.UserInfo.Split(':', 2);
+var databaseConnection = builder.Configuration.GetConnectionString("productdb") ?? throw new InvalidOperationException("Missing connection string 'productdb'.");
+var redisConnection = builder.Configuration.GetConnectionString("cache") ?? throw new InvalidOperationException("Missing connection string 'cache'.");
+var rabbitConnection = new Uri(builder.Configuration.GetConnectionString("messaging") ?? throw new InvalidOperationException("Missing connection string 'messaging'."));
 
-builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
-{
-    ["Caching:RedisConnectionString"] = redisConn,
-    ["Messaging:Host"]                = amqpUri.Host,
-    ["Messaging:Port"]                = amqpUri.Port.ToString(),
-    ["Messaging:Username"]            = Uri.UnescapeDataString(amqpUserInfo[0]),
-    ["Messaging:Password"]            = Uri.UnescapeDataString(amqpUserInfo.Length > 1 ? amqpUserInfo[1] : string.Empty),
-});
-
-// --- ALBY KERNEL SDK ---
-// Pure declarative chain. Lambdas appear ONLY where a runtime-only behavior is required:
-//  - Persistence: choosing the EF Core provider (UseNpgsql).
-//  - Messaging:   wiring the MassTransit Outbox.
-// Everything else is bound from appsettings.json sections (Observability, Keycloak,
-// Persistence, Caching, DistributedLock, Localization, Messaging).
 builder.AddKernel()
-    .WithObservability()
-    .WithSecurity()
-    .WithPersistence<ProductContext>((_, opt) => opt.UseNpgsql(pgConn))
-    .WithCaching<CategoryCache>()
-    .WithDistributedLocks()
-    .WithLocalization()
-    .WithMessaging<ProductContext, CreateCategoryConsumer>(outbox =>
-    {
-        outbox.UsePostgres();
-        outbox.UseBusOutbox();
-    });
+    .WithMe
+
+
 
 // Shared UI Notifier
 builder.Services.Scan(scan => scan
