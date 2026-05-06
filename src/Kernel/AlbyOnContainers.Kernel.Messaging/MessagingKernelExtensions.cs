@@ -27,29 +27,29 @@ public static class MessagingKernelExtensions
         // OVERLOADS (Multi-Assembly Support with Mandatory Outbox Pattern)
         // ==============================================================================
 
-        public IKernelBuilder WithMessaging<TDbContext>(string? section, params Type[] assemblyMarkers) where TDbContext : DbContext
+        public IKernelBuilder WithMessaging<TDbContext>(Action<IEntityFrameworkOutboxConfigurator> configureOutbox, string? section, params Type[] assemblyMarkers) where TDbContext : DbContext
         {
             ValidateMarkers(assemblyMarkers);
             builder.BindOptions(section);
-            BuildAndConfigureMassTransit<TDbContext>(builder.Host.Services, assemblyMarkers);
-            
+            BuildAndConfigureMassTransit<TDbContext>(builder.Host.Services, assemblyMarkers, configureOutbox);
+
             return builder;
         }
 
-        public IKernelBuilder WithMessaging<TDbContext>(Action<MessagingOptions> configureOptions, params Type[] assemblyMarkers) where TDbContext : DbContext
+        public IKernelBuilder WithMessaging<TDbContext>(Action<MessagingOptions> configureOptions, Action<IEntityFrameworkOutboxConfigurator> configureOutbox, params Type[] assemblyMarkers) where TDbContext : DbContext
         {
             ValidateMarkers(assemblyMarkers);
             builder.ConfigureOptions(configureOptions);
-            BuildAndConfigureMassTransit<TDbContext>(builder.Host.Services, assemblyMarkers);
-            
+            BuildAndConfigureMassTransit<TDbContext>(builder.Host.Services, assemblyMarkers, configureOutbox);
+
             return builder;
         }
 
-        public IKernelBuilder WithMessaging<TDbContext, TMarker>(string? section = null) where TDbContext : DbContext => 
-            builder.WithMessaging<TDbContext>(section, typeof(TMarker));
+        public IKernelBuilder WithMessaging<TDbContext, TMarker>(Action<IEntityFrameworkOutboxConfigurator> configureOutbox, string? section = null) where TDbContext : DbContext =>
+            builder.WithMessaging<TDbContext>(configureOutbox, section, typeof(TMarker));
 
-        public IKernelBuilder WithMessaging<TDbContext, TMarker>(Action<MessagingOptions> configureOptions) where TDbContext : DbContext =>
-            builder.WithMessaging<TDbContext>(configureOptions, typeof(TMarker));
+        public IKernelBuilder WithMessaging<TDbContext, TMarker>(Action<MessagingOptions> configureOptions, Action<IEntityFrameworkOutboxConfigurator> configureOutbox) where TDbContext : DbContext =>
+            builder.WithMessaging<TDbContext>(configureOptions, configureOutbox, typeof(TMarker));
 
         // ==============================================================================
         // INTERNAL OPTIONS HELPERS
@@ -81,17 +81,17 @@ public static class MessagingKernelExtensions
         if (markers.Length == 0) throw new ArgumentException("At least one marker type must be provided to scan for consumers.", nameof(markers));
     }
 
-    private static void BuildAndConfigureMassTransit<TDbContext>(IServiceCollection services, Type[] markers) where TDbContext : DbContext
+    private static void BuildAndConfigureMassTransit<TDbContext>(IServiceCollection services, Type[] markers, Action<IEntityFrameworkOutboxConfigurator> configureOutbox) where TDbContext : DbContext
     {
-        // 1. Registra il plugin per iniettare le tabelle Outbox nel ModelBuilder di EF Core
+        // 1. Register the plugin to inject Outbox tables into the EF Core ModelBuilder
         services.AddSingleton<IModelConfigurationPlugin, MassTransitOutboxPlugin>();
-        
-        // 2. Registra l'interceptor (ora risolto dal namespace locale del modulo Messaging)
+
+        // 2. Register the interceptor (resolved from the local Messaging module namespace)
         services.AddScoped<IInterceptor, DomainEventDispatcherInterceptor>();
 
         var assemblies = markers.Select(t => t.Assembly).Distinct().ToArray();
 
-        // 2. IN-PROCESS MEDIATOR (Commands & Queries ONLY)
+        // 3. IN-PROCESS MEDIATOR (Commands & Queries ONLY)
         services.AddMediator(cfg =>
         {
             cfg.AddConsumers(
@@ -105,16 +105,18 @@ public static class MessagingKernelExtensions
             });
         });
 
-        // 3. OUT-OF-PROCESS BUS (Events & External Integration ONLY)
+        // 4. OUT-OF-PROCESS BUS (Events & External Integration ONLY)
         services.AddMassTransit(cfg =>
         {
             cfg.AddConsumers(type => type.GetCustomAttribute<EventConsumerAttribute>() is not null, assemblies);
             cfg.SetKebabCaseEndpointNameFormatter();
             cfg.DisableUsageTelemetry();
 
+            // The caller is responsible for selecting the DB provider (e.g. UsePostgres, UseSqlServer).
+            // UseBusOutbox is enforced by the kernel to guarantee the outbox delivery pipeline is always active.
             cfg.AddEntityFrameworkOutbox<TDbContext>(o =>
             {
-                o.UsePostgres();
+                configureOutbox(o);
                 o.UseBusOutbox();
             });
 
@@ -133,14 +135,11 @@ public static class MessagingKernelExtensions
 
                 // GUARD: MassTransit's UseMessageRetry throws if RetryCount == 0.
                 if (options.RetryCount > 0)
-                {
                     rmq.UseMessageRetry(r => r.Exponential(
                         options.RetryCount,
                         options.RetryInitialInterval,
                         options.RetryMaxInterval,
-                        options.RetryDeltaInterval
-                    ));
-                }
+                        options.RetryDeltaInterval));
 
                 rmq.UseConsumeFilter(typeof(GlobalExceptionFilter<>), context);
                 rmq.UseConsumeFilter(typeof(ValidationFilter<>), context);
