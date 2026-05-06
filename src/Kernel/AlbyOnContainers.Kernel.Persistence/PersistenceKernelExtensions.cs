@@ -34,23 +34,25 @@ public static class PersistenceKernelExtensions
 
         // --- PRIVATE INFRASTRUCTURE HELPERS ---
 
-        private void AddResilience()
-        {
-            builder.WithResilience(nameof(HostedServices), options =>
-            {
-                options.MaxRetryAttempts = 10;
-                options.Delay = TimeSpan.Zero;
-                options.OverallTimeout = TimeSpan.FromSeconds(270);
-                options.UseExponentialBackoff = true;
-            }).WithResilience(nameof(DomainEventDispatcherInterceptor), options =>
-            {
-                options.MaxRetryAttempts = 3;
-                options.Delay = TimeSpan.Zero;
-                options.OverallTimeout = TimeSpan.FromSeconds(270);
-                options.UseExponentialBackoff = true;
-            });
-        }
-        
+        private void AddResilience() =>
+            builder
+                .WithResilience(
+                    nameof(HostedServices), options =>
+                    {
+                        options.MaxRetryAttempts = 10;
+                        options.Delay = TimeSpan.Zero;
+                        options.OverallTimeout = TimeSpan.FromSeconds(270);
+                        options.UseExponentialBackoff = true;
+                    })
+                .WithResilience(
+                    nameof(DomainEventDispatcherInterceptor), options =>
+                    {
+                        options.MaxRetryAttempts = 3;
+                        options.Delay = TimeSpan.Zero;
+                        options.OverallTimeout = TimeSpan.FromSeconds(270);
+                        options.UseExponentialBackoff = true;
+                    });
+
         private void BindOptions(string? section) =>
             builder.Host.Services
                 .AddOptions<PersistenceOptions>()

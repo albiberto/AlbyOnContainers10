@@ -17,7 +17,7 @@ public sealed class ResilienceExtensionsInvalidTests : ResilienceTestBase
         UseExponentialBackoff = true
     };
     
-    private static IEnumerable<TestCaseData> InvalidScenariosSource() =>
+    private static IEnumerable<TestCaseData> InvalidOptionsSource() =>
     [
         // MaxRetryAttempts Boundaries [Range(1, 10)]
         CreateTestCase("MaxRetryAttempts_BelowMinimum", ValidOptions with { MaxRetryAttempts = 0 }),
@@ -34,7 +34,7 @@ public sealed class ResilienceExtensionsInvalidTests : ResilienceTestBase
     
     private static TestCaseData CreateTestCase(string key, ResilienceOptions options) => new TestCaseData(key, options).SetName($"Invalid_{key}");
 
-    [TestCaseSource(nameof(InvalidScenariosSource))]
+    [TestCaseSource(nameof(InvalidOptionsSource))]
     public void WithResilience_InvalidConfiguration_ShouldThrowOptionsValidationException(string key, ResilienceOptions options)
     {
         // Arrange
@@ -52,11 +52,10 @@ public sealed class ResilienceExtensionsInvalidTests : ResilienceTestBase
         Throws<OptionsValidationException>(() => host.Services.GetRequiredService<IOptionsMonitor<ResilienceOptions>>().Get(key));
     }
     
-    [TestCaseSource(nameof(InvalidScenariosSource))]
+    [TestCaseSource(nameof(InvalidOptionsSource))]
     public void WithResilience_InvalidOptions_ShouldThrowOptionsValidationException(string label, ResilienceOptions options)
     {
         // Arrange & Act
-        
         KernelBuilder.WithResilience(label, opt =>
         {
             opt.MaxRetryAttempts = options.MaxRetryAttempts;
