@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AlbyOnContainers.Kernel.Messaging.Filters;
 
-public class GlobalExceptionFilter<T>(ILogger<GlobalExceptionFilter<T>> logger) : IFilter<ConsumeContext<T>> where T : class
+public sealed class GlobalExceptionFilter<T>(ILogger<GlobalExceptionFilter<T>> logger) : IFilter<ConsumeContext<T>> where T : class
 {
     public async Task Send(ConsumeContext<T> context, IPipe<ConsumeContext<T>> next)
     {
