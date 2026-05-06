@@ -9,8 +9,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Security.Abstractions;
 
-public sealed class AuditableInterceptor(ICurrentUserService currentUserService, TimeProvider timeProvider) : SaveChangesInterceptorBase
+public sealed class AuditableEntityInterceptor(ICurrentUserService currentUserService, TimeProvider timeProvider) : SaveChangesInterceptorBase
 {
+    public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
+    {
+        throw new NotSupportedException("Synchronous DB operations are strictly forbidden. Use SaveChangesAsync instead.");
+    }
+
     public override ValueTask<InterceptionResult<int>> SavingChangesAsync(DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
     {
         UpdateAuditFields(eventData.Context);

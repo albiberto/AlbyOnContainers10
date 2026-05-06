@@ -62,7 +62,7 @@ public static class PersistenceKernelExtensions
 
         private void BuildAndConfigurePersistence<TDbContext>(Action<IServiceProvider, DbContextOptionsBuilder> configureDbContext) where TDbContext : DbContext
         {
-            builder.Services.AddScoped<IInterceptor, AuditableInterceptor>();
+            builder.Services.AddScoped<IInterceptor, AuditableEntityInterceptor>();
 
             builder.Services.AddDbContext<TDbContext>((sp, options) =>
             {

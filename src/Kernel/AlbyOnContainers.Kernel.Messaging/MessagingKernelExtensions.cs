@@ -27,29 +27,29 @@ public static class MessagingKernelExtensions
         // OVERLOADS (Multi-Assembly Support with Mandatory Outbox Pattern)
         // ==============================================================================
 
-        public IKernelBuilder WithMessaging<TDbContext>(Action<IEntityFrameworkOutboxConfigurator> configureOutbox, string? section, params Type[] assemblyMarkers) where TDbContext : DbContext
+        public IKernelBuilder WithMessaging<TDbContext>(string? section, params Type[] assemblyMarkers) where TDbContext : DbContext
         {
             ValidateMarkers(assemblyMarkers);
             builder.BindOptions(section);
-            BuildAndConfigureMassTransit<TDbContext>(builder.Host.Services, assemblyMarkers, configureOutbox);
+            BuildAndConfigureMassTransit<TDbContext>(builder.Host.Services, assemblyMarkers);
             
             return builder;
         }
 
-        public IKernelBuilder WithMessaging<TDbContext>(Action<MessagingOptions> configureOptions, Action<IEntityFrameworkOutboxConfigurator> configureOutbox, params Type[] assemblyMarkers) where TDbContext : DbContext
+        public IKernelBuilder WithMessaging<TDbContext>(Action<MessagingOptions> configureOptions, params Type[] assemblyMarkers) where TDbContext : DbContext
         {
             ValidateMarkers(assemblyMarkers);
             builder.ConfigureOptions(configureOptions);
-            BuildAndConfigureMassTransit<TDbContext>(builder.Host.Services, assemblyMarkers, configureOutbox);
+            BuildAndConfigureMassTransit<TDbContext>(builder.Host.Services, assemblyMarkers);
             
             return builder;
         }
 
-        public IKernelBuilder WithMessaging<TDbContext, TMarker>(Action<IEntityFrameworkOutboxConfigurator> configureOutbox, string? section = null) where TDbContext : DbContext => 
-            builder.WithMessaging<TDbContext>(configureOutbox, section, typeof(TMarker));
+        public IKernelBuilder WithMessaging<TDbContext, TMarker>(string? section = null) where TDbContext : DbContext => 
+            builder.WithMessaging<TDbContext>(section, typeof(TMarker));
 
-        public IKernelBuilder WithMessaging<TDbContext, TMarker>(Action<MessagingOptions> configureOptions, Action<IEntityFrameworkOutboxConfigurator> configureOutbox) where TDbContext : DbContext =>
-            builder.WithMessaging<TDbContext>(configureOptions, configureOutbox, typeof(TMarker));
+        public IKernelBuilder WithMessaging<TDbContext, TMarker>(Action<MessagingOptions> configureOptions) where TDbContext : DbContext =>
+            builder.WithMessaging<TDbContext>(configureOptions, typeof(TMarker));
 
         // ==============================================================================
         // INTERNAL OPTIONS HELPERS
@@ -81,7 +81,7 @@ public static class MessagingKernelExtensions
         if (markers.Length == 0) throw new ArgumentException("At least one marker type must be provided to scan for consumers.", nameof(markers));
     }
 
-    private static void BuildAndConfigureMassTransit<TDbContext>(IServiceCollection services, Type[] markers, Action<IEntityFrameworkOutboxConfigurator> configureOutbox) where TDbContext : DbContext
+    private static void BuildAndConfigureMassTransit<TDbContext>(IServiceCollection services, Type[] markers) where TDbContext : DbContext
     {
         // 1. Registra il plugin per iniettare le tabelle Outbox nel ModelBuilder di EF Core
         services.AddSingleton<IModelConfigurationPlugin, MassTransitOutboxPlugin>();
@@ -114,7 +114,7 @@ public static class MessagingKernelExtensions
 
             cfg.AddEntityFrameworkOutbox<TDbContext>(o =>
             {
-                configureOutbox(o);
+                o.UsePostgres();
                 o.UseBusOutbox();
             });
 
