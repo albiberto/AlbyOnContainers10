@@ -10,6 +10,8 @@ using Microsoft.Extensions.Options;
 
 namespace AlbyOnContainers.Kernel.Messaging;
 
+using Interceptors;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Persistence.Abstractions;
 using PlugIns;
 
@@ -83,6 +85,9 @@ public static class MessagingKernelExtensions
     {
         // 1. Registra il plugin per iniettare le tabelle Outbox nel ModelBuilder di EF Core
         services.AddSingleton<IModelConfigurationPlugin, MassTransitOutboxPlugin>();
+        
+        // 2. Registra l'interceptor (ora risolto dal namespace locale del modulo Messaging)
+        services.AddScoped<IInterceptor, DomainEventDispatcherInterceptor>();
 
         var assemblies = markers.Select(t => t.Assembly).Distinct().ToArray();
 

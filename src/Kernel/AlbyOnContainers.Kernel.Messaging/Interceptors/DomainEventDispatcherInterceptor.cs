@@ -1,10 +1,10 @@
-namespace AlbyOnContainers.Kernel.Persistence.Interceptors;
+namespace AlbyOnContainers.Kernel.Messaging.Interceptors;
 
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Abstractions;
 using Domain.SeedWork;
+using Persistence.Abstractions;
 using MassTransit;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Logging;

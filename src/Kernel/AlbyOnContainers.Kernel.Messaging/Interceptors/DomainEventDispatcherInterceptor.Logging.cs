@@ -1,4 +1,4 @@
-﻿namespace AlbyOnContainers.Kernel.Persistence.Interceptors;
+﻿namespace AlbyOnContainers.Kernel.Messaging.Interceptors;
 
 using Microsoft.Extensions.Logging;
 

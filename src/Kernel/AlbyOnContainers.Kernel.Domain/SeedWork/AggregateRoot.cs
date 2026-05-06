@@ -19,5 +19,5 @@ public abstract class AggregateRoot : AuditableEntity
     /// persistence-layer DomainEventDispatcherInterceptor is allowed to invoke this
     /// after extracting the events for outbox publication.
     /// </summary>
-    internal void ClearDomainEvents() => _domainEvents.Clear();
+    public void ClearDomainEvents() => _domainEvents.Clear();
 }
