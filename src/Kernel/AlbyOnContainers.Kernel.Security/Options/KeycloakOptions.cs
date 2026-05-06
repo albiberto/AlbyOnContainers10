@@ -1,9 +1,9 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using AlbyOnContainers.Kernel.Options;
 
 namespace AlbyOnContainers.Kernel.Security.Options;
 
-public sealed class KeycloakOptions : KernelOptions<KeycloakOptions>, IValidatableObject
+public sealed record KeycloakOptions : KernelOptions<KeycloakOptions>, IValidatableObject
 {
     public bool EnableStub { get; set; } = false;
 

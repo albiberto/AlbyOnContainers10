@@ -8,7 +8,7 @@ using NUnit.Framework;
 using Options;
 
 [TestFixture]
-public sealed class ResilienceExtensionsTests : ResilienceTestBase
+public sealed class ResilienceExtensionsValidTests : ResilienceTestBase
 {
     private static Dictionary<string, ResilienceOptions> GenerateTestProfiles(int profileCount = 5) =>
         Enumerable
