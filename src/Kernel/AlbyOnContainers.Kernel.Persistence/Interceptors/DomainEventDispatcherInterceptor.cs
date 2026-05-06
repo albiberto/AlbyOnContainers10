@@ -9,7 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Polly;
 
-public sealed partial class DomainEventDispatcherInterceptor(ILogger<DomainEventDispatcherInterceptor> logger, [FromKeyedServices(ResilienceKey.Messaging)] ResiliencePipeline pipeline) : SaveChangesInterceptorBase
+public sealed partial class DomainEventDispatcherInterceptor(ILogger<DomainEventDispatcherInterceptor> logger, [FromKeyedServices(nameof(DomainEventDispatcherInterceptor))] ResiliencePipeline pipeline) : SaveChangesInterceptorBase
 {
     public override async ValueTask<InterceptionResult<int>> SavingChangesAsync(DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
     {

@@ -18,7 +18,7 @@ public sealed partial class MigrationHostedService<TDbContext>(
     IServiceScopeFactory scopeFactory,
     IHostApplicationLifetime lifetime,
     IDistributedLockProvider lockProvider,
-    [FromKeyedServices(ResilienceKey.Database)]
+    [FromKeyedServices(nameof(MigrationHostedService<>))]
     ResiliencePipeline pipeline,
     IOptions<PersistenceOptions> options,
     ILogger<MigrationHostedService<TDbContext>> logger)

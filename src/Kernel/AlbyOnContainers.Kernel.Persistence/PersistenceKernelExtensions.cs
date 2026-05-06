@@ -1,17 +1,17 @@
-namespace AlbyOnContainers.Kernel.Persistence;
+// ReSharper disable once CheckNamespace
 
-using HostedServices;
-using Interceptors;
-using Microsoft.EntityFrameworkCore;
+namespace Microsoft.Extensions.DependencyInjection;
+
+using AlbyOnContainers.Kernel;
+using AlbyOnContainers.Kernel.Persistence.HostedServices;
+using AlbyOnContainers.Kernel.Persistence.Interceptors;
+using AlbyOnContainers.Kernel.Persistence.Options;
+using EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 using Options;
 
 public static class PersistenceKernelExtensions
 {
-    // --- PUBLIC FACADE LOGIC ---
-
     extension(IKernelBuilder builder)
     {
         public IKernelBuilder WithPersistence<TDbContext>(Action<IServiceProvider, DbContextOptionsBuilder> configureDbContext, string? section = null) where TDbContext : DbContext
@@ -32,12 +32,10 @@ public static class PersistenceKernelExtensions
             return builder;
         }
 
-        // --- PRIVATE INFRASTRUCTURE HELPERS ---
-
         private void AddResilience() =>
             builder
                 .WithResilience(
-                    nameof(HostedServices), options =>
+                    nameof(MigrationHostedService<>), options =>
                     {
                         options.MaxRetryAttempts = 10;
                         options.Delay = TimeSpan.Zero;
@@ -67,8 +65,6 @@ public static class PersistenceKernelExtensions
                 .ValidateDataAnnotations()
                 .ValidateOnStart();
     }
-
-    // --- PRIVATE INFRASTRUCTURE HELPERS ---
 
     extension(IServiceCollection services)
     {
