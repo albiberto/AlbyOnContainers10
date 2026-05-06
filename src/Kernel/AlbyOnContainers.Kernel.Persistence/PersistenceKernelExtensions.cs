@@ -3,6 +3,7 @@
 namespace Microsoft.Extensions.DependencyInjection;
 
 using AlbyOnContainers.Kernel;
+using AlbyOnContainers.Kernel.Persistence.Abstractions;
 using AlbyOnContainers.Kernel.Persistence.Customizers;
 using AlbyOnContainers.Kernel.Persistence.HostedServices;
 using AlbyOnContainers.Kernel.Persistence.Interceptors;
@@ -68,6 +69,8 @@ public static class PersistenceKernelExtensions
             {
                 configureDbContext(sp, options);
 
+                var plugins = sp.GetServices<IModelConfigurationPlugin>();
+                ((IDbContextOptionsBuilderInfrastructure)options).AddOrUpdateExtension(new KernelModelPluginsExtension(plugins));
                 options.ReplaceService<IModelCustomizer, KernelModelCustomizer>();
 
                 options.AddInterceptors(sp.GetServices<IInterceptor>());

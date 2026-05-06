@@ -1,5 +1,4 @@
-﻿using AlbyOnContainers.Kernel.Persistence.Abstractions;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 
 namespace AlbyOnContainers.Kernel.Persistence.Customizers;
@@ -12,6 +11,11 @@ public class KernelModelCustomizer(ModelCustomizerDependencies dependencies) : R
         base.Customize(modelBuilder, context);
 
         // 2. Resolves all plugins registered in the application
-        foreach (var plugin in context.GetService<IEnumerable<IModelConfigurationPlugin>>()) plugin.Apply(modelBuilder);
+        var options = context.GetService<IDbContextOptions>();
+        var extension = options.FindExtension<KernelModelPluginsExtension>();
+
+        if (extension is null) return;
+        
+        foreach (var plugin in extension.Plugins) plugin.Apply(modelBuilder);
     }
 }

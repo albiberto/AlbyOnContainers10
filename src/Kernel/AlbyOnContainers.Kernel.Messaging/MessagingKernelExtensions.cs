@@ -22,7 +22,7 @@ public static class MessagingKernelExtensions
     extension (IKernelBuilder builder)
     {
         // ==============================================================================
-        // 1. OVERLOADS CON OUTBOX PATTERN (Multi-Assembly Support)
+        // OVERLOADS (Multi-Assembly Support with Mandatory Outbox Pattern)
         // ==============================================================================
 
         public IKernelBuilder WithMessaging<TDbContext>(Action<IEntityFrameworkOutboxConfigurator> configureOutbox, string? section, params Type[] assemblyMarkers) where TDbContext : DbContext
@@ -48,34 +48,6 @@ public static class MessagingKernelExtensions
 
         public IKernelBuilder WithMessaging<TDbContext, TMarker>(Action<MessagingOptions> configureOptions, Action<IEntityFrameworkOutboxConfigurator> configureOutbox) where TDbContext : DbContext =>
             builder.WithMessaging<TDbContext>(configureOptions, configureOutbox, typeof(TMarker));
-
-        // ==============================================================================
-        // 2. OVERLOADS SENZA OUTBOX (Multi-Assembly Support)
-        // ==============================================================================
-
-        public IKernelBuilder WithMessaging(string? section, params Type[] assemblyMarkers)
-        {
-            ValidateMarkers(assemblyMarkers);
-            builder.BindOptions(section);
-            BuildAndConfigureMassTransit(builder.Host.Services, assemblyMarkers);
-            
-            return builder;
-        }
-
-        public IKernelBuilder WithMessaging(Action<MessagingOptions> configureOptions, params Type[] assemblyMarkers)
-        {
-            ValidateMarkers(assemblyMarkers);
-            builder.ConfigureOptions(configureOptions);
-            BuildAndConfigureMassTransit(builder.Host.Services, assemblyMarkers);
-            
-            return builder;
-        }
-
-        public IKernelBuilder WithMessaging<TMarker>(string? section = null) => 
-            builder.WithMessaging(section, typeof(TMarker));
-
-        public IKernelBuilder WithMessaging<TMarker>(Action<MessagingOptions> configureOptions) => 
-            builder.WithMessaging(configureOptions, typeof(TMarker));
 
         // ==============================================================================
         // INTERNAL OPTIONS HELPERS
@@ -109,18 +81,12 @@ public static class MessagingKernelExtensions
 
     private static void BuildAndConfigureMassTransit<TDbContext>(IServiceCollection services, Type[] markers, Action<IEntityFrameworkOutboxConfigurator> configureOutbox) where TDbContext : DbContext
     {
+        // 1. Registra il plugin per iniettare le tabelle Outbox nel ModelBuilder di EF Core
         services.AddSingleton<IModelConfigurationPlugin, MassTransitOutboxPlugin>();
-        
-        // ARCHITECTURAL NOTE: The caller is responsible for invoking 'o.UseBusOutbox()'
-        // on the configurator if they want the outbox to publish to the broker automatically.
-        BuildAndConfigureMassTransit(services, markers, cfg => cfg.AddEntityFrameworkOutbox<TDbContext>(configureOutbox));
-    }
 
-    private static void BuildAndConfigureMassTransit(IServiceCollection services, Type[] markers, Action<IBusRegistrationConfigurator>? configureBus = null)
-    {
         var assemblies = markers.Select(t => t.Assembly).Distinct().ToArray();
 
-        // 1. IN-PROCESS MEDIATOR (Commands & Queries ONLY)
+        // 2. IN-PROCESS MEDIATOR (Commands & Queries ONLY)
         services.AddMediator(cfg =>
         {
             cfg.AddConsumers(
@@ -134,14 +100,17 @@ public static class MessagingKernelExtensions
             });
         });
 
-        // 2. OUT-OF-PROCESS BUS (Events & External Integration ONLY)
+        // 3. OUT-OF-PROCESS BUS (Events & External Integration ONLY)
         services.AddMassTransit(cfg =>
         {
             cfg.AddConsumers(type => type.GetCustomAttribute<EventConsumerAttribute>() is not null, assemblies);
             cfg.SetKebabCaseEndpointNameFormatter();
             cfg.DisableUsageTelemetry();
 
-            configureBus?.Invoke(cfg);
+            // Configurazione Mandatory Outbox
+            // ARCHITECTURAL NOTE: The caller is responsible for invoking 'o.UseBusOutbox()'
+            // on the configurator if they want the outbox to publish to the broker automatically.
+            cfg.AddEntityFrameworkOutbox<TDbContext>(configureOutbox);
 
             cfg.UsingRabbitMq((context, rmq) =>
             {
