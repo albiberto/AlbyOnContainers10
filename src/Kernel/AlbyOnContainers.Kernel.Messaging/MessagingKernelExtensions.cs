@@ -10,6 +10,9 @@ using Microsoft.Extensions.Options;
 
 namespace AlbyOnContainers.Kernel.Messaging;
 
+using Persistence.Abstractions;
+using PlugIns;
+
 public static class MessagingKernelExtensions
 {
     // ==============================================================================
@@ -22,44 +25,29 @@ public static class MessagingKernelExtensions
         // 1. OVERLOADS CON OUTBOX PATTERN (Multi-Assembly Support)
         // ==============================================================================
 
-        public IKernelBuilder WithMessaging<TDbContext>(Action<IEntityFrameworkOutboxConfigurator> configureOutbox,
-            string? section,
-            params Type[] assemblyMarkers)
-            where TDbContext : DbContext
+        public IKernelBuilder WithMessaging<TDbContext>(Action<IEntityFrameworkOutboxConfigurator> configureOutbox, string? section, params Type[] assemblyMarkers) where TDbContext : DbContext
         {
             ValidateMarkers(assemblyMarkers);
             builder.BindOptions(section);
             BuildAndConfigureMassTransit<TDbContext>(builder.Host.Services, assemblyMarkers, configureOutbox);
+            
             return builder;
         }
 
-        public IKernelBuilder WithMessaging<TDbContext>(
-            Action<MessagingOptions> configureOptions,
-            Action<IEntityFrameworkOutboxConfigurator> configureOutbox,
-            params Type[] assemblyMarkers)
-            where TDbContext : DbContext
+        public IKernelBuilder WithMessaging<TDbContext>(Action<MessagingOptions> configureOptions, Action<IEntityFrameworkOutboxConfigurator> configureOutbox, params Type[] assemblyMarkers) where TDbContext : DbContext
         {
             ValidateMarkers(assemblyMarkers);
             builder.ConfigureOptions(configureOptions);
             BuildAndConfigureMassTransit<TDbContext>(builder.Host.Services, assemblyMarkers, configureOutbox);
+            
             return builder;
         }
 
-        public IKernelBuilder WithMessaging<TDbContext, TMarker>(
-            Action<IEntityFrameworkOutboxConfigurator> configureOutbox,
-            string? section = null)
-            where TDbContext : DbContext
-        {
-            return builder.WithMessaging<TDbContext>(configureOutbox, section, [typeof(TMarker)]);
-        }
+        public IKernelBuilder WithMessaging<TDbContext, TMarker>(Action<IEntityFrameworkOutboxConfigurator> configureOutbox, string? section = null) where TDbContext : DbContext => 
+            builder.WithMessaging<TDbContext>(configureOutbox, section, typeof(TMarker));
 
-        public IKernelBuilder WithMessaging<TDbContext, TMarker>(
-            Action<MessagingOptions> configureOptions,
-            Action<IEntityFrameworkOutboxConfigurator> configureOutbox)
-            where TDbContext : DbContext
-        {
-            return builder.WithMessaging<TDbContext>(configureOptions, configureOutbox, [typeof(TMarker)]);
-        }
+        public IKernelBuilder WithMessaging<TDbContext, TMarker>(Action<MessagingOptions> configureOptions, Action<IEntityFrameworkOutboxConfigurator> configureOutbox) where TDbContext : DbContext =>
+            builder.WithMessaging<TDbContext>(configureOptions, configureOutbox, typeof(TMarker));
 
         // ==============================================================================
         // 2. OVERLOADS SENZA OUTBOX (Multi-Assembly Support)
@@ -70,6 +58,7 @@ public static class MessagingKernelExtensions
             ValidateMarkers(assemblyMarkers);
             builder.BindOptions(section);
             BuildAndConfigureMassTransit(builder.Host.Services, assemblyMarkers);
+            
             return builder;
         }
 
@@ -78,40 +67,33 @@ public static class MessagingKernelExtensions
             ValidateMarkers(assemblyMarkers);
             builder.ConfigureOptions(configureOptions);
             BuildAndConfigureMassTransit(builder.Host.Services, assemblyMarkers);
+            
             return builder;
         }
 
-        public IKernelBuilder WithMessaging<TMarker>(string? section = null)
-        {
-            return builder.WithMessaging(section, [typeof(TMarker)]);
-        }
+        public IKernelBuilder WithMessaging<TMarker>(string? section = null) => 
+            builder.WithMessaging(section, typeof(TMarker));
 
-        public IKernelBuilder WithMessaging<TMarker>(Action<MessagingOptions> configureOptions)
-        {
-            return builder.WithMessaging(configureOptions, [typeof(TMarker)]);
-        }
+        public IKernelBuilder WithMessaging<TMarker>(Action<MessagingOptions> configureOptions) => 
+            builder.WithMessaging(configureOptions, typeof(TMarker));
 
         // ==============================================================================
         // INTERNAL OPTIONS HELPERS
         // ==============================================================================
 
-        private void BindOptions(string? section)
-        {
+        private void BindOptions(string? section) =>
             builder.Host.Services
                 .AddOptions<MessagingOptions>()
                 .BindConfiguration(section ?? MessagingOptions.Section)
                 .ValidateDataAnnotations()
                 .ValidateOnStart();
-        }
 
-        private void ConfigureOptions(Action<MessagingOptions> configure)
-        {
+        private void ConfigureOptions(Action<MessagingOptions> configure) =>
             builder.Host.Services
                 .AddOptions<MessagingOptions>()
                 .Configure(configure)
                 .ValidateDataAnnotations()
                 .ValidateOnStart();
-        }
     }
 
     // ==============================================================================
@@ -122,25 +104,19 @@ public static class MessagingKernelExtensions
     {
         ArgumentNullException.ThrowIfNull(markers);
 
-        if (markers.Length == 0)
-            throw new ArgumentException("At least one marker type must be provided to scan for consumers.", nameof(markers));
+        if (markers.Length == 0) throw new ArgumentException("At least one marker type must be provided to scan for consumers.", nameof(markers));
     }
 
-    private static void BuildAndConfigureMassTransit<TDbContext>(
-        IServiceCollection services,
-        Type[] markers,
-        Action<IEntityFrameworkOutboxConfigurator> configureOutbox)
-        where TDbContext : DbContext
+    private static void BuildAndConfigureMassTransit<TDbContext>(IServiceCollection services, Type[] markers, Action<IEntityFrameworkOutboxConfigurator> configureOutbox) where TDbContext : DbContext
     {
+        services.AddSingleton<IModelConfigurationPlugin, MassTransitOutboxPlugin>();
+        
         // ARCHITECTURAL NOTE: The caller is responsible for invoking 'o.UseBusOutbox()'
         // on the configurator if they want the outbox to publish to the broker automatically.
         BuildAndConfigureMassTransit(services, markers, cfg => cfg.AddEntityFrameworkOutbox<TDbContext>(configureOutbox));
     }
 
-    private static void BuildAndConfigureMassTransit(
-        IServiceCollection services,
-        Type[] markers,
-        Action<IBusRegistrationConfigurator>? configureBus = null)
+    private static void BuildAndConfigureMassTransit(IServiceCollection services, Type[] markers, Action<IBusRegistrationConfigurator>? configureBus = null)
     {
         var assemblies = markers.Select(t => t.Assembly).Distinct().ToArray();
 
@@ -161,10 +137,7 @@ public static class MessagingKernelExtensions
         // 2. OUT-OF-PROCESS BUS (Events & External Integration ONLY)
         services.AddMassTransit(cfg =>
         {
-            cfg.AddConsumers(
-                type => type.GetCustomAttribute<EventConsumerAttribute>() is not null,
-                assemblies);
-
+            cfg.AddConsumers(type => type.GetCustomAttribute<EventConsumerAttribute>() is not null, assemblies);
             cfg.SetKebabCaseEndpointNameFormatter();
             cfg.DisableUsageTelemetry();
 

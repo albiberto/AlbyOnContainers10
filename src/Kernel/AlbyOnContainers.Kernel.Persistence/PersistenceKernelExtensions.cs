@@ -3,11 +3,13 @@
 namespace Microsoft.Extensions.DependencyInjection;
 
 using AlbyOnContainers.Kernel;
+using AlbyOnContainers.Kernel.Persistence.Customizers;
 using AlbyOnContainers.Kernel.Persistence.HostedServices;
 using AlbyOnContainers.Kernel.Persistence.Interceptors;
 using AlbyOnContainers.Kernel.Persistence.Options;
 using EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Diagnostics;
+using EntityFrameworkCore.Diagnostics;
+using EntityFrameworkCore.Infrastructure;
 using Options;
 
 public static class PersistenceKernelExtensions
@@ -18,7 +20,7 @@ public static class PersistenceKernelExtensions
         {
             builder.AddResilience();
             builder.BindOptions(section);
-            builder.Services.BuildAndConfigurePersistence<TDbContext>(configureDbContext);
+            builder.BuildAndConfigurePersistence<TDbContext>(configureDbContext);
 
             return builder;
         }
@@ -27,7 +29,7 @@ public static class PersistenceKernelExtensions
         {
             builder.AddResilience();
             builder.ConfigureOptions(configureOptions);
-            builder.Services.BuildAndConfigurePersistence<TDbContext>(configureDbContext);
+            builder.BuildAndConfigurePersistence<TDbContext>(configureDbContext);
 
             return builder;
         }
@@ -64,26 +66,17 @@ public static class PersistenceKernelExtensions
                 .Configure(configure)
                 .ValidateDataAnnotations()
                 .ValidateOnStart();
-    }
 
-    extension(IServiceCollection services)
-    {
         private void BuildAndConfigurePersistence<TDbContext>(Action<IServiceProvider, DbContextOptionsBuilder> configureDbContext) where TDbContext : DbContext
         {
-            services.Scan(scan => scan
-                .FromAssemblyOf<PersistenceOptions>()
-                .AddClasses(classes => classes
-                    .AssignableTo<IInterceptor>()
-                    .Where(t => !t.IsGenericTypeDefinition))
-                .AsImplementedInterfaces()
-                .AsSelf()
-                .WithScopedLifetime()
-            );
+            builder.Services.AddScoped<IInterceptor, AuditableInterceptor>();
+            builder.Services.AddScoped<IInterceptor, DomainEventDispatcherInterceptor>();
 
-
-            services.AddDbContext<TDbContext>((sp, options) =>
+            builder.Services.AddDbContext<TDbContext>((sp, options) =>
             {
                 configureDbContext(sp, options);
+
+                options.ReplaceService<IModelCustomizer, KernelModelCustomizer>();
 
                 options.AddInterceptors(sp.GetServices<IInterceptor>());
 
@@ -96,9 +89,9 @@ public static class PersistenceKernelExtensions
                     options.EnableDetailedErrors();
             });
 
-            services.AddHealthChecks().AddDbContextCheck<TDbContext>();
+            builder.Services.AddHealthChecks().AddDbContextCheck<TDbContext>();
 
-            services.AddHostedService<MigrationHostedService<TDbContext>>();
+            builder.Services.AddHostedService<MigrationHostedService<TDbContext>>();
         }
     }
 }

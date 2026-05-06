@@ -3,7 +3,7 @@ using AlbyOnContainers.Kernel.Options;
 
 namespace AlbyOnContainers.Kernel.Messaging.Options;
 
-public sealed class MessagingOptions : KernelOptions<MessagingOptions>
+public sealed record MessagingOptions : KernelOptions<MessagingOptions>
 {
     [Required] public string Host { get; set; } = null!;
 
