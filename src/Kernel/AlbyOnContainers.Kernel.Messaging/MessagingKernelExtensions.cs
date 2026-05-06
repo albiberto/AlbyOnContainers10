@@ -112,10 +112,11 @@ public static class MessagingKernelExtensions
             cfg.SetKebabCaseEndpointNameFormatter();
             cfg.DisableUsageTelemetry();
 
-            // Configurazione Mandatory Outbox
-            // ARCHITECTURAL NOTE: The caller is responsible for invoking 'o.UseBusOutbox()'
-            // on the configurator if they want the outbox to publish to the broker automatically.
-            cfg.AddEntityFrameworkOutbox<TDbContext>(configureOutbox);
+            cfg.AddEntityFrameworkOutbox<TDbContext>(o =>
+            {
+                configureOutbox(o);
+                o.UseBusOutbox();
+            });
 
             cfg.UsingRabbitMq((context, rmq) =>
             {
