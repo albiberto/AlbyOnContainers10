@@ -1,15 +1,18 @@
 namespace AlbyOnContainers.Kernel.Persistence.Interceptors;
 
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Abstractions;
 using Domain.SeedWork;
 using MassTransit;
 using Microsoft.EntityFrameworkCore.Diagnostics;
-using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Polly;
 
-public sealed partial class DomainEventDispatcherInterceptor(ILogger<DomainEventDispatcherInterceptor> logger, [FromKeyedServices(nameof(DomainEventDispatcherInterceptor))] ResiliencePipeline pipeline) : SaveChangesInterceptorBase
+public sealed partial class DomainEventDispatcherInterceptor(
+    ILogger<DomainEventDispatcherInterceptor> logger,
+    IPublishEndpoint publishEndpoint,
+    IDomainEventMapper mapper) : SaveChangesInterceptorBase
 {
     public override async ValueTask<InterceptionResult<int>> SavingChangesAsync(DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
     {
@@ -34,14 +37,8 @@ public sealed partial class DomainEventDispatcherInterceptor(ILogger<DomainEvent
             .SelectMany(e => e.DomainEvents)
             .ToList();
 
-        // Resolve infrastructure services from the DbContext's service provider.
-        var publishEndpoint = dbContext.GetService<IPublishEndpoint>();
-        var mapper = dbContext.GetService<IDomainEventMapper>();
-
         // Phase 3 — Mapping & Publishing: translate each domain event into zero or more
-        // integration messages and publish them to the message broker.
-        // Each publish is individually wrapped in the messaging resilience pipeline
-        // to handle transient broker failures with retry and timeout.
+        // integration messages and publish them to the message broker (via Outbox).
         foreach (var domainEvent in domainEvents)
         {
             var eventName = domainEvent.GetType().Name;
@@ -59,10 +56,12 @@ public sealed partial class DomainEventDispatcherInterceptor(ILogger<DomainEvent
             }
 
             foreach (var message in integrationMessages)
-                await pipeline.ExecuteAsync(
-                    static async (state, token) => await state.Endpoint.Publish(state.Message, state.Message.GetType(), token),
-                    (Endpoint: publishEndpoint, Message: message),
-                    cancellationToken);
+            {
+                // Note: With MassTransit Outbox enabled, this Publishes call does NOT execute a network request 
+                // to RabbitMQ. It serializes the message and inserts it into the DbContext's OutboxMessage table, 
+                // sharing the exact same ACID transaction as the business data.
+                await publishEndpoint.Publish(message, message.GetType(), cancellationToken);
+            }
         }
 
         // Phase 4 — Cleanup: clear domain events only after all messages have been

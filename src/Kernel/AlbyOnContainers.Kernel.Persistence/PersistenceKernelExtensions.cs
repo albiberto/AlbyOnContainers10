@@ -43,14 +43,6 @@ public static class PersistenceKernelExtensions
                         options.Delay = TimeSpan.Zero;
                         options.OverallTimeout = TimeSpan.FromSeconds(270);
                         options.UseExponentialBackoff = true;
-                    })
-                .WithResilience(
-                    nameof(DomainEventDispatcherInterceptor), options =>
-                    {
-                        options.MaxRetryAttempts = 3;
-                        options.Delay = TimeSpan.Zero;
-                        options.OverallTimeout = TimeSpan.FromSeconds(270);
-                        options.UseExponentialBackoff = true;
                     });
 
         private void BindOptions(string? section) =>
