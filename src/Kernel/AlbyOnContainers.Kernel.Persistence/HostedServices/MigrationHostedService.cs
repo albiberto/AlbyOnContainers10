@@ -1,36 +1,32 @@
 namespace AlbyOnContainers.Kernel.Persistence.HostedServices;
 
-using System;
 using System.Diagnostics;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
+using Medallion.Threading;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Medallion.Threading;
-using Polly;
 using Options;
-using Resilience.Enums;
+using Polly;
 
 /// <summary>
-/// Applies pending EF Core migrations on startup, coordinated across replicas
-/// via a distributed lock. Fail-fast on errors so the orchestrator restarts the pod.
+///     Applies pending EF Core migrations on startup, coordinated across replicas
+///     via a distributed lock. Fail-fast on errors so the orchestrator restarts the pod.
 /// </summary>
 public sealed partial class MigrationHostedService<TDbContext>(
     IServiceScopeFactory scopeFactory,
     IHostApplicationLifetime lifetime,
     IDistributedLockProvider lockProvider,
-    [FromKeyedServices(ResilienceKey.Database)] ResiliencePipeline pipeline,
+    [FromKeyedServices(ResilienceKey.Database)]
+    ResiliencePipeline pipeline,
     IOptions<PersistenceOptions> options,
     ILogger<MigrationHostedService<TDbContext>> logger)
     : IHostedService
     where TDbContext : DbContext
 {
-    private readonly PersistenceOptions _options = options.Value;
     private readonly string _dbContextName = typeof(TDbContext).Name;
+    private readonly PersistenceOptions _options = options.Value;
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
@@ -78,7 +74,7 @@ public sealed partial class MigrationHostedService<TDbContext>(
         await using var distributedLock = await lockProvider.TryAcquireLockAsync(lockName, _options.LockTimeout, ct) ?? throw new TimeoutException($"Timed out after {_options.LockTimeout} waiting for migration lock '{lockName}'.");
 
         var pending = (await dbContext.Database.GetPendingMigrationsAsync(ct)).ToList();
-        
+
         if (pending.Count == 0)
         {
             LogNoPendingMigrations(_dbContextName);

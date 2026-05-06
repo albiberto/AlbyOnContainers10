@@ -1,8 +1,5 @@
 namespace AlbyOnContainers.Kernel.Persistence.Interceptors;
 
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 using Abstractions;
 using Domain.SeedWork;
 using Microsoft.EntityFrameworkCore;
@@ -29,15 +26,9 @@ public sealed class AuditableInterceptor : SaveChangesInterceptorBase
 
         foreach (var entry in context.ChangeTracker.Entries<AuditableEntity>())
         {
-            if (entry.State == EntityState.Added) 
-            {
-                entry.Entity.SetCreated(currentUserId, transactionTimestamp);
-            }
+            if (entry.State == EntityState.Added) entry.Entity.SetCreated(currentUserId, transactionTimestamp);
 
-            if (entry.State is EntityState.Added or EntityState.Modified) 
-            {
-                entry.Entity.SetUpdated(currentUserId, transactionTimestamp);
-            }
+            if (entry.State is EntityState.Added or EntityState.Modified) entry.Entity.SetUpdated(currentUserId, transactionTimestamp);
         }
     }
 }

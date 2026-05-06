@@ -1,8 +1,5 @@
 namespace AlbyOnContainers.Kernel.Persistence.Interceptors;
 
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Abstractions;
 using Domain.SeedWork;
 using MassTransit;
@@ -11,7 +8,6 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Polly;
-using Resilience.Enums;
 
 public sealed partial class DomainEventDispatcherInterceptor(ILogger<DomainEventDispatcherInterceptor> logger, [FromKeyedServices(ResilienceKey.Messaging)] ResiliencePipeline pipeline) : SaveChangesInterceptorBase
 {
@@ -63,12 +59,10 @@ public sealed partial class DomainEventDispatcherInterceptor(ILogger<DomainEvent
             }
 
             foreach (var message in integrationMessages)
-            {
                 await pipeline.ExecuteAsync(
                     static async (state, token) => await state.Endpoint.Publish(state.Message, state.Message.GetType(), token),
                     (Endpoint: publishEndpoint, Message: message),
                     cancellationToken);
-            }
         }
 
         // Phase 4 — Cleanup: clear domain events only after all messages have been

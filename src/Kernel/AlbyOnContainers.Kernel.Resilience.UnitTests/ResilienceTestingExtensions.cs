@@ -21,7 +21,7 @@ public static class ResilienceTestingExtensions
         foreach (var (profileKey, options) in profiles)
         {
             appSettings.Add($"Resilience:{profileKey}:{nameof(ResilienceOptions.MaxRetryAttempts)}", options.MaxRetryAttempts.ToString());
-            appSettings.Add($"Resilience:{profileKey}:{nameof(ResilienceOptions.InitialDelay)}", options.InitialDelay.ToString());
+            appSettings.Add($"Resilience:{profileKey}:{nameof(ResilienceOptions.Delay)}", options.Delay.ToString());
             appSettings.Add($"Resilience:{profileKey}:{nameof(ResilienceOptions.OverallTimeout)}", options.OverallTimeout.ToString());
             appSettings.Add($"Resilience:{profileKey}:{nameof(ResilienceOptions.UseExponentialBackoff)}", options.UseExponentialBackoff.ToString().ToLowerInvariant());
         }
@@ -47,25 +47,12 @@ public static class ResilienceTestingExtensions
         {
             Assert.That(actualOptions, Is.Not.Null, "ResilienceOptions should be resolvable.");
             Assert.That(actualOptions.MaxRetryAttempts, Is.EqualTo(expectedOptions.MaxRetryAttempts), nameof(actualOptions.MaxRetryAttempts));
-            Assert.That(actualOptions.InitialDelay, Is.EqualTo(expectedOptions.InitialDelay), nameof(actualOptions.InitialDelay));
+            Assert.That(actualOptions.Delay, Is.EqualTo(expectedOptions.Delay), nameof(actualOptions.Delay));
             Assert.That(actualOptions.OverallTimeout, Is.EqualTo(expectedOptions.OverallTimeout), nameof(actualOptions.OverallTimeout));
             Assert.That(actualOptions.UseExponentialBackoff, Is.EqualTo(expectedOptions.UseExponentialBackoff), nameof(actualOptions.UseExponentialBackoff));
 
             Assert.That(pipelineProvider, Is.Not.Null, "Polly ResiliencePipelineProvider must be registered.");
             Assert.That(bridge, Is.Not.Null, $"Keyed service for {expectedKey} must be registered.");
-        });
-    }
-
-    /// <summary>
-    ///     Validates that the Fail-Fast mechanism threw the correct OptionsValidationException.
-    /// </summary>
-    public static void AssertValidationException(this OptionsValidationException? exception, string expectedProfileKey, string expectedPropertyName)
-    {
-        Assert.Multiple(() =>
-        {
-            Assert.That(exception, Is.Not.Null);
-            Assert.That(exception!.OptionsName, Is.EqualTo(expectedProfileKey));
-            Assert.That(exception.Message, Does.Contain(expectedPropertyName));
         });
     }
 }

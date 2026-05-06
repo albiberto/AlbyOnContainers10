@@ -23,8 +23,8 @@ var redisConnection = builder.Configuration.GetConnectionString("cache") ?? thro
 var rabbitConnection = new Uri(builder.Configuration.GetConnectionString("messaging") ?? throw new InvalidOperationException("Missing connection string 'messaging'."));
 
 builder.AddKernel()
-    .WithMessagingResilience()
-    .WithDatabaseResilience();
+    .WithResilience("Database")
+    .WithResilience("Messaging");
 
 // Shared UI Notifier
 builder.Services.Scan(scan => scan

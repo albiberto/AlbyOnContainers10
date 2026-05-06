@@ -76,7 +76,7 @@ public static class ResilienceExtensions
                 builder.AddRetry(new()
                 {
                     MaxRetryAttempts = options.MaxRetryAttempts,
-                    Delay = options.InitialDelay,
+                    Delay = options.Delay,
                     BackoffType = options.UseExponentialBackoff ? DelayBackoffType.Exponential : DelayBackoffType.Constant,
                     ShouldHandle = new PredicateBuilder().Handle<Exception>()
                 });

@@ -6,7 +6,7 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
     <ItemGroup>
-        <PackageReference Include="DistributedLock.Core" />
+        <PackageReference Include="DistributedLock.Core"/>
         <PackageReference Include="MassTransit.Abstractions"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore.Relational"/>
@@ -16,7 +16,7 @@
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\AlbyOnContainers.Kernel.Domain\AlbyOnContainers.Kernel.Domain.csproj"/>
-        <ProjectReference Include="..\AlbyOnContainers.Kernel.Resilience\AlbyOnContainers.Kernel.Resilience.csproj" />
+        <ProjectReference Include="..\AlbyOnContainers.Kernel.Resilience\AlbyOnContainers.Kernel.Resilience.csproj"/>
         <ProjectReference Include="..\AlbyOnContainers.Kernel.Security\AlbyOnContainers.Kernel.Security.csproj"/>
         <ProjectReference Include="..\AlbyOnContainers.Kernel\AlbyOnContainers.Kernel.csproj"/>
     </ItemGroup>

@@ -15,7 +15,7 @@
 /// <c>section</c> parameter that overrides this default.
 /// </para>
 /// </remarks>
-public abstract class KernelOptions<T>
+public abstract record KernelOptions<T>
 {
     private const string OptionsSuffix = "Options";
 

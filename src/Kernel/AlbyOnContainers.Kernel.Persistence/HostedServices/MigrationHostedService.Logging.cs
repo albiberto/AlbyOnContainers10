@@ -1,6 +1,5 @@
 ﻿namespace AlbyOnContainers.Kernel.Persistence.HostedServices;
 
-using System;
 using Microsoft.Extensions.Logging;
 
 public sealed partial class MigrationHostedService<TDbContext>
@@ -19,7 +18,7 @@ public sealed partial class MigrationHostedService<TDbContext>
 
     [LoggerMessage(EventId = 204, Level = LogLevel.Debug, Message = "No pending migrations for {DbContextName}.")]
     private partial void LogNoPendingMigrations(string dbContextName);
-    
+
     [LoggerMessage(EventId = 208, Level = LogLevel.Warning, Message = "Migration for {DbContextName} was cancelled by the host shutdown signal.")]
     private partial void LogMigrationCancelled(string dbContextName);
 }
