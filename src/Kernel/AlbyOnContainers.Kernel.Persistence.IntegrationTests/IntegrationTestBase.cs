@@ -18,6 +18,7 @@ public abstract class IntegrationTestBase
     private ServiceProvider _rootServiceProvider = null!;
     protected IServiceScope Scope { get; private set; } = null!;
     protected TestDbContext DbContext { get; private set; } = null!;
+    protected StubCurrentUserService CurrentUserService => Scope.ServiceProvider.GetRequiredService<StubCurrentUserService>();
 
     private sealed class TestKernelBuilder(IHostApplicationBuilder hostBuilder) : IKernelBuilder
     {
@@ -40,9 +41,8 @@ public abstract class IntegrationTestBase
         var hostBuilder = Microsoft.Extensions.Hosting.Host.CreateApplicationBuilder();
         hostBuilder.Configuration.AddConfiguration(configuration);
 
-        var currentUserServiceMock = Substitute.For<ICurrentUserService>();
-        currentUserServiceMock.UserId.Returns("TestUser");
-        hostBuilder.Services.AddSingleton(currentUserServiceMock);
+        hostBuilder.Services.AddScoped<StubCurrentUserService>();
+        hostBuilder.Services.AddScoped<ICurrentUserService>(sp => sp.GetRequiredService<StubCurrentUserService>());
 
         hostBuilder.Services.AddSingleton(TimeProvider.System);
 
@@ -95,7 +95,7 @@ public abstract class IntegrationTestBase
     {
         // Smaltisce il ServiceProvider radice al termine della fixture.
         // Richiesto dall'analizzatore NUnit1032 per i disposable a livello di fixture.
-        _rootServiceProvider?.Dispose();
+        _rootServiceProvider.Dispose();
     }
 
     [TearDown]

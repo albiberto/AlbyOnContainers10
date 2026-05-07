@@ -41,7 +41,7 @@ public static class PersistenceKernelExtensions
                     nameof(MigrationHostedService<>), options =>
                     {
                         options.MaxRetryAttempts = 10;
-                        options.Delay = TimeSpan.Zero;
+                        options.Delay = TimeSpan.FromSeconds(1);
                         options.OverallTimeout = TimeSpan.FromSeconds(270);
                         options.UseExponentialBackoff = true;
                     });

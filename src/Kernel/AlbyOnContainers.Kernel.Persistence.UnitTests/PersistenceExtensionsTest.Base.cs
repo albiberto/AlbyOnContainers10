@@ -1,6 +1,11 @@
 ﻿namespace AlbyOnContainers.Kernel.Persistence.UnitTests;
 
+using AlbyOnContainers.Kernel.Security.Abstractions;
+using Medallion.Threading;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using NSubstitute;
+using NUnit.Framework;
 
 /// <summary>
 ///     Base class for persistence tests.
@@ -18,6 +23,11 @@ public abstract class PersistenceTestBase
     {
         // Arrange: Initialize a fresh builder and kernel for each test to guarantee complete isolation.
         HostBuilder = Host.CreateApplicationBuilder();
+
+        HostBuilder.Services.AddSingleton(Substitute.For<ICurrentUserService>());
+        HostBuilder.Services.AddSingleton(Substitute.For<IDistributedLockProvider>());
+        HostBuilder.Services.AddSingleton(TimeProvider.System);
+        
         KernelBuilder = HostBuilder.AddKernel();
     }
 

@@ -27,9 +27,9 @@ public sealed class ResilienceExtensionsInvalidTests : ResilienceTestBase
         CreateTestCase("Delay_BelowMinimum", ValidOptions with { Delay = TimeSpan.Zero }),
         CreateTestCase("Delay_AboveMaximum", ValidOptions with { Delay = TimeSpan.FromSeconds(11) }),
 
-        // OverallTimeout Boundaries [Range("00:00:05", "00:01:00")]
+        // OverallTimeout Boundaries [Range("00:00:05", "00:05:00")]
         CreateTestCase("OverallTimeout_BelowMinimum", ValidOptions with { OverallTimeout = TimeSpan.FromSeconds(4) }),
-        CreateTestCase("OverallTimeout_AboveMaximum", ValidOptions with { OverallTimeout = TimeSpan.FromSeconds(61) })
+        CreateTestCase("OverallTimeout_AboveMaximum", ValidOptions with { OverallTimeout = TimeSpan.FromSeconds(321) })
     ];
     
     private static TestCaseData CreateTestCase(string key, ResilienceOptions options) => new TestCaseData(key, options).SetName($"Invalid_{key}");

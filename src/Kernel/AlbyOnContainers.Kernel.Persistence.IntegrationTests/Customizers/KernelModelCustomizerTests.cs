@@ -65,7 +65,7 @@ public sealed class KernelModelCustomizerTests : IntegrationTestBase
     /// </para>
     /// </summary>
     [Test]
-    public void Should_Apply_Registered_Plugins_To_DbContext_Model()
+    public void FindEntityType_WhenPluginIsRegistered_ShouldReturnConfiguredEntity()
     {
         // Act
         // Accediamo al Model del DbContext già risolto dalla base class.
@@ -95,7 +95,7 @@ public sealed class KernelModelCustomizerTests : IntegrationTestBase
     /// </para>
     /// </summary>
     [Test]
-    public void Should_Map_Plugin_Entity_To_Correct_Table_Name()
+    public void GetTableName_WhenPluginIsRegistered_ShouldReturnMappedTableName()
     {
         // Act
         var entityType = DbContext.Model.FindEntityType(typeof(FakeOutboxMessage));
