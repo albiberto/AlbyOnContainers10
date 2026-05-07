@@ -67,6 +67,9 @@ public sealed class KernelModelCustomizerTests : IntegrationTestBase
     [Test]
     public void FindEntityType_WhenPluginIsRegistered_ShouldReturnConfiguredEntity()
     {
+        // Arrange
+        // Plugin is already registered in RegisterAdditionalServices
+        
         // Act
         // Accediamo al Model del DbContext già risolto dalla base class.
         // EF Core compila il modello in modo lazy e lo cachea nelle DbContextOptions:
@@ -97,17 +100,21 @@ public sealed class KernelModelCustomizerTests : IntegrationTestBase
     [Test]
     public void GetTableName_WhenPluginIsRegistered_ShouldReturnMappedTableName()
     {
+        // Arrange
+        // Plugin is already registered in RegisterAdditionalServices
+        
         // Act
         var entityType = DbContext.Model.FindEntityType(typeof(FakeOutboxMessage));
+        var tableName = entityType?.GetTableName();
 
-        // Assert — prerequisito: l'entità deve esistere nel modello
-        Assert.That(entityType, Is.Not.Null, "FakeOutboxMessage non trovato nel modello EF Core.");
-
-        var tableName = entityType!.GetTableName();
-
-        Assert.That(
-            tableName,
-            Is.EqualTo("fake_outbox_messages"),
-            "Il nome della tabella configurato dal plugin non corrisponde a quello atteso.");
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(entityType, Is.Not.Null, "FakeOutboxMessage non trovato nel modello EF Core.");
+            Assert.That(
+                tableName,
+                Is.EqualTo("fake_outbox_messages"),
+                "Il nome della tabella configurato dal plugin non corrisponde a quello atteso.");
+        });
     }
 }
