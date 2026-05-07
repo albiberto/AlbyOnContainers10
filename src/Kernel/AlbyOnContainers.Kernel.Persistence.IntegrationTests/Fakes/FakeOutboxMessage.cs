@@ -1,10 +1,10 @@
 namespace AlbyOnContainers.Kernel.Persistence.IntegrationTests.Fakes;
 
 /// <summary>
-/// Entità fittizia che simula un messaggio outbox.
-/// Viene usata esclusivamente da <see cref="FakeMessagingPlugin"/> per
-/// verificare che il meccanismo di plugin EF Core funzioni correttamente.
-/// Non rappresenta un'entità di produzione.
+/// Dummy entity that simulates an outbox message.
+/// It is used exclusively by <see cref="FakeMessagingPlugin"/> to
+/// verify that the EF Core plugin mechanism works correctly.
+/// It does not represent a production entity.
 /// </summary>
 public sealed record FakeOutboxMessage
 {
@@ -13,10 +13,10 @@ public sealed record FakeOutboxMessage
         // EF Core requirement
     }
 
-    /// <summary>Identificatore univoco del messaggio.</summary>
+    /// <summary>Unique identifier of the message.</summary>
     public Guid Id { get; init; }
 
-    /// <summary>Contenuto serializzato del messaggio (payload).</summary>
+    /// <summary>Serialized content of the message (payload).</summary>
     public string Payload { get; private set; } = string.Empty;
 
     public static FakeOutboxMessage Create(string payload)

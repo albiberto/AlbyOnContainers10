@@ -4,33 +4,33 @@ using Microsoft.EntityFrameworkCore;
 namespace AlbyOnContainers.Kernel.Persistence.IntegrationTests.Fakes;
 
 /// <summary>
-/// Plugin fasullo che simula ciò che farebbe un modulo esterno (es. Messaging)
-/// per iniettare la propria tabella nel <see cref="DbContext"/> tramite il
-/// meccanismo di <see cref="IModelConfigurationPlugin"/>.
+/// Dummy plugin that simulates what an external module (e.g., Messaging) would do
+/// to inject its own table into the <see cref="DbContext"/> via the
+/// <see cref="IModelConfigurationPlugin"/> mechanism.
 ///
-/// Il suo unico scopo è registrare <see cref="FakeOutboxMessage"/> nel modello
-/// EF Core, permettendo al test di verificare che:
-/// 1. Il plugin sia stato risolto dal container DI.
-/// 2. Il <see cref="KernelModelCustomizer"/> lo abbia invocato correttamente.
-/// 3. L'entità sia effettivamente presente nel modello compilato del DbContext.
+/// Its only purpose is to register <see cref="FakeOutboxMessage"/> in the
+/// EF Core model, allowing the test to verify that:
+/// 1. The plugin has been resolved by the DI container.
+/// 2. The <see cref="KernelModelCustomizer"/> has invoked it correctly.
+/// 3. The entity is actually present in the compiled DbContext model.
 /// </summary>
 public sealed class FakeMessagingPlugin : IModelConfigurationPlugin
 {
     /// <inheritdoc />
     public void Apply(ModelBuilder modelBuilder)
     {
-        // Configura la tabella fittizia che simula un Outbox Messages.
-        // In un plugin reale (es. MessagingPlugin), questa sezione
-        // configurerebbe la tabella OutboxMessages con tutte le sue colonne.
+        // Configures the dummy table that simulates Outbox Messages.
+        // In a real plugin (e.g., MessagingPlugin), this section
+        // would configure the OutboxMessages table with all its columns.
         modelBuilder.Entity<FakeOutboxMessage>(entity =>
         {
-            // Chiave primaria basata sul Guid Id
+            // Primary key based on the Guid Id
             entity.HasKey(e => e.Id);
 
-            // Mappa alla tabella "fake_outbox_messages" (snake_case come convenzione)
+            // Maps to the "fake_outbox_messages" table (snake_case by convention)
             entity.ToTable("fake_outbox_messages");
 
-            // Il payload non può essere nullo e ha una lunghezza massima ragionevole
+            // The payload cannot be null and has a reasonable maximum length
             entity.Property(e => e.Payload)
                 .IsRequired()
                 .HasMaxLength(4096);

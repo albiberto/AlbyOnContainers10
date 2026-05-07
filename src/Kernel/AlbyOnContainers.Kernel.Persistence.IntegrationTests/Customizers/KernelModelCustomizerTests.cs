@@ -6,61 +6,61 @@ using Microsoft.Extensions.DependencyInjection;
 namespace AlbyOnContainers.Kernel.Persistence.IntegrationTests.Customizers;
 
 /// <summary>
-/// Test di integrazione per il meccanismo di plugin del modello EF Core.
+/// Integration tests for the EF Core model plugin mechanism.
 ///
 /// <para>
-/// Questi test verificano che l'intera pipeline infrastrutturale dei plugin funzioni
-/// correttamente end-to-end:
+/// These tests verify that the entire plugin infrastructure pipeline works
+/// correctly end-to-end:
 /// </para>
 /// <list type="number">
-///   <item>Il plugin (<see cref="FakeMessagingPlugin"/>) viene registrato nel container DI.</item>
-///   <item><c>WithPersistence</c> risolve tutti i <see cref="IModelConfigurationPlugin"/> e
-///         li inietta nella <c>KernelModelPluginsExtension</c> delle <c>DbContextOptions</c>.</item>
-///   <item><c>KernelModelCustomizer</c> legge l'extension e invoca <c>plugin.Apply(modelBuilder)</c>.</item>
-///   <item>L'entità configurata dal plugin è effettivamente presente nel modello compilato del DbContext.</item>
+///   <item>The plugin (<see cref="FakeMessagingPlugin"/>) is registered in the DI container.</item>
+///   <item><c>WithPersistence</c> resolves all <see cref="IModelConfigurationPlugin"/> and
+///         injects them into the <c>KernelModelPluginsExtension</c> of the <c>DbContextOptions</c>.</item>
+///   <item><c>KernelModelCustomizer</c> reads the extension and invokes <c>plugin.Apply(modelBuilder)</c>.</item>
+///   <item>The entity configured by the plugin is actually present in the compiled DbContext model.</item>
 /// </list>
 /// </summary>
 [TestFixture]
 public sealed class KernelModelCustomizerTests : IntegrationTestBase
 {
     /// <summary>
-    /// Sovrascrive l'hook della base class per registrare il <see cref="FakeMessagingPlugin"/>
-    /// come <see cref="IModelConfigurationPlugin"/> nel container DI.
+    /// Overrides the base class hook to register the <see cref="FakeMessagingPlugin"/>
+    /// as an <see cref="IModelConfigurationPlugin"/> in the DI container.
     ///
     /// <para>
-    /// La registrazione avviene <strong>prima</strong> della chiamata a <c>WithPersistence</c>
-    /// (orchestrata in <see cref="IntegrationTestBase.OneTimeSetUp"/>), garantendo che il plugin
-    /// sia visibile quando EF Core costruisce le <c>DbContextOptions</c>.
+    /// Registration occurs <strong>before</strong> the call to <c>WithPersistence</c>
+    /// (orchestrated in <see cref="IntegrationTestBase.OneTimeSetUp"/>), ensuring that the plugin
+    /// is visible when EF Core builds the <c>DbContextOptions</c>.
     /// </para>
     /// </summary>
-    /// <param name="services">La collezione di servizi dell'host in costruzione.</param>
+    /// <param name="services">The service collection of the host being built.</param>
     protected override void RegisterAdditionalServices(IServiceCollection services)
     {
-        // Registra il plugin fasullo che simula il modulo Messaging.
-        // Singleton perché i plugin sono stateless e condivisi per tutta la durata del test.
+        // Registers the dummy plugin that simulates the Messaging module.
+        // Singleton because plugins are stateless and shared throughout the test duration.
         services.AddSingleton<IModelConfigurationPlugin, FakeMessagingPlugin>();
     }
 
     /// <summary>
-    /// Verifica che i plugin registrati nel container DI vengano applicati al modello EF Core.
+    /// Verifies that the plugins registered in the DI container are applied to the EF Core model.
     ///
     /// <para>
-    /// <strong>Arrange:</strong> <see cref="FakeMessagingPlugin"/> è stato registrato in
-    /// <see cref="RegisterAdditionalServices"/> e configura <see cref="FakeOutboxMessage"/>
-    /// nel <c>ModelBuilder</c>.
+    /// <strong>Arrange:</strong> <see cref="FakeMessagingPlugin"/> has been registered in
+    /// <see cref="RegisterAdditionalServices"/> and configures <see cref="FakeOutboxMessage"/>
+    /// in the <c>ModelBuilder</c>.
     /// </para>
     /// <para>
-    /// <strong>Act:</strong> Risolviamo il <see cref="TestDbContext"/> direttamente dallo
-    /// scope creato dalla base class. EF Core compila il modello la prima volta che il
-    /// contesto viene usato o quando accediamo a <c>Model</c>.
+    /// <strong>Act:</strong> We resolve the <see cref="TestDbContext"/> directly from the
+    /// scope created by the base class. EF Core compiles the model the first time the
+    /// context is used or when we access <c>Model</c>.
     /// </para>
     /// <para>
     /// <strong>Assert:</strong> <c>DbContext.Model.FindEntityType(typeof(FakeOutboxMessage))</c>
-    /// deve restituire un'istanza non nulla, dimostrando che:
+    /// must return a non-null instance, demonstrating that:
     /// <list type="bullet">
-    ///   <item>La <c>KernelModelPluginsExtension</c> ha trasportato il plugin fino al customizer.</item>
-    ///   <item>Il <c>KernelModelCustomizer</c> ha invocato correttamente <c>Apply</c>.</item>
-    ///   <item>L'entità <c>FakeOutboxMessage</c> è parte integrante del modello EF Core compilato.</item>
+    ///   <item>The <c>KernelModelPluginsExtension</c> transported the plugin to the customizer.</item>
+    ///   <item>The <c>KernelModelCustomizer</c> invoked <c>Apply</c> correctly.</item>
+    ///   <item>The <c>FakeOutboxMessage</c> entity is an integral part of the compiled EF Core model.</item>
     /// </list>
     /// </para>
     /// </summary>
@@ -71,30 +71,30 @@ public sealed class KernelModelCustomizerTests : IntegrationTestBase
         // Plugin is already registered in RegisterAdditionalServices
         
         // Act
-        // Accediamo al Model del DbContext già risolto dalla base class.
-        // EF Core compila il modello in modo lazy e lo cachea nelle DbContextOptions:
-        // questo è il momento in cui KernelModelCustomizer viene eseguito.
+        // Access the DbContext Model already resolved by the base class.
+        // EF Core compiles the model lazily and caches it in DbContextOptions:
+        // this is the moment when KernelModelCustomizer is executed.
         var entityType = DbContext.Model.FindEntityType(typeof(FakeOutboxMessage));
 
         // Assert
-        // Se entityType non è null, significa che FakeMessagingPlugin.Apply() è stato
-        // invocato da KernelModelCustomizer e l'entità è nel modello compilato.
+        // If entityType is not null, it means FakeMessagingPlugin.Apply() was
+        // invoked by KernelModelCustomizer and the entity is in the compiled model.
         Assert.That(
             entityType,
             Is.Not.Null,
-            "FakeOutboxMessage dovrebbe essere presente nel modello EF Core. " +
-            "Questo indica che KernelModelCustomizer ha correttamente applicato " +
-            "tutti i plugin registrati tramite IModelConfigurationPlugin.");
+            "FakeOutboxMessage should be present in the EF Core model. " +
+            "This indicates that KernelModelCustomizer correctly applied " +
+            "all plugins registered via IModelConfigurationPlugin.");
     }
 
     /// <summary>
-    /// Verifica che il nome della tabella configurata dal plugin corrisponda
-    /// a quello dichiarato in <see cref="FakeMessagingPlugin"/>.
+    /// Verifies that the table name configured by the plugin matches
+    /// the one declared in <see cref="FakeMessagingPlugin"/>.
     ///
     /// <para>
-    /// Questo test è complementare al precedente: non si limita a verificare
-    /// la presenza dell'entità nel modello, ma controlla anche che la mappatura
-    /// relazionale (nome tabella) sia stata applicata correttamente.
+    /// This test complements the previous one: it doesn't just verify
+    /// the presence of the entity in the model, but also checks that the relational
+    /// mapping (table name) was applied correctly.
     /// </para>
     /// </summary>
     [Test]
@@ -110,11 +110,11 @@ public sealed class KernelModelCustomizerTests : IntegrationTestBase
         // Assert
         Assert.Multiple(() =>
         {
-            Assert.That(entityType, Is.Not.Null, "FakeOutboxMessage non trovato nel modello EF Core.");
+            Assert.That(entityType, Is.Not.Null, "FakeOutboxMessage not found in the EF Core model.");
             Assert.That(
                 tableName,
                 Is.EqualTo("fake_outbox_messages"),
-                "Il nome della tabella configurato dal plugin non corrisponde a quello atteso.");
+                "The table name configured by the plugin does not match the expected one.");
         });
     }
 }
