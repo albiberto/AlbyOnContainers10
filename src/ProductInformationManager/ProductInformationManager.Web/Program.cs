@@ -11,7 +11,6 @@ using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.FluentUI.AspNetCore.Components;
 using ProductInformationManager.Application;
-using ProductInformationManager.Application.Cache;
 using ProductInformationManager.Application.Consumers;
 using ProductInformationManager.Infrastructure;
 using ProductInformationManager.Web.Notifiers;

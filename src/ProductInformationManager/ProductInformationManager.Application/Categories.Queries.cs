@@ -1,16 +1,33 @@
+using AlbyOnContainers.Kernel.Caching.Cache;
+using AlbyOnContainers.Kernel.Caching.Keys;
 using AlbyOnContainers.Kernel.Messaging.Attributes;
 using MassTransit;
-using ProductInformationManager.Application.Cache;
+using Microsoft.EntityFrameworkCore;
+using ProductInformationManager.Domain;
+using ProductInformationManager.Infrastructure;
 using ProductInformationManager.Messages;
 
 namespace ProductInformationManager.Application;
 
 [MediatorConsumer]
-public class GetRootCategoriesConsumer(CategoryCache cache) : IConsumer<GetRootCategories>
+public class GetRootCategoriesConsumer(IAlbyCache cache, ProductContext db) : IConsumer<GetRootCategories>
 {
     public async Task Consume(ConsumeContext<GetRootCategories> context)
     {
-        var all = await cache.GetOrSetAllAsync(context.CancellationToken);
+        var all = await cache.GetOrSetAsync(
+            CacheKey.For<Category>("All"),
+            ct => db.Categories
+                .AsNoTracking()
+                .OrderBy(c => c.Path)
+                .Select(c => new CategoryDto(
+                    c.Id.Value,
+                    c.Name,
+                    c.Description,
+                    c.Path,
+                    c.ParentId != null ? c.ParentId.Value : null,
+                    c.Children.Any()))
+                .ToListAsync(ct),
+            context.CancellationToken) ?? [];
         
         var roots = all
             .Where(c => c.ParentId == null)
@@ -22,11 +39,24 @@ public class GetRootCategoriesConsumer(CategoryCache cache) : IConsumer<GetRootC
 }
 
 [MediatorConsumer]
-public class GetChildCategoriesConsumer(CategoryCache cache) : IConsumer<GetChildCategories>
+public class GetChildCategoriesConsumer(IAlbyCache cache, ProductContext db) : IConsumer<GetChildCategories>
 {
     public async Task Consume(ConsumeContext<GetChildCategories> context)
     {
-        var all = await cache.GetOrSetAllAsync(context.CancellationToken);
+        var all = await cache.GetOrSetAsync(
+            CacheKey.For<Category>("All"),
+            ct => db.Categories
+                .AsNoTracking()
+                .OrderBy(c => c.Path)
+                .Select(c => new CategoryDto(
+                    c.Id.Value,
+                    c.Name,
+                    c.Description,
+                    c.Path,
+                    c.ParentId != null ? c.ParentId.Value : null,
+                    c.Children.Any()))
+                .ToListAsync(ct),
+            context.CancellationToken) ?? [];
         
         var children = all
             .Where(c => c.ParentId == context.Message.ParentId)
@@ -38,11 +68,24 @@ public class GetChildCategoriesConsumer(CategoryCache cache) : IConsumer<GetChil
 }
 
 [MediatorConsumer]
-public class GetCategoryByIdConsumer(CategoryCache cache) : IConsumer<GetCategoryById>
+public class GetCategoryByIdConsumer(IAlbyCache cache, ProductContext db) : IConsumer<GetCategoryById>
 {
     public async Task Consume(ConsumeContext<GetCategoryById> context)
     {
-        var all = await cache.GetOrSetAllAsync(context.CancellationToken);
+        var all = await cache.GetOrSetAsync(
+            CacheKey.For<Category>("All"),
+            ct => db.Categories
+                .AsNoTracking()
+                .OrderBy(c => c.Path)
+                .Select(c => new CategoryDto(
+                    c.Id.Value,
+                    c.Name,
+                    c.Description,
+                    c.Path,
+                    c.ParentId != null ? c.ParentId.Value : null,
+                    c.Children.Any()))
+                .ToListAsync(ct),
+            context.CancellationToken) ?? [];
         
         var category = all.FirstOrDefault(c => c.Id == context.Message.Id);
         
@@ -53,7 +96,7 @@ public class GetCategoryByIdConsumer(CategoryCache cache) : IConsumer<GetCategor
 }
 
 [MediatorConsumer]
-public class SearchCategoriesConsumer(CategoryCache cache) : IConsumer<SearchCategories>
+public class SearchCategoriesConsumer(IAlbyCache cache, ProductContext db) : IConsumer<SearchCategories>
 {
     public async Task Consume(ConsumeContext<SearchCategories> context)
     {
@@ -67,7 +110,20 @@ public class SearchCategoriesConsumer(CategoryCache cache) : IConsumer<SearchCat
 
         var lowerPattern = pattern.ToLowerInvariant();
 
-        var all = await cache.GetOrSetAllAsync(context.CancellationToken);
+        var all = await cache.GetOrSetAsync(
+            CacheKey.For<Category>("All"),
+            ct => db.Categories
+                .AsNoTracking()
+                .OrderBy(c => c.Path)
+                .Select(c => new CategoryDto(
+                    c.Id.Value,
+                    c.Name,
+                    c.Description,
+                    c.Path,
+                    c.ParentId != null ? c.ParentId.Value : null,
+                    c.Children.Any()))
+                .ToListAsync(ct),
+            context.CancellationToken) ?? [];
 
         var results = all
             .Where(c => c.Name.Contains(lowerPattern, StringComparison.InvariantCultureIgnoreCase))

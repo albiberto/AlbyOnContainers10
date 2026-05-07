@@ -3,7 +3,7 @@ using AlbyOnContainers.Kernel.Options;
 
 namespace AlbyOnContainers.Kernel.Caching.Options;
 
-public class CachingOptions: KernelOptions<CachingOptions>
+public record CachingOptions: KernelOptions<CachingOptions>
 {
     [Required(AllowEmptyStrings = false)] public string RedisConnectionString { get; set; } = string.Empty;
 
