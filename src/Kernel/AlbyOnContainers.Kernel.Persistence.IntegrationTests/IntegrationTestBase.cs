@@ -34,7 +34,8 @@ public abstract class IntegrationTestBase
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["ConnectionStrings:TestDb"] = connectionString,
-                ["Persistence:RunMigrationsOnStartup"] = "false"
+                ["Persistence:RunMigrationsOnStartup"] = "false",
+                ["Persistence:MetricPrefix"] = "integration_tests"
             })
             .Build();
 
