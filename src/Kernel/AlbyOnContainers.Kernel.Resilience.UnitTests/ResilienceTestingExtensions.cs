@@ -18,12 +18,12 @@ public static class ResilienceTestingExtensions
     {
         var appSettings = new Dictionary<string, string?>();
 
-        foreach (var (profileKey, options) in profiles)
+        foreach (var (key, options) in profiles)
         {
-            appSettings.Add($"Resilience:{profileKey}:{nameof(ResilienceOptions.MaxRetryAttempts)}", options.MaxRetryAttempts.ToString());
-            appSettings.Add($"Resilience:{profileKey}:{nameof(ResilienceOptions.Delay)}", options.Delay.ToString());
-            appSettings.Add($"Resilience:{profileKey}:{nameof(ResilienceOptions.OverallTimeout)}", options.OverallTimeout.ToString());
-            appSettings.Add($"Resilience:{profileKey}:{nameof(ResilienceOptions.UseExponentialBackoff)}", options.UseExponentialBackoff.ToString().ToLowerInvariant());
+            appSettings.Add($"Resilience:{key}:{nameof(ResilienceOptions.MaxRetryAttempts)}", options.MaxRetryAttempts.ToString());
+            appSettings.Add($"Resilience:{key}:{nameof(ResilienceOptions.Delay)}", options.Delay.ToString());
+            appSettings.Add($"Resilience:{key}:{nameof(ResilienceOptions.OverallTimeout)}", options.OverallTimeout.ToString());
+            appSettings.Add($"Resilience:{key}:{nameof(ResilienceOptions.UseExponentialBackoff)}", options.UseExponentialBackoff.ToString().ToLowerInvariant());
         }
 
         var configuration = new ConfigurationBuilder()

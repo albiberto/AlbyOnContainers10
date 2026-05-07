@@ -1,8 +1,11 @@
 ﻿namespace AlbyOnContainers.Kernel.Persistence.UnitTests;
 
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 
+/// <summary>
+///     Base class for persistence tests.
+///     Manages the strict lifecycle of the HostBuilder and provides shared assertion logic.
+/// </summary>
 public abstract class PersistenceTestBase
 {
     private IHost? _host;
@@ -13,7 +16,7 @@ public abstract class PersistenceTestBase
     [SetUp]
     public void SetUpBase()
     {
-        // Isolamento totale: un nuovo Host e un nuovo Kernel per ogni test
+        // Arrange: Initialize a fresh builder and kernel for each test to guarantee complete isolation.
         HostBuilder = Host.CreateApplicationBuilder();
         KernelBuilder = HostBuilder.AddKernel();
     }
@@ -25,14 +28,5 @@ public abstract class PersistenceTestBase
     {
         _host = HostBuilder.Build();
         return _host;
-    }
-
-    protected void AddInMemoryConfiguration(Dictionary<string, string?> appSettings)
-    {
-        var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(appSettings)
-            .Build();
-
-        HostBuilder.Configuration.AddConfiguration(configuration);
     }
 }
