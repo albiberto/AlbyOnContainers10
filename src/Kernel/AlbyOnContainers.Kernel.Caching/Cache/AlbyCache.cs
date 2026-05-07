@@ -4,7 +4,7 @@ namespace AlbyOnContainers.Kernel.Caching.Cache;
 
 public sealed class AlbyCache(IFusionCache cache) : IAlbyCache
 {
-    public async Task<T?> GetOrSetAsync<T>(string key, Func<CancellationToken, Task<T>> factory, CancellationToken ct)
+    public async Task<T?> GetOrSetAsync<T>(string key, Func<CancellationToken, Task<T>> factory, CancellationToken ct = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(key);
         ArgumentNullException.ThrowIfNull(factory);
@@ -15,14 +15,14 @@ public sealed class AlbyCache(IFusionCache cache) : IAlbyCache
             token: ct);
     }
 
-    public Task RemoveAsync(string key, CancellationToken ct)
+    public Task RemoveAsync(string key, CancellationToken ct = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(key);
 
         return cache.RemoveAsync(key, token: ct).AsTask();
     }
 
-    public Task SetAsync<T>(string key, T value, CancellationToken ct)
+    public Task SetAsync<T>(string key, T value, CancellationToken ct = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(key);
 

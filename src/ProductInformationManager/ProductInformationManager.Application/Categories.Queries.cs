@@ -15,7 +15,7 @@ public class GetRootCategoriesConsumer(IAlbyCache cache, ProductContext db) : IC
     public async Task Consume(ConsumeContext<GetRootCategories> context)
     {
         var all = await cache.GetOrSetAsync(
-            CacheKey.For<Category>("All"),
+            CacheKey.Type<Category>("All"),
             ct => db.Categories
                 .AsNoTracking()
                 .OrderBy(c => c.Path)
@@ -44,7 +44,7 @@ public class GetChildCategoriesConsumer(IAlbyCache cache, ProductContext db) : I
     public async Task Consume(ConsumeContext<GetChildCategories> context)
     {
         var all = await cache.GetOrSetAsync(
-            CacheKey.For<Category>("All"),
+            CacheKey.Type<Category>("All"),
             ct => db.Categories
                 .AsNoTracking()
                 .OrderBy(c => c.Path)
@@ -73,7 +73,7 @@ public class GetCategoryByIdConsumer(IAlbyCache cache, ProductContext db) : ICon
     public async Task Consume(ConsumeContext<GetCategoryById> context)
     {
         var all = await cache.GetOrSetAsync(
-            CacheKey.For<Category>("All"),
+            CacheKey.Type<Category>("All"),
             ct => db.Categories
                 .AsNoTracking()
                 .OrderBy(c => c.Path)
@@ -111,7 +111,7 @@ public class SearchCategoriesConsumer(IAlbyCache cache, ProductContext db) : ICo
         var lowerPattern = pattern.ToLowerInvariant();
 
         var all = await cache.GetOrSetAsync(
-            CacheKey.For<Category>("All"),
+            CacheKey.Type<Category>("All"),
             ct => db.Categories
                 .AsNoTracking()
                 .OrderBy(c => c.Path)

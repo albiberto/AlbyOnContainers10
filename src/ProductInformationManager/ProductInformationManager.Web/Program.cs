@@ -22,6 +22,10 @@ var redisConnection = builder.Configuration.GetConnectionString("cache") ?? thro
 var rabbitConnection = new Uri(builder.Configuration.GetConnectionString("messaging") ?? throw new InvalidOperationException("Missing connection string 'messaging'."));
 
 builder.AddKernel()
+    .WithCaching(options =>
+    {
+        options.RedisConnectionString = redisConnection;
+    })
     .WithResilience("Database")
     .WithResilience("Messaging");
 
