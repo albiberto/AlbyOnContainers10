@@ -64,7 +64,7 @@ public sealed class ResilienceExtensionsValidTests : ResilienceTestBase
     }
 
     [Test]
-    public void WithResilience_OptInCircuitBreaker_UsingLambda_ShouldBindNestedOptions()
+    public void WithResilience_CircuitBreakerOverride_UsingLambda_ShouldBindNestedOptions()
     {
         // Arrange
         const string key = "with-circuit-breaker";

@@ -16,12 +16,10 @@ public sealed record ResilienceOptions : KernelOptions<ResilienceOptions>, IVali
 
     public bool UseExponentialBackoff { get; set; } = true;
 
-    public CircuitBreakerOptions? CircuitBreaker { get; set; }
+    public CircuitBreakerOptions CircuitBreaker { get; set; } = new();
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
-        if (CircuitBreaker is null) yield break;
-
         var nestedContext = new ValidationContext(CircuitBreaker);
         var nestedResults = new List<ValidationResult>();
 

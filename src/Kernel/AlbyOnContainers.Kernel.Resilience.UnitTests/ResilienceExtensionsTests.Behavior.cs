@@ -48,10 +48,12 @@ public sealed class ResilienceExtensionsBehaviorTests : ResilienceTestBase
     }
 
     [Test]
-    public async Task Pipeline_WithoutCircuitBreaker_DoesNotThrowBrokenCircuitException()
+    public async Task Pipeline_WithDefaultCircuitBreaker_DoesNotOpenAfterFewFailures()
     {
-        // Arrange
-        const string key = "no-circuit-breaker";
+        // The breaker is always active. This test verifies that the default thresholds
+        // (MinimumThroughput = 10) are conservative enough to NOT open the circuit on a
+        // small burst of failures, avoiding false positives in production workloads.
+        const string key = "default-cb";
         KernelBuilder.WithResilience(key, opt =>
         {
             opt.MaxRetryAttempts = 1;
@@ -63,21 +65,25 @@ public sealed class ResilienceExtensionsBehaviorTests : ResilienceTestBase
         var host = BuildHost();
         var pipeline = host.Services.GetRequiredKeyedService<ResiliencePipeline>(key);
 
-        // Act
+        // Act — fail a handful of times, far below the default MinimumThroughput.
+        for (var i = 0; i < 3; i++)
+        {
+            try { await pipeline.ExecuteAsync(_ => throw new InvalidOperationException("boom")); }
+            catch (InvalidOperationException) { }
+        }
+
+        // Assert — the next call still hits the user code (no BrokenCircuitException).
         Exception? observed = null;
         try
         {
-            await pipeline.ExecuteAsync(_ => throw new InvalidOperationException("boom"));
+            await pipeline.ExecuteAsync(_ => throw new InvalidOperationException("still-on"));
         }
         catch (Exception ex)
         {
             observed = ex;
         }
 
-        // Assert
-        Assert.That(observed, Is.Not.Null);
-        Assert.That(observed, Is.Not.InstanceOf<BrokenCircuitException>(), "Without opt-in CircuitBreaker no breaker should be active.");
-        Assert.That(observed, Is.InstanceOf<InvalidOperationException>());
+        Assert.That(observed, Is.InstanceOf<InvalidOperationException>(), "Defaults should not open the breaker after a handful of failures.");
     }
 
     [Test]

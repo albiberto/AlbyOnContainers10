@@ -70,7 +70,7 @@ public static class ResilienceExtensions
                 var options = optionsMonitor.Get(key);
 
                 // Polly v8 execution order is outer-to-inner (top-to-bottom):
-                // Timeout (outer) -> Retry -> Circuit Breaker (inner, opt-in).
+                // Timeout (outer) -> Retry -> Circuit Breaker (inner, always active).
                 builder.AddTimeout(options.OverallTimeout);
 
                 builder.AddRetry(new()
@@ -84,19 +84,18 @@ public static class ResilienceExtensions
                         .Handle<Exception>(ex => ex is not (OperationCanceledException or BrokenCircuitException or IsolatedCircuitException))
                 });
 
-                if (options.CircuitBreaker is { } circuit)
+                // Circuit breaker is always active (forced best practice). Defaults are conservative
+                // enough to avoid false positives; consumers can override values per-pipeline via options.
+                builder.AddCircuitBreaker(new()
                 {
-                    builder.AddCircuitBreaker(new()
-                    {
-                        FailureRatio = circuit.FailureRatio,
-                        MinimumThroughput = circuit.MinimumThroughput,
-                        BreakDuration = circuit.BreakDuration,
-                        SamplingDuration = circuit.SamplingDuration,
-                        // The breaker should not count cancellations against the failure ratio.
-                        ShouldHandle = new PredicateBuilder()
-                            .Handle<Exception>(ex => ex is not OperationCanceledException)
-                    });
-                }
+                    FailureRatio = options.CircuitBreaker.FailureRatio,
+                    MinimumThroughput = options.CircuitBreaker.MinimumThroughput,
+                    BreakDuration = options.CircuitBreaker.BreakDuration,
+                    SamplingDuration = options.CircuitBreaker.SamplingDuration,
+                    // The breaker should not count cancellations against the failure ratio.
+                    ShouldHandle = new PredicateBuilder()
+                        .Handle<Exception>(ex => ex is not OperationCanceledException)
+                });
             });
     }
 }

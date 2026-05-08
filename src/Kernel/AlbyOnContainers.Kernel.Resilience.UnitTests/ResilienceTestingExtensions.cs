@@ -25,7 +25,7 @@ public static class ResilienceTestingExtensions
             appSettings.Add($"Resilience:{key}:{nameof(ResilienceOptions.OverallTimeout)}", options.OverallTimeout.ToString());
             appSettings.Add($"Resilience:{key}:{nameof(ResilienceOptions.UseExponentialBackoff)}", options.UseExponentialBackoff.ToString().ToLowerInvariant());
 
-            if (options.CircuitBreaker is not { } circuit) continue;
+            var circuit = options.CircuitBreaker;
 
             appSettings.Add($"Resilience:{key}:{nameof(ResilienceOptions.CircuitBreaker)}:{nameof(CircuitBreakerOptions.FailureRatio)}", circuit.FailureRatio.ToString(System.Globalization.CultureInfo.InvariantCulture));
             appSettings.Add($"Resilience:{key}:{nameof(ResilienceOptions.CircuitBreaker)}:{nameof(CircuitBreakerOptions.MinimumThroughput)}", circuit.MinimumThroughput.ToString());
@@ -58,18 +58,11 @@ public static class ResilienceTestingExtensions
             Assert.That(actualOptions.OverallTimeout, Is.EqualTo(expectedOptions.OverallTimeout), nameof(actualOptions.OverallTimeout));
             Assert.That(actualOptions.UseExponentialBackoff, Is.EqualTo(expectedOptions.UseExponentialBackoff), nameof(actualOptions.UseExponentialBackoff));
 
-            if (expectedOptions.CircuitBreaker is { } expectedCircuit)
-            {
-                Assert.That(actualOptions.CircuitBreaker, Is.Not.Null, "CircuitBreaker should be bound when configured.");
-                Assert.That(actualOptions.CircuitBreaker!.FailureRatio, Is.EqualTo(expectedCircuit.FailureRatio), nameof(expectedCircuit.FailureRatio));
-                Assert.That(actualOptions.CircuitBreaker.MinimumThroughput, Is.EqualTo(expectedCircuit.MinimumThroughput), nameof(expectedCircuit.MinimumThroughput));
-                Assert.That(actualOptions.CircuitBreaker.BreakDuration, Is.EqualTo(expectedCircuit.BreakDuration), nameof(expectedCircuit.BreakDuration));
-                Assert.That(actualOptions.CircuitBreaker.SamplingDuration, Is.EqualTo(expectedCircuit.SamplingDuration), nameof(expectedCircuit.SamplingDuration));
-            }
-            else
-            {
-                Assert.That(actualOptions.CircuitBreaker, Is.Null, "CircuitBreaker should be null when not configured.");
-            }
+            // Circuit breaker is always present (forced best practice).
+            Assert.That(actualOptions.CircuitBreaker.FailureRatio, Is.EqualTo(expectedOptions.CircuitBreaker.FailureRatio), nameof(actualOptions.CircuitBreaker.FailureRatio));
+            Assert.That(actualOptions.CircuitBreaker.MinimumThroughput, Is.EqualTo(expectedOptions.CircuitBreaker.MinimumThroughput), nameof(actualOptions.CircuitBreaker.MinimumThroughput));
+            Assert.That(actualOptions.CircuitBreaker.BreakDuration, Is.EqualTo(expectedOptions.CircuitBreaker.BreakDuration), nameof(actualOptions.CircuitBreaker.BreakDuration));
+            Assert.That(actualOptions.CircuitBreaker.SamplingDuration, Is.EqualTo(expectedOptions.CircuitBreaker.SamplingDuration), nameof(actualOptions.CircuitBreaker.SamplingDuration));
 
             Assert.That(pipelineProvider, Is.Not.Null, "Polly ResiliencePipelineProvider must be registered.");
             Assert.That(bridge, Is.Not.Null, $"Keyed service for {expectedKey} must be registered.");
