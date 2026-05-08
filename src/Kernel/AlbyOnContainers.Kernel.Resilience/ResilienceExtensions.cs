@@ -1,4 +1,4 @@
-﻿// ReSharper disable once CheckNamespace
+// ReSharper disable once CheckNamespace
 
 namespace Microsoft.Extensions.DependencyInjection;
 
@@ -6,6 +6,7 @@ using AlbyOnContainers.Kernel;
 using AlbyOnContainers.Kernel.Resilience.Options;
 using Options;
 using Polly;
+using Polly.CircuitBreaker;
 using Polly.Registry;
 
 public static class ResilienceExtensions
@@ -68,18 +69,34 @@ public static class ResilienceExtensions
                 var optionsMonitor = context.ServiceProvider.GetRequiredService<IOptionsMonitor<ResilienceOptions>>();
                 var options = optionsMonitor.Get(key);
 
-                // Polly v8 execution order is outer-to-inner (top-to-bottom).
-                // 1. Overall Timeout (encompasses all retries)
+                // Polly v8 execution order is outer-to-inner (top-to-bottom):
+                // Timeout (outer) -> Retry -> Circuit Breaker (inner, opt-in).
                 builder.AddTimeout(options.OverallTimeout);
 
-                // 2. Retry Strategy
                 builder.AddRetry(new()
                 {
                     MaxRetryAttempts = options.MaxRetryAttempts,
                     Delay = options.Delay,
                     BackoffType = options.UseExponentialBackoff ? DelayBackoffType.Exponential : DelayBackoffType.Constant,
-                    ShouldHandle = new PredicateBuilder().Handle<Exception>()
+                    // Skip retry on cancellation (cooperative cancellation must propagate).
+                    // Skip retry on a broken circuit: the breaker decides when traffic resumes.
+                    ShouldHandle = new PredicateBuilder()
+                        .Handle<Exception>(ex => ex is not (OperationCanceledException or BrokenCircuitException or IsolatedCircuitException))
                 });
+
+                if (options.CircuitBreaker is { } circuit)
+                {
+                    builder.AddCircuitBreaker(new()
+                    {
+                        FailureRatio = circuit.FailureRatio,
+                        MinimumThroughput = circuit.MinimumThroughput,
+                        BreakDuration = circuit.BreakDuration,
+                        SamplingDuration = circuit.SamplingDuration,
+                        // The breaker should not count cancellations against the failure ratio.
+                        ShouldHandle = new PredicateBuilder()
+                            .Handle<Exception>(ex => ex is not OperationCanceledException)
+                    });
+                }
             });
     }
 }

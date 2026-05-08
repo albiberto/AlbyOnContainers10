@@ -17,6 +17,14 @@ public sealed class ResilienceExtensionsInvalidTests : ResilienceTestBase
         UseExponentialBackoff = true
     };
     
+    private static CircuitBreakerOptions ValidCircuitBreaker => new()
+    {
+        FailureRatio = 0.5,
+        MinimumThroughput = 10,
+        BreakDuration = TimeSpan.FromSeconds(30),
+        SamplingDuration = TimeSpan.FromSeconds(60)
+    };
+
     private static IEnumerable<TestCaseData> InvalidOptionsSource() =>
     [
         // MaxRetryAttempts Boundaries [Range(1, 10)]
@@ -29,7 +37,14 @@ public sealed class ResilienceExtensionsInvalidTests : ResilienceTestBase
 
         // OverallTimeout Boundaries [Range("00:00:05", "00:05:00")]
         CreateTestCase("OverallTimeout_BelowMinimum", ValidOptions with { OverallTimeout = TimeSpan.FromSeconds(4) }),
-        CreateTestCase("OverallTimeout_AboveMaximum", ValidOptions with { OverallTimeout = TimeSpan.FromSeconds(321) })
+        CreateTestCase("OverallTimeout_AboveMaximum", ValidOptions with { OverallTimeout = TimeSpan.FromSeconds(321) }),
+
+        // Nested CircuitBreaker validation (only triggered when CircuitBreaker is not null)
+        CreateTestCase("CircuitBreaker_FailureRatio_BelowMinimum", ValidOptions with { CircuitBreaker = ValidCircuitBreaker with { FailureRatio = 0.0 } }),
+        CreateTestCase("CircuitBreaker_FailureRatio_AboveMaximum", ValidOptions with { CircuitBreaker = ValidCircuitBreaker with { FailureRatio = 1.5 } }),
+        CreateTestCase("CircuitBreaker_MinimumThroughput_BelowMinimum", ValidOptions with { CircuitBreaker = ValidCircuitBreaker with { MinimumThroughput = 1 } }),
+        CreateTestCase("CircuitBreaker_BreakDuration_BelowMinimum", ValidOptions with { CircuitBreaker = ValidCircuitBreaker with { BreakDuration = TimeSpan.Zero } }),
+        CreateTestCase("CircuitBreaker_SamplingDuration_BelowMinimum", ValidOptions with { CircuitBreaker = ValidCircuitBreaker with { SamplingDuration = TimeSpan.FromSeconds(1) } })
     ];
     
     private static TestCaseData CreateTestCase(string key, ResilienceOptions options) => new TestCaseData(key, options).SetName($"Invalid_{key}");
@@ -62,6 +77,7 @@ public sealed class ResilienceExtensionsInvalidTests : ResilienceTestBase
             opt.Delay = options.Delay;
             opt.OverallTimeout = options.OverallTimeout;
             opt.UseExponentialBackoff = options.UseExponentialBackoff;
+            opt.CircuitBreaker = options.CircuitBreaker;
         });
         
         var host = BuildHost();

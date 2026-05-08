@@ -62,4 +62,40 @@ public sealed class ResilienceExtensionsValidTests : ResilienceTestBase
         // Assert
         foreach (var (key, expected) in profiles) host.Services.AssertResilienceProfile(key, expected);
     }
+
+    [Test]
+    public void WithResilience_OptInCircuitBreaker_UsingLambda_ShouldBindNestedOptions()
+    {
+        // Arrange
+        const string key = "with-circuit-breaker";
+        var expected = new Options.ResilienceOptions
+        {
+            MaxRetryAttempts = 3,
+            Delay = TimeSpan.FromSeconds(1),
+            OverallTimeout = TimeSpan.FromSeconds(10),
+            UseExponentialBackoff = true,
+            CircuitBreaker = new()
+            {
+                FailureRatio = 0.5,
+                MinimumThroughput = 5,
+                BreakDuration = TimeSpan.FromSeconds(10),
+                SamplingDuration = TimeSpan.FromSeconds(30)
+            }
+        };
+
+        // Act
+        KernelBuilder.WithResilience(key, opt =>
+        {
+            opt.MaxRetryAttempts = expected.MaxRetryAttempts;
+            opt.Delay = expected.Delay;
+            opt.OverallTimeout = expected.OverallTimeout;
+            opt.UseExponentialBackoff = expected.UseExponentialBackoff;
+            opt.CircuitBreaker = expected.CircuitBreaker;
+        });
+
+        var host = BuildHost();
+
+        // Assert
+        host.Services.AssertResilienceProfile(key, expected);
+    }
 }
