@@ -1,13 +1,12 @@
+namespace ProductInformationManager.Application.Consumers;
+
+using AlbyOnContainers.Kernel.Caching.Abstractions;
 using AlbyOnContainers.Kernel.Caching.Cache;
 using AlbyOnContainers.Kernel.Messaging.Attributes;
 using MassTransit;
 using Microsoft.Extensions.Logging;
 using ProductInformationManager.Contracts;
 using ProductInformationManager.Domain;
-
-namespace ProductInformationManager.Application.Consumers;
-
-using AlbyOnContainers.Kernel.Caching.Abstractions;
 
 [EventConsumer]
 public class CategoryConsumer(ICache cache, ILogger<CategoryConsumer> logger) :

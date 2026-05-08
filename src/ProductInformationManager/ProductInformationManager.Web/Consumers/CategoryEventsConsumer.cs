@@ -1,12 +1,11 @@
-using AlbyOnContainers.Kernel.Caching.Cache;
-using ProductInformationManager.Contracts;
-using MassTransit;
-using ProductInformationManager.Domain;
-using ProductInformationManager.Web.Notifiers;
-
 namespace ProductInformationManager.Web.Consumers;
 
 using AlbyOnContainers.Kernel.Caching.Abstractions;
+using AlbyOnContainers.Kernel.Caching.Cache;
+using MassTransit;
+using ProductInformationManager.Contracts;
+using ProductInformationManager.Domain;
+using ProductInformationManager.Web.Notifiers;
 
 public class CategoryEventsConsumer(
     CategoryNotifier notifier,

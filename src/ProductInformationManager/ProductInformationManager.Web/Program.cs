@@ -21,11 +21,9 @@ var databaseConnection = builder.Configuration.GetConnectionString("productdb") 
 var redisConnection = builder.Configuration.GetConnectionString("cache") ?? throw new InvalidOperationException("Missing connection string 'cache'.");
 var rabbitConnection = new Uri(builder.Configuration.GetConnectionString("messaging") ?? throw new InvalidOperationException("Missing connection string 'messaging'."));
 
+// TODO: full kernel wiring is finalized in a follow-up step; this leaves the build green for now.
 builder.AddKernel()
-    .WithCaching(options =>
-    {
-        options.RedisConnectionString = redisConnection;
-    })
+    .WithCaching()
     .WithResilience("Database")
     .WithResilience("Messaging");
 

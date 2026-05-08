@@ -1,14 +1,12 @@
-using AlbyOnContainers.Kernel.Caching.Cache;
-using AlbyOnContainers.Kernel.Messaging.Attributes;
-using MassTransit;
-using Microsoft.EntityFrameworkCore;
-using ProductInformationManager.Domain;
-using ProductInformationManager.Infrastructure;
-using ProductInformationManager.Messages;
-
 namespace ProductInformationManager.Application;
 
 using AlbyOnContainers.Kernel.Caching.Abstractions;
+using AlbyOnContainers.Kernel.Caching.Cache;
+using AlbyOnContainers.Kernel.Messaging.Attributes;
+using MassTransit;
+using ProductInformationManager.Domain;
+using ProductInformationManager.Infrastructure;
+using ProductInformationManager.Messages;
 
 [MediatorConsumer]
 public class GetRootCategoriesConsumer(ICache cache, ProductContext db) : IConsumer<GetRootCategories>
@@ -17,25 +15,15 @@ public class GetRootCategoriesConsumer(ICache cache, ProductContext db) : IConsu
     {
         var all = await cache.GetOrSetAsync(
             Key.Type<Category>("All"),
-            ct => db.Categories
-                .AsNoTracking()
-                .OrderBy(c => c.Path)
-                .Select(c => new CategoryDto(
-                    c.Id.Value,
-                    c.Name,
-                    c.Description,
-                    c.Path,
-                    c.ParentId != null ? c.ParentId.Value : null,
-                    c.Children.Any()))
-                .ToListAsync(ct),
+            db.GetAllCategoriesAsync,
             context.CancellationToken) ?? [];
-        
+
         var roots = all
             .Where(c => c.ParentId == null)
             .OrderBy(c => c.Name)
             .ToList();
-        
-        await context.RespondAsync(new GetCategoriesResult(roots)); 
+
+        await context.RespondAsync(new GetCategoriesResult(roots));
     }
 }
 
@@ -46,25 +34,15 @@ public class GetChildCategoriesConsumer(ICache cache, ProductContext db) : ICons
     {
         var all = await cache.GetOrSetAsync(
             Key.Type<Category>("All"),
-            ct => db.Categories
-                .AsNoTracking()
-                .OrderBy(c => c.Path)
-                .Select(c => new CategoryDto(
-                    c.Id.Value,
-                    c.Name,
-                    c.Description,
-                    c.Path,
-                    c.ParentId != null ? c.ParentId.Value : null,
-                    c.Children.Any()))
-                .ToListAsync(ct),
+            db.GetAllCategoriesAsync,
             context.CancellationToken) ?? [];
-        
+
         var children = all
             .Where(c => c.ParentId == context.Message.ParentId)
             .OrderBy(c => c.Name)
             .ToList();
 
-        await context.RespondAsync(new GetCategoriesResult(children)); 
+        await context.RespondAsync(new GetCategoriesResult(children));
     }
 }
 
@@ -75,21 +53,11 @@ public class GetCategoryByIdConsumer(ICache cache, ProductContext db) : IConsume
     {
         var all = await cache.GetOrSetAsync(
             Key.Type<Category>("All"),
-            ct => db.Categories
-                .AsNoTracking()
-                .OrderBy(c => c.Path)
-                .Select(c => new CategoryDto(
-                    c.Id.Value,
-                    c.Name,
-                    c.Description,
-                    c.Path,
-                    c.ParentId != null ? c.ParentId.Value : null,
-                    c.Children.Any()))
-                .ToListAsync(ct),
+            db.GetAllCategoriesAsync,
             context.CancellationToken) ?? [];
-        
+
         var category = all.FirstOrDefault(c => c.Id == context.Message.Id);
-        
+
         if (category is null) throw new DomainException($"Category with ID {context.Message.Id} not found.");
 
         await context.RespondAsync(new GetCategoryResult(category));
@@ -113,17 +81,7 @@ public class SearchCategoriesConsumer(ICache cache, ProductContext db) : IConsum
 
         var all = await cache.GetOrSetAsync(
             Key.Type<Category>("All"),
-            ct => db.Categories
-                .AsNoTracking()
-                .OrderBy(c => c.Path)
-                .Select(c => new CategoryDto(
-                    c.Id.Value,
-                    c.Name,
-                    c.Description,
-                    c.Path,
-                    c.ParentId != null ? c.ParentId.Value : null,
-                    c.Children.Any()))
-                .ToListAsync(ct),
+            db.GetAllCategoriesAsync,
             context.CancellationToken) ?? [];
 
         var results = all
