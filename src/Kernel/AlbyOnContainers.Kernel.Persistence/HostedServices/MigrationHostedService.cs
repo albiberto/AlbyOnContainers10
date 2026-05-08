@@ -21,6 +21,7 @@ public sealed partial class MigrationHostedService<TDbContext>(
     [FromKeyedServices(nameof(MigrationHostedService<>))]
     ResiliencePipeline pipeline,
     IOptions<PersistenceOptions> options,
+    MigrationTelemetry telemetry,
     ILogger<MigrationHostedService<TDbContext>> logger)
     : IHostedService
     where TDbContext : DbContext
@@ -36,7 +37,7 @@ public sealed partial class MigrationHostedService<TDbContext>(
             return;
         }
 
-        using var activity = MigrationTelemetry.ActivitySource.StartActivity($"Migrate {_dbContextName}");
+        using var activity = telemetry.ActivitySource.StartActivity($"Migrate {_dbContextName}");
         activity?.SetTag("db.system.name", _dbContextName);
 
         try

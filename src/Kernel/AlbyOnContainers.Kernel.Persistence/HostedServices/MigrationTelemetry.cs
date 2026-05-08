@@ -1,13 +1,17 @@
-﻿namespace AlbyOnContainers.Kernel.Persistence.HostedServices;
+namespace AlbyOnContainers.Kernel.Persistence.HostedServices;
 
 using System.Diagnostics;
+using Microsoft.Extensions.Options;
+using Options;
 
 /// <summary>
-///     Shared <see cref="ActivitySource" /> for all migration hosted services so that
-///     every closed generic <see cref="MigrationHostedService{TDbContext}" /> emits
-///     activities under a single, stable telemetry name.
+///     Shared <see cref="ActivitySource" /> for migration hosted services. The source name
+///     is namespaced via <see cref="PersistenceOptions.MetricPrefix" /> so each microservice
+///     emits activities under its own OpenTelemetry namespace.
 /// </summary>
-internal static class MigrationTelemetry
+public sealed class MigrationTelemetry(IOptions<PersistenceOptions> options) : IDisposable
 {
-    public static readonly ActivitySource ActivitySource = new("AlbyOnContainers.Kernel.Persistence.Migrations");
+    public ActivitySource ActivitySource { get; } = new($"{options.Value.MetricPrefix}.persistence.migration");
+
+    public void Dispose() => ActivitySource.Dispose();
 }

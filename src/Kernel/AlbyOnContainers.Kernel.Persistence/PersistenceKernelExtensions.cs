@@ -11,6 +11,7 @@ using AlbyOnContainers.Kernel.Persistence.Options;
 using EntityFrameworkCore;
 using EntityFrameworkCore.Diagnostics;
 using EntityFrameworkCore.Infrastructure;
+using Extensions;
 using Options;
 
 public static class PersistenceKernelExtensions
@@ -85,6 +86,7 @@ public static class PersistenceKernelExtensions
 
             builder.Services.AddHealthChecks().AddDbContextCheck<TDbContext>();
 
+            builder.Services.TryAddSingleton<MigrationTelemetry>();
             builder.Services.AddHostedService<MigrationHostedService<TDbContext>>();
         }
     }
