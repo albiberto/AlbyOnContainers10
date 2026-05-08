@@ -6,17 +6,34 @@ using AlbyOnContainers.Kernel;
 using AlbyOnContainers.Kernel.Caching.Abstractions;
 using AlbyOnContainers.Kernel.Caching.Cache;
 using AlbyOnContainers.Kernel.Caching.Options;
+using Caching.StackExchangeRedis;
+using Microsoft.Extensions.Hosting;
 using Options;
 using ZiggyCreatures.Caching.Fusion;
 using ZiggyCreatures.Caching.Fusion.Backplane.StackExchangeRedis;
+using ZiggyCreatures.Caching.Fusion.Serialization;
 
+/// <summary>
+///     Fluent extensions to register FusionCache (L1 memory + L2 Redis backplane) on the Kernel builder.
+/// </summary>
+/// <remarks>
+///     <para>
+///         Every <c>WithCaching</c> overload assumes that an <see cref="StackExchange.Redis.IConnectionMultiplexer" />
+///         (or a keyed one for keyed registrations) is already present in the DI container. The recommended way to
+///         provide it is Aspire's <c>builder.AddRedisClient("cache")</c>, which must run BEFORE <c>AddKernel()</c>.
+///     </para>
+///     <para>
+///         A <see cref="Cache.CachingBackplaneProbe" /> is registered automatically and validates the multiplexer at
+///         application startup, failing fast with an explicit error if the prerequisite is missing.
+///     </para>
+/// </remarks>
 public static class CachingKernelExtensions
 {
     // --- PUBLIC FACADE LOGIC ---
 
     extension(IKernelBuilder builder)
     {
-        // 1. Standard Caching (IConfiguration Binding)
+        /// <summary>Registers default caching using configuration binding.</summary>
         public IKernelBuilder WithCaching(string? configurationSection = null)
         {
             var section = configurationSection ?? CachingOptions.Section;
@@ -28,7 +45,7 @@ public static class CachingKernelExtensions
             return builder;
         }
 
-        // 2. Standard Caching (Lambda Configuration)
+        /// <summary>Registers default caching using a configuration lambda.</summary>
         public IKernelBuilder WithCaching(Action<CachingOptions> configureOptions)
         {
             ArgumentNullException.ThrowIfNull(configureOptions);
@@ -40,7 +57,7 @@ public static class CachingKernelExtensions
             return builder;
         }
 
-        // 3. Keyed Caching (IConfiguration Binding)
+        /// <summary>Registers a keyed caching pipeline bound from configuration.</summary>
         public IKernelBuilder WithKeyedCaching(string serviceKey, string? configurationSection = null)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(serviceKey);
@@ -49,12 +66,12 @@ public static class CachingKernelExtensions
 
             builder.Services.BindOptions(serviceKey, section);
             builder.Services.AddFusionCacheInternal(serviceKey);
-            builder.Services.AddKeyedSingleton<ICache, Cache>(serviceKey);
+            builder.Services.AddKeyedCacheBridge(serviceKey);
 
             return builder;
         }
 
-        // 4. Keyed Caching (Lambda Configuration)
+        /// <summary>Registers a keyed caching pipeline using a configuration lambda.</summary>
         public IKernelBuilder WithKeyedCaching(string serviceKey, Action<CachingOptions> configureOptions)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(serviceKey);
@@ -62,7 +79,7 @@ public static class CachingKernelExtensions
 
             builder.Services.ConfigureOptions(serviceKey, configureOptions);
             builder.Services.AddFusionCacheInternal(serviceKey);
-            builder.Services.AddKeyedSingleton<ICache, Cache>(serviceKey);
+            builder.Services.AddKeyedCacheBridge(serviceKey);
 
             return builder;
         }
@@ -72,6 +89,12 @@ public static class CachingKernelExtensions
 
     extension(IServiceCollection services)
     {
+        // Bridges a keyed ICache to the named IFusionCache produced by AddFusionCache(name)
+        // by resolving the cache through IFusionCacheProvider.
+        private void AddKeyedCacheBridge(string serviceKey) =>
+            services.AddKeyedSingleton<ICache>(serviceKey, (sp, key) =>
+                new Cache(sp.GetRequiredService<IFusionCacheProvider>().GetCache((string)key!)));
+
         private void BindOptions(string name, string section) =>
             services.AddOptions<CachingOptions>(name)
                 .BindConfiguration(section)
@@ -117,6 +140,27 @@ public static class CachingKernelExtensions
             services.AddFusionCacheNeueccMessagePackSerializer();
 
             cacheBuilder.WithRegisteredBackplane();
+
+            // L2 distributed cache (Redis). Currently wired only for the default cache because
+            // IDistributedCache cannot be keyed via AddStackExchangeRedisCache; keyed caches
+            // operate as L1 + backplane only until a per-key distributed cache is needed.
+            if (name == Options.DefaultName)
+            {
+                services.AddOptions<RedisCacheOptions>()
+                    .Configure<IServiceProvider>((redis, sp) =>
+                    {
+                        redis.ConnectionMultiplexerFactory = () =>
+                            Task.FromResult(sp.GetRequiredService<StackExchange.Redis.IConnectionMultiplexer>());
+                    });
+
+                services.AddStackExchangeRedisCache(_ => { });
+
+                cacheBuilder
+                    .WithRegisteredDistributedCache()
+                    .WithRegisteredSerializer();
+            }
+
+            services.AddSingleton<IHostedService>(sp => new CachingBackplaneProbe(sp, name == Options.DefaultName ? null : name));
         }
     }
 }

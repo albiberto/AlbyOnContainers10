@@ -1,6 +1,8 @@
 namespace AlbyOnContainers.Kernel.Caching.Cache;
 
-public readonly record struct Key(string Value)
+using Abstractions;
+
+public readonly record struct Key(string Value) : IKey
 {
     public static Key Type<T>(string? id = null)
     {
