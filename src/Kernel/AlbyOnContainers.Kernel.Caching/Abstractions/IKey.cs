@@ -1,6 +1,6 @@
 ﻿namespace AlbyOnContainers.Kernel.Caching.Abstractions;
 
-public interface ICacheKey
+public interface IKey
 {
     string Value { get; }
 }

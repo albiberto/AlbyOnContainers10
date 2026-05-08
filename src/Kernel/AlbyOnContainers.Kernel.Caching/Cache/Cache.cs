@@ -2,7 +2,9 @@ using ZiggyCreatures.Caching.Fusion;
 
 namespace AlbyOnContainers.Kernel.Caching.Cache;
 
-public sealed class AlbyCache(IFusionCache cache) : IAlbyCache
+using Abstractions;
+
+public sealed class Cache(IFusionCache cache) : ICache
 {
     public async Task<T?> GetOrSetAsync<T>(string key, Func<CancellationToken, Task<T>> factory, CancellationToken ct = default)
     {

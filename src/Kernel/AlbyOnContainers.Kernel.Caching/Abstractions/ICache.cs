@@ -1,6 +1,6 @@
-namespace AlbyOnContainers.Kernel.Caching.Cache;
+namespace AlbyOnContainers.Kernel.Caching.Abstractions;
 
-public interface IAlbyCache
+public interface ICache
 {
     Task<T?> GetOrSetAsync<T>(string key, Func<CancellationToken, Task<T>> factory, CancellationToken ct = default);
 

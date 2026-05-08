@@ -5,8 +5,6 @@ namespace AlbyOnContainers.Kernel.Caching.Options;
 
 public record CachingOptions: KernelOptions<CachingOptions>
 {
-    [Required(AllowEmptyStrings = false)] public string RedisConnectionString { get; set; } = string.Empty;
-
     public TimeSpan Duration { get; set; } = TimeSpan.FromMinutes(30);
 
     public TimeSpan FailSafeMaxDuration { get; set; } = TimeSpan.FromHours(2);

@@ -1,5 +1,4 @@
 using AlbyOnContainers.Kernel.Caching.Cache;
-using AlbyOnContainers.Kernel.Caching.Keys;
 using AlbyOnContainers.Kernel.Messaging.Attributes;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
@@ -9,13 +8,15 @@ using ProductInformationManager.Messages;
 
 namespace ProductInformationManager.Application;
 
+using AlbyOnContainers.Kernel.Caching.Abstractions;
+
 [MediatorConsumer]
-public class GetRootCategoriesConsumer(IAlbyCache cache, ProductContext db) : IConsumer<GetRootCategories>
+public class GetRootCategoriesConsumer(ICache cache, ProductContext db) : IConsumer<GetRootCategories>
 {
     public async Task Consume(ConsumeContext<GetRootCategories> context)
     {
         var all = await cache.GetOrSetAsync(
-            CacheKey.Type<Category>("All"),
+            Key.Type<Category>("All"),
             ct => db.Categories
                 .AsNoTracking()
                 .OrderBy(c => c.Path)
@@ -39,12 +40,12 @@ public class GetRootCategoriesConsumer(IAlbyCache cache, ProductContext db) : IC
 }
 
 [MediatorConsumer]
-public class GetChildCategoriesConsumer(IAlbyCache cache, ProductContext db) : IConsumer<GetChildCategories>
+public class GetChildCategoriesConsumer(ICache cache, ProductContext db) : IConsumer<GetChildCategories>
 {
     public async Task Consume(ConsumeContext<GetChildCategories> context)
     {
         var all = await cache.GetOrSetAsync(
-            CacheKey.Type<Category>("All"),
+            Key.Type<Category>("All"),
             ct => db.Categories
                 .AsNoTracking()
                 .OrderBy(c => c.Path)
@@ -68,12 +69,12 @@ public class GetChildCategoriesConsumer(IAlbyCache cache, ProductContext db) : I
 }
 
 [MediatorConsumer]
-public class GetCategoryByIdConsumer(IAlbyCache cache, ProductContext db) : IConsumer<GetCategoryById>
+public class GetCategoryByIdConsumer(ICache cache, ProductContext db) : IConsumer<GetCategoryById>
 {
     public async Task Consume(ConsumeContext<GetCategoryById> context)
     {
         var all = await cache.GetOrSetAsync(
-            CacheKey.Type<Category>("All"),
+            Key.Type<Category>("All"),
             ct => db.Categories
                 .AsNoTracking()
                 .OrderBy(c => c.Path)
@@ -96,7 +97,7 @@ public class GetCategoryByIdConsumer(IAlbyCache cache, ProductContext db) : ICon
 }
 
 [MediatorConsumer]
-public class SearchCategoriesConsumer(IAlbyCache cache, ProductContext db) : IConsumer<SearchCategories>
+public class SearchCategoriesConsumer(ICache cache, ProductContext db) : IConsumer<SearchCategories>
 {
     public async Task Consume(ConsumeContext<SearchCategories> context)
     {
@@ -111,7 +112,7 @@ public class SearchCategoriesConsumer(IAlbyCache cache, ProductContext db) : ICo
         var lowerPattern = pattern.ToLowerInvariant();
 
         var all = await cache.GetOrSetAsync(
-            CacheKey.Type<Category>("All"),
+            Key.Type<Category>("All"),
             ct => db.Categories
                 .AsNoTracking()
                 .OrderBy(c => c.Path)
