@@ -1,12 +1,10 @@
 namespace AlbyOnContainers.Kernel.Caching.UnitTests;
 
-using Caching.Abstractions;
 using Caching.Options;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
-using NSubstitute;
-using StackExchange.Redis;
+using ZiggyCreatures.Caching.Fusion;
 
 [TestFixture]
 public sealed class CachingExtensionsTests
@@ -14,76 +12,55 @@ public sealed class CachingExtensionsTests
     private static HostApplicationBuilder NewBuilder() => Host.CreateApplicationBuilder();
 
     [Test]
-    public async Task WithCaching_Lambda_RegistersOptionsAndICache()
+    public async Task WithCaching_FromConfiguration_RegistersFusionCacheAndOptions()
     {
+        // Arrange
         var builder = NewBuilder();
-        builder.Services.AddSingleton(Substitute.For<IConnectionMultiplexer>());
+        builder.Configuration["Caching:Duration"] = "00:05:00";
+        builder.Configuration["Caching:IsFailSafeEnabled"] = "false";
 
-        builder.AddKernel().WithCaching(opt =>
-        {
-            opt.Duration = TimeSpan.FromMinutes(5);
-            opt.IsFailSafeEnabled = false;
-        });
+        // Act
+        builder.AddKernel().WithCaching();
 
         using var host = builder.Build();
         await host.StartAsync();
 
-        var cache = host.Services.GetService<ICache>();
+        var cache = host.Services.GetService<IFusionCache>();
         var optionsMonitor = host.Services.GetRequiredService<IOptionsMonitor<CachingOptions>>();
 
+        // Assert
         Assert.Multiple(() =>
         {
             Assert.That(cache, Is.Not.Null);
-            Assert.That(optionsMonitor.Get(Microsoft.Extensions.Options.Options.DefaultName).Duration, Is.EqualTo(TimeSpan.FromMinutes(5)));
-            Assert.That(optionsMonitor.Get(Microsoft.Extensions.Options.Options.DefaultName).IsFailSafeEnabled, Is.False);
+            Assert.That(optionsMonitor.Get(Options.DefaultName).Duration, Is.EqualTo(TimeSpan.FromMinutes(5)));
+            Assert.That(optionsMonitor.Get(Options.DefaultName).IsFailSafeEnabled, Is.False);
         });
 
         await host.StopAsync();
     }
 
     [Test]
-    public async Task WithKeyedCaching_RegistersKeyedICache()
+    public async Task WithCaching_RegistersUsableL1Cache()
     {
-        const string key = "secondary";
-        var builder = NewBuilder();
-        builder.Services.AddKeyedSingleton(key, (_, _) => Substitute.For<IConnectionMultiplexer>());
-
-        builder.AddKernel().WithKeyedCaching(key, opt => opt.Duration = TimeSpan.FromMinutes(1));
-
-        using var host = builder.Build();
-        await host.StartAsync();
-
-        var cache = host.Services.GetKeyedService<ICache>(key);
-
-        Assert.That(cache, Is.Not.Null);
-
-        await host.StopAsync();
-    }
-
-    [Test]
-    public void WithCaching_WithoutMultiplexer_FailsFastAtStartup()
-    {
+        // Arrange
         var builder = NewBuilder();
         builder.AddKernel().WithCaching();
 
         using var host = builder.Build();
+        await host.StartAsync();
 
-        var ex = Assert.ThrowsAsync<InvalidOperationException>(() => host.StartAsync());
+        var cache = host.Services.GetRequiredService<IFusionCache>();
 
-        Assert.That(ex!.Message, Does.Contain("IConnectionMultiplexer"));
-    }
+        // Act
+        await cache.SetAsync("l1-key", "stored");
+        var observed = await cache.GetOrSetAsync<string>(
+            "l1-key",
+            _ => throw new InvalidOperationException("L1 should hit"),
+            token: CancellationToken.None);
 
-    [Test]
-    public void WithKeyedCaching_WithoutKeyedMultiplexer_FailsFastAtStartup()
-    {
-        const string key = "missing";
-        var builder = NewBuilder();
-        builder.AddKernel().WithKeyedCaching(key);
+        // Assert
+        Assert.That(observed, Is.EqualTo("stored"));
 
-        using var host = builder.Build();
-
-        var ex = Assert.ThrowsAsync<InvalidOperationException>(() => host.StartAsync());
-
-        Assert.That(ex!.Message, Does.Contain(key));
+        await host.StopAsync();
     }
 }

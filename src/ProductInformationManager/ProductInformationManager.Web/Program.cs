@@ -28,12 +28,16 @@ builder.AddKernel()
     .WithSecurity()
     .WithLocalization()
     .WithCaching()
+    .WithRedisBackplane()
     .WithDistributedLocks()
     .WithPersistence<ProductContext>((sp, opt) =>
         opt.UseNpgsql(
             sp.GetRequiredService<NpgsqlDataSource>(),
             npgsql => npgsql.EnableRetryOnFailure()))
-    .WithMessaging<ProductContext>("messaging", o => o.UsePostgres(), typeof(ApplicationServiceExtensions), typeof(CategoryEventsConsumer));
+    .WithMessaging<ProductContext>(
+        "messaging",
+        o => o.UsePostgres(),
+        new Type[] { typeof(ApplicationServiceExtensions), typeof(CategoryEventsConsumer) });
 
 // Shared UI Notifier
 builder.Services.Scan(scan => scan

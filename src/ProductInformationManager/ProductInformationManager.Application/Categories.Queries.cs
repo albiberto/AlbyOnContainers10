@@ -1,22 +1,26 @@
 namespace ProductInformationManager.Application;
 
-using AlbyOnContainers.Kernel.Caching.Abstractions;
-using AlbyOnContainers.Kernel.Caching.Cache;
 using AlbyOnContainers.Kernel.Messaging.Attributes;
 using MassTransit;
 using ProductInformationManager.Domain;
 using ProductInformationManager.Infrastructure;
 using ProductInformationManager.Messages;
+using ZiggyCreatures.Caching.Fusion;
+
+public static class CategoryCacheKeys
+{
+    public const string All = "Category:All";
+}
 
 [MediatorConsumer]
-public class GetRootCategoriesConsumer(ICache cache, ProductContext db) : IConsumer<GetRootCategories>
+public class GetRootCategoriesConsumer(IFusionCache cache, ProductContext db) : IConsumer<GetRootCategories>
 {
     public async Task Consume(ConsumeContext<GetRootCategories> context)
     {
-        var all = await cache.GetOrSetAsync(
-            Key.Type<Category>("All"),
-            db.GetAllCategoriesAsync,
-            context.CancellationToken) ?? [];
+        var all = await cache.GetOrSetAsync<List<CategoryDto>>(
+            CategoryCacheKeys.All,
+            async (_, factoryCt) => await db.GetAllCategoriesAsync(factoryCt),
+            token: context.CancellationToken) ?? [];
 
         var roots = all
             .Where(c => c.ParentId == null)
@@ -28,14 +32,14 @@ public class GetRootCategoriesConsumer(ICache cache, ProductContext db) : IConsu
 }
 
 [MediatorConsumer]
-public class GetChildCategoriesConsumer(ICache cache, ProductContext db) : IConsumer<GetChildCategories>
+public class GetChildCategoriesConsumer(IFusionCache cache, ProductContext db) : IConsumer<GetChildCategories>
 {
     public async Task Consume(ConsumeContext<GetChildCategories> context)
     {
-        var all = await cache.GetOrSetAsync(
-            Key.Type<Category>("All"),
-            db.GetAllCategoriesAsync,
-            context.CancellationToken) ?? [];
+        var all = await cache.GetOrSetAsync<List<CategoryDto>>(
+            CategoryCacheKeys.All,
+            async (_, factoryCt) => await db.GetAllCategoriesAsync(factoryCt),
+            token: context.CancellationToken) ?? [];
 
         var children = all
             .Where(c => c.ParentId == context.Message.ParentId)
@@ -47,14 +51,14 @@ public class GetChildCategoriesConsumer(ICache cache, ProductContext db) : ICons
 }
 
 [MediatorConsumer]
-public class GetCategoryByIdConsumer(ICache cache, ProductContext db) : IConsumer<GetCategoryById>
+public class GetCategoryByIdConsumer(IFusionCache cache, ProductContext db) : IConsumer<GetCategoryById>
 {
     public async Task Consume(ConsumeContext<GetCategoryById> context)
     {
-        var all = await cache.GetOrSetAsync(
-            Key.Type<Category>("All"),
-            db.GetAllCategoriesAsync,
-            context.CancellationToken) ?? [];
+        var all = await cache.GetOrSetAsync<List<CategoryDto>>(
+            CategoryCacheKeys.All,
+            async (_, factoryCt) => await db.GetAllCategoriesAsync(factoryCt),
+            token: context.CancellationToken) ?? [];
 
         var category = all.FirstOrDefault(c => c.Id == context.Message.Id);
 
@@ -65,7 +69,7 @@ public class GetCategoryByIdConsumer(ICache cache, ProductContext db) : IConsume
 }
 
 [MediatorConsumer]
-public class SearchCategoriesConsumer(ICache cache, ProductContext db) : IConsumer<SearchCategories>
+public class SearchCategoriesConsumer(IFusionCache cache, ProductContext db) : IConsumer<SearchCategories>
 {
     public async Task Consume(ConsumeContext<SearchCategories> context)
     {
@@ -79,10 +83,10 @@ public class SearchCategoriesConsumer(ICache cache, ProductContext db) : IConsum
 
         var lowerPattern = pattern.ToLowerInvariant();
 
-        var all = await cache.GetOrSetAsync(
-            Key.Type<Category>("All"),
-            db.GetAllCategoriesAsync,
-            context.CancellationToken) ?? [];
+        var all = await cache.GetOrSetAsync<List<CategoryDto>>(
+            CategoryCacheKeys.All,
+            async (_, factoryCt) => await db.GetAllCategoriesAsync(factoryCt),
+            token: context.CancellationToken) ?? [];
 
         var results = all
             .Where(c => c.Name.Contains(lowerPattern, StringComparison.InvariantCultureIgnoreCase))
