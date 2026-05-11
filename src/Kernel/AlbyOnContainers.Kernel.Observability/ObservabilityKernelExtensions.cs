@@ -1,9 +1,11 @@
-using AlbyOnContainers.Kernel.Observability.Detectors;
+using System.ComponentModel.DataAnnotations;
 using AlbyOnContainers.Kernel.Observability.Options;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using OpenTelemetry;
@@ -13,16 +15,31 @@ using OpenTelemetry.Trace;
 
 namespace AlbyOnContainers.Kernel.Observability;
 
+/// <summary>
+///     Fluent extensions to wire OpenTelemetry (logs, metrics, traces) on the Kernel builder along
+///     with the standard ASP.NET Core resilience handler, service discovery, and the kernel's
+///     liveness/readiness probe contract (<see cref="MapKernelObservabilityEndpoints" />).
+/// </summary>
 public static class ObservabilityKernelExtensions
 {
+    /// <summary>
+    ///     Singleton sentinel registered on the very first <c>WithObservability</c> call. Subsequent
+    ///     calls become no-ops, preventing duplicate OpenTelemetry registrations and HTTP client
+    ///     defaults stacking up.
+    /// </summary>
+    private sealed class ObservabilityRegistered;
+
     // ==============================================================================
     // PUBLIC API (Fluent Builder)
     // ==============================================================================
 
     extension(IKernelBuilder builder)
     {
+        /// <summary>Registers observability binding <see cref="ObservabilityOptions" /> from configuration.</summary>
         public IKernelBuilder WithObservability(string? section = null)
         {
+            if (builder.IsObservabilityAlreadyRegistered()) return builder;
+
             builder.BindOptions(section);
             return AddInternalObservability(
                 builder,
@@ -30,8 +47,11 @@ public static class ObservabilityKernelExtensions
                 ResolveStartupOptions(builder, section, configure: null));
         }
 
+        /// <summary>Registers observability configuring <see cref="ObservabilityOptions" /> via a lambda.</summary>
         public IKernelBuilder WithObservability(Action<ObservabilityOptions> configureOptions)
         {
+            if (builder.IsObservabilityAlreadyRegistered()) return builder;
+
             builder.ConfigureOptions(configureOptions);
             return AddInternalObservability(
                 builder,
@@ -39,8 +59,14 @@ public static class ObservabilityKernelExtensions
                 ResolveStartupOptions(builder, section: null, configureOptions));
         }
 
+        /// <summary>
+        ///     Registers observability and uses <typeparamref name="TMarker" />'s assembly as the source for
+        ///     ActivitySource and Meter discovery (the assembly name itself is auto-registered).
+        /// </summary>
         public IKernelBuilder WithObservability<TMarker>(string? section = null)
         {
+            if (builder.IsObservabilityAlreadyRegistered()) return builder;
+
             builder.BindOptions(section);
             return AddInternalObservability(
                 builder,
@@ -48,8 +74,14 @@ public static class ObservabilityKernelExtensions
                 ResolveStartupOptions(builder, section, configure: null));
         }
 
+        /// <summary>
+        ///     Registers observability with a configuration lambda and a marker assembly for
+        ///     ActivitySource/Meter discovery.
+        /// </summary>
         public IKernelBuilder WithObservability<TMarker>(Action<ObservabilityOptions> configureOptions)
         {
+            if (builder.IsObservabilityAlreadyRegistered()) return builder;
+
             builder.ConfigureOptions(configureOptions);
             return AddInternalObservability(
                 builder,
@@ -78,28 +110,42 @@ public static class ObservabilityKernelExtensions
                 .ValidateDataAnnotations()
                 .ValidateOnStart();
         }
+
+        private bool IsObservabilityAlreadyRegistered()
+        {
+            if (builder.Host.Services.Any(s => s.ServiceType == typeof(ObservabilityRegistered))) return true;
+            builder.Host.Services.AddSingleton<ObservabilityRegistered>();
+            return false;
+        }
     }
 
     // ==============================================================================
     // PUBLIC ENDPOINTS API
     // ==============================================================================
 
+    /// <summary>
+    ///     Maps the kernel's three health endpoints in a K8s-friendly contract:
+    ///     <list type="bullet">
+    ///         <item><c>/alive</c> — liveness probe; returns the status of checks tagged <c>"live"</c>.
+    ///         Cheap, never depends on external resources. Failing → K8s restarts the pod.</item>
+    ///         <item><c>/ready</c> — readiness probe; returns the status of checks tagged <c>"ready"</c>
+    ///         (DB, Redis, broker, ...). Failing → K8s removes the pod from the load balancer (no restart).</item>
+    ///         <item><c>/health</c> — aggregate of every registered check, useful for debugging.</item>
+    ///     </list>
+    /// </summary>
     public static WebApplication MapKernelObservabilityEndpoints(this WebApplication app)
     {
-        // Liveness: process is up (cheap probe).
         app.MapHealthChecks("/alive", new()
         {
             Predicate = r => r.Tags.Contains("live")
-        });
+        }).DisableHttpMetrics();
 
-        // Readiness: process is up AND all dependencies (DB, broker, ...) are reachable.
         app.MapHealthChecks("/ready", new()
         {
             Predicate = r => r.Tags.Contains("ready")
-        });
+        }).DisableHttpMetrics();
 
-        // Aggregated probe.
-        app.MapHealthChecks("/health");
+        app.MapHealthChecks("/health").DisableHttpMetrics();
 
         return app;
     }
@@ -122,7 +168,19 @@ public static class ObservabilityKernelExtensions
         var options = new ObservabilityOptions();
         builder.Host.Configuration.GetSection(section ?? ObservabilityOptions.Section).Bind(options);
         configure?.Invoke(options);
-        return options;
+
+        // Eagerly validate the snapshot. Instrumentation registration uses these values immediately
+        // (e.g. TraceIdRatioBasedSampler's ctor throws ArgumentOutOfRangeException on bad probability),
+        // so we must fail fast HERE with a clean OptionsValidationException instead of an obscure
+        // ArgumentException happening deep inside the OpenTelemetry builder.
+        var failures = new List<ValidationResult>();
+        if (Validator.TryValidateObject(options, new ValidationContext(options), failures, validateAllProperties: true))
+            return options;
+
+        throw new OptionsValidationException(
+            ObservabilityOptions.Section,
+            typeof(ObservabilityOptions),
+            failures.Select(f => f.ErrorMessage ?? "Observability options failed validation."));
     }
 
     private static IKernelBuilder AddInternalObservability(
@@ -172,16 +230,24 @@ public static class ObservabilityKernelExtensions
         var otel = builder.Host.Services.AddOpenTelemetry()
             .ConfigureResource(resource =>
             {
-                resource.AddDetector(sp => new OptionsResourceDetector(sp.GetRequiredService<IOptions<ObservabilityOptions>>().Value));
                 resource.AddEnvironmentVariableDetector();
             })
             .WithMetrics(metrics =>
             {
                 metrics
                     .AddAspNetCoreInstrumentation()
-                    .AddRuntimeInstrumentation();
+                    .AddRuntimeInstrumentation()
+                    .AddMeter(
+                        "Microsoft.AspNetCore.Hosting",
+                        "Microsoft.AspNetCore.Server.Kestrel",
+                        "System.Net.Http",
+                        "System.Net.NameResolution");
 
                 if (startupOptions.EnableHttpClientTracing) metrics.AddHttpClientInstrumentation();
+
+                // MassTransit emits its own Meter ("MassTransit") in v8+. Subscribe so messages
+                // published/consumed counters land in the metric pipeline — no custom code needed.
+                if (startupOptions.EnableMassTransitTracing) metrics.AddMeter("MassTransit");
 
                 foreach (var meter in startupOptions.CustomMeters) metrics.AddMeter(meter);
 
@@ -190,11 +256,14 @@ public static class ObservabilityKernelExtensions
             })
             .WithTracing(tracing =>
             {
+                // Parent-based ratio sampler is the gold standard for distributed tracing:
+                // child spans inherit the parent's sampling decision so a single trace stays
+                // either fully captured or fully dropped, regardless of the local probability.
+                tracing.SetSampler(new ParentBasedSampler(new TraceIdRatioBasedSampler(startupOptions.TraceSamplingProbability)));
+
                 tracing.AddAspNetCoreInstrumentation();
                 if (startupOptions.EnableHttpClientTracing) tracing.AddHttpClientInstrumentation();
                 if (startupOptions.EnableEntityFrameworkTracing) tracing.AddEntityFrameworkCoreInstrumentation();
-
-                tracing.AddSource(startupOptions.ServiceName);
 
                 if (startupOptions.EnableMassTransitTracing)
                     tracing.AddSource("MassTransit");

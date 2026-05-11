@@ -26,7 +26,6 @@ public abstract class PersistenceTestBase
 
         HostBuilder.Services.AddSingleton(Substitute.For<ICurrentUserService>());
         HostBuilder.Services.AddSingleton(Substitute.For<IDistributedLockProvider>());
-        HostBuilder.Services.AddSingleton(TimeProvider.System);
         
         KernelBuilder = HostBuilder.AddKernel();
     }

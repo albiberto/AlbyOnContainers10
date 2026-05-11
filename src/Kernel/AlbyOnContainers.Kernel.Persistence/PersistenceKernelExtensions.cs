@@ -63,6 +63,7 @@ public static class PersistenceKernelExtensions
 
         private void BuildAndConfigurePersistence<TDbContext>(Action<IServiceProvider, DbContextOptionsBuilder> configureDbContext) where TDbContext : DbContext
         {
+            builder.Services.TryAddSingleton(TimeProvider.System);
             builder.Services.AddScoped<IInterceptor, AuditableEntityInterceptor>();
 
             builder.Services.AddDbContext<TDbContext>((sp, options) =>
@@ -84,7 +85,9 @@ public static class PersistenceKernelExtensions
                     options.EnableDetailedErrors();
             });
 
-            builder.Services.AddHealthChecks().AddDbContextCheck<TDbContext>();
+            // Tag the DbContext check with "ready" so it participates in the kernel's
+            // /ready readiness probe (Observability MapKernelObservabilityEndpoints).
+            builder.Services.AddHealthChecks().AddDbContextCheck<TDbContext>(tags: ["ready"]);
 
             builder.Services.TryAddSingleton<MigrationTelemetry>();
             builder.Services.AddHostedService<MigrationHostedService<TDbContext>>();

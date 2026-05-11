@@ -1,4 +1,4 @@
-﻿using AlbyOnContainers.Kernel.Domain.Exceptions;
+using AlbyOnContainers.Kernel.Domain.Exceptions;
 using FluentValidation;
 using MassTransit;
 using Microsoft.Extensions.Logging;
@@ -12,6 +12,11 @@ public sealed class GlobalExceptionFilter<T>(ILogger<GlobalExceptionFilter<T>> l
         try
         {
             await next.Send(context);
+        }
+        catch (OperationCanceledException)
+        {
+            // Cooperative cancellation (host shutdown, message timeout). Do NOT log as a failure.
+            throw;
         }
         catch (ValidationException)
         {

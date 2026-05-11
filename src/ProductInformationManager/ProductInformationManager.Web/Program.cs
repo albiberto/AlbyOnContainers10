@@ -28,24 +28,12 @@ builder.AddKernel()
     .WithSecurity()
     .WithLocalization()
     .WithCaching()
+    .WithDistributedLocks()
     .WithPersistence<ProductContext>((sp, opt) =>
-        opt.UseNpgsql(sp.GetRequiredService<NpgsqlDataSource>()))
-    .WithMessaging<ProductContext>(
-        configureOptions: msg =>
-        {
-            // RabbitMQ connection string from Aspire is of the form amqp://user:pass@host:port
-            var uri = new Uri(builder.Configuration.GetConnectionString("messaging")
-                              ?? throw new InvalidOperationException("Missing connection string 'messaging'."));
-            msg.Host = uri.Host;
-            msg.Port = uri.IsDefaultPort ? 5672 : uri.Port;
-            var userInfo = uri.UserInfo.Split(':', 2);
-            msg.Username = Uri.UnescapeDataString(userInfo[0]);
-            msg.Password = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : string.Empty;
-        },
-        configureOutbox: o => o.UsePostgres(),
-        // Scan both the Application assembly (mediator/event consumers) and the Web assembly
-        // (UI-side event consumers like CategoryEventsConsumer).
-        assemblyMarkers: new[] { typeof(ApplicationServiceExtensions), typeof(CategoryEventsConsumer) });
+        opt.UseNpgsql(
+            sp.GetRequiredService<NpgsqlDataSource>(),
+            npgsql => npgsql.EnableRetryOnFailure()))
+    .WithMessaging<ProductContext>("messaging", o => o.UsePostgres(), typeof(ApplicationServiceExtensions), typeof(CategoryEventsConsumer));
 
 // Shared UI Notifier
 builder.Services.Scan(scan => scan

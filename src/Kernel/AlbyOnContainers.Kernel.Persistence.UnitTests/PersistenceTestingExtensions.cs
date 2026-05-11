@@ -72,6 +72,7 @@ public static class PersistenceTestingExtensions
             var interceptors = scopedProvider.GetServices<IInterceptor>().ToList();
             Assert.That(interceptors.Any(i => i is AuditableEntityInterceptor), Is.True, "AuditableEntityInterceptor MUST be registered.");
             Assert.That(interceptors.Any(i => i.GetType().Name == "DomainEventDispatcherInterceptor"), Is.False, "DomainEventDispatcherInterceptor belongs to Messaging, NOT Persistence.");
+            Assert.That(serviceProvider.GetService<TimeProvider>(), Is.SameAs(TimeProvider.System), "Persistence MUST register TimeProvider.System for audit interceptors.");
 
             // HostedServices are Singleton, so they can be resolved from the Root Provider
             Assert.That(serviceProvider.GetServices<IHostedService>().Any(h => h is MigrationHostedService<TDbContext>), Is.True, "MigrationHostedService MUST be registered for scaffolding.");

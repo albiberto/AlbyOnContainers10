@@ -1,6 +1,4 @@
-﻿namespace ProductInformationManager.Contracts;
-
-using AlbyOnContainers.Kernel.Messaging.Contracts;
+namespace ProductInformationManager.Contracts;
 
 public sealed record CategoryUpdatedEvent(
     Guid Id,
@@ -8,4 +6,4 @@ public sealed record CategoryUpdatedEvent(
     string Description,
     string Path,
     Guid? ParentId,
-    long Version = 0) : ContractBase;
+    long Version = 0);

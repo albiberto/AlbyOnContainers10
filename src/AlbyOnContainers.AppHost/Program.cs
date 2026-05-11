@@ -83,7 +83,7 @@ builder.AddProject<Projects.ProductInformationManager_Web>("productdatamanager")
     .WithEnvironment("OTEL_SERVICE_NAME", otelServiceName)
     .WithEnvironment(
         "OTEL_RESOURCE_ATTRIBUTES",
-        $"service.namespace={otelNamespace},deployment.environment={otelEnvironment},deployment.environment.name={otelEnvironment}")
+        $"service.namespace={otelNamespace},deployment.environment.name={otelEnvironment}")
     .WithExternalHttpEndpoints();
 
 builder.Build().Run();

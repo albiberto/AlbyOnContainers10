@@ -6,6 +6,7 @@ using AlbyOnContainers.Kernel;
 using AlbyOnContainers.Kernel.Caching.Abstractions;
 using AlbyOnContainers.Kernel.Caching.Cache;
 using AlbyOnContainers.Kernel.Caching.Options;
+using Caching.Distributed;
 using Caching.StackExchangeRedis;
 using Microsoft.Extensions.Hosting;
 using Options;
@@ -141,11 +142,11 @@ public static class CachingKernelExtensions
 
             cacheBuilder.WithRegisteredBackplane();
 
-            // L2 distributed cache (Redis). Currently wired only for the default cache because
-            // IDistributedCache cannot be keyed via AddStackExchangeRedisCache; keyed caches
-            // operate as L1 + backplane only until a per-key distributed cache is needed.
+            // L2 distributed cache (Redis) — wired for both default and keyed pipelines.
             if (name == Options.DefaultName)
             {
+                // Default path uses AddStackExchangeRedisCache, which registers a singleton
+                // IDistributedCache backed by the non-keyed IConnectionMultiplexer.
                 services.AddOptions<RedisCacheOptions>()
                     .Configure<IServiceProvider>((redis, sp) =>
                     {
@@ -159,8 +160,37 @@ public static class CachingKernelExtensions
                     .WithRegisteredDistributedCache()
                     .WithRegisteredSerializer();
             }
+            else
+            {
+                // Keyed path: AddStackExchangeRedisCache cannot register a keyed IDistributedCache,
+                // so we instantiate a RedisCache per pipeline using the keyed multiplexer and bind
+                // it to the FusionCache builder with WithDistributedCache(sp => keyed).
+                services.AddKeyedSingleton<IDistributedCache>(name, (sp, key) =>
+                {
+                    var multiplexer = sp.GetRequiredKeyedService<StackExchange.Redis.IConnectionMultiplexer>((string)key!);
+                    var redisOptions = Microsoft.Extensions.Options.Options.Create(new RedisCacheOptions
+                    {
+                        ConnectionMultiplexerFactory = () => Task.FromResult(multiplexer)
+                    });
+                    return new RedisCache(redisOptions);
+                });
+
+                cacheBuilder
+                    .WithDistributedCache(sp => sp.GetRequiredKeyedService<IDistributedCache>(name))
+                    .WithRegisteredSerializer();
+            }
 
             services.AddSingleton<IHostedService>(sp => new CachingBackplaneProbe(sp, name == Options.DefaultName ? null : name));
+
+            // Health check on the Redis multiplexer (default or keyed) tagged "ready":
+            // the K8s readiness probe will pull the pod out of rotation if Redis becomes unreachable.
+            // Uses AspNetCore.HealthChecks.Redis (.NET Foundation) — no custom code.
+            services.AddHealthChecks().AddRedis(
+                connectionMultiplexerFactory: sp => name == Options.DefaultName
+                    ? sp.GetRequiredService<StackExchange.Redis.IConnectionMultiplexer>()
+                    : sp.GetRequiredKeyedService<StackExchange.Redis.IConnectionMultiplexer>(name),
+                name: name == Options.DefaultName ? "redis" : $"redis-{name}",
+                tags: ["ready"]);
         }
     }
 }
