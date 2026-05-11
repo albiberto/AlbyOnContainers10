@@ -1,10 +1,10 @@
+// ReSharper disable once CheckNamespace
 namespace Microsoft.Extensions.DependencyInjection;
 
 using System;
 using System.Threading.Tasks;
 using AlbyOnContainers.Kernel;
-using Microsoft.Extensions.Caching.Distributed;
-using Microsoft.Extensions.Caching.StackExchangeRedis;
+using Caching.StackExchangeRedis;
 using ZiggyCreatures.Caching.Fusion;
 using ZiggyCreatures.Caching.Fusion.Backplane.StackExchangeRedis;
 
@@ -15,12 +15,11 @@ public static class RedisCachingExtensions
         builder.Services.AddOptions<RedisCacheOptions>()
             .Configure<IServiceProvider>((redis, sp) =>
             {
-                redis.ConnectionMultiplexerFactory = () =>
-                    Task.FromResult(sp.GetRequiredService<StackExchange.Redis.IConnectionMultiplexer>());
+                redis.ConnectionMultiplexerFactory = () => Task.FromResult(sp.GetRequiredService<StackExchange.Redis.IConnectionMultiplexer>());
             });
         builder.Services.AddStackExchangeRedisCache(_ => { });
 
-        builder.Services.AddOptions<RedisBackplaneOptions>(Microsoft.Extensions.Options.Options.DefaultName)
+        builder.Services.AddOptions<RedisBackplaneOptions>(Options.Options.DefaultName)
             .Configure<IServiceProvider>((redis, sp) =>
             {
                 redis.ConnectionMultiplexerFactory = () =>

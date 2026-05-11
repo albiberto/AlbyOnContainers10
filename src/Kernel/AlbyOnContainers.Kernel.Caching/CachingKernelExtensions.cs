@@ -1,12 +1,10 @@
+// ReSharper disable once CheckNamespace
 namespace Microsoft.Extensions.DependencyInjection;
 
-using System;
 using AlbyOnContainers.Kernel;
 using AlbyOnContainers.Kernel.Caching.Options;
-using Microsoft.Extensions.Options;
-using OpenTelemetry.Metrics;
+using Options;
 using ZiggyCreatures.Caching.Fusion;
-using ZiggyCreatures.Caching.Fusion.Serialization;
 
 public static class CachingKernelExtensions
 {
@@ -35,7 +33,9 @@ public static class CachingKernelExtensions
         builder.Services.AddFusionCacheNeueccMessagePackSerializer();
 
         // Native observability.
-        builder.Services.AddOpenTelemetry().WithMetrics(m => m.AddMeter("ZiggyCreatures.Caching.Fusion"));
+        builder.Services.AddOpenTelemetry()
+            .WithMetrics(m => m
+                .AddMeter("ZiggyCreatures.Caching.Fusion"));
 
         return builder;
     }

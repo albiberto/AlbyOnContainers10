@@ -1,4 +1,3 @@
-using System.ComponentModel.DataAnnotations;
 using AlbyOnContainers.Kernel.Options;
 
 namespace AlbyOnContainers.Kernel.Caching.Options;
