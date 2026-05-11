@@ -4,28 +4,49 @@ using AlbyOnContainers.Kernel.Localization;
 using AlbyOnContainers.Kernel.Messaging;
 using AlbyOnContainers.Kernel.Observability;
 using AlbyOnContainers.Kernel.Persistence;
-using AlbyOnContainers.Kernel.Resilience;
 using AlbyOnContainers.Kernel.Security;
 using AlbyOnContainers.Plugins.DistributedLocks;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.FluentUI.AspNetCore.Components;
+using Npgsql;
 using ProductInformationManager.Application;
-using ProductInformationManager.Application.Consumers;
 using ProductInformationManager.Infrastructure;
+using ProductInformationManager.Web.Consumers;
 using ProductInformationManager.Web.Notifiers;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var databaseConnection = builder.Configuration.GetConnectionString("productdb") ?? throw new InvalidOperationException("Missing connection string 'productdb'.");
-var redisConnection = builder.Configuration.GetConnectionString("cache") ?? throw new InvalidOperationException("Missing connection string 'cache'.");
-var rabbitConnection = new Uri(builder.Configuration.GetConnectionString("messaging") ?? throw new InvalidOperationException("Missing connection string 'messaging'."));
+// Aspire bootstraps the underlying clients (NpgsqlDataSource, IConnectionMultiplexer)
+// from the connection strings injected by the AppHost. The kernel modules below
+// resolve them from DI — no connection-string handling lives inside the kernel.
+builder.AddNpgsqlDataSource("productdb");
+builder.AddRedisClient("cache");
 
-// TODO: full kernel wiring is finalized in a follow-up step; this leaves the build green for now.
 builder.AddKernel()
+    .WithObservability()
+    .WithSecurity()
+    .WithLocalization()
     .WithCaching()
-    .WithResilience("Database")
-    .WithResilience("Messaging");
+    .WithPersistence<ProductContext>((sp, opt) =>
+        opt.UseNpgsql(sp.GetRequiredService<NpgsqlDataSource>()))
+    .WithMessaging<ProductContext>(
+        configureOptions: msg =>
+        {
+            // RabbitMQ connection string from Aspire is of the form amqp://user:pass@host:port
+            var uri = new Uri(builder.Configuration.GetConnectionString("messaging")
+                              ?? throw new InvalidOperationException("Missing connection string 'messaging'."));
+            msg.Host = uri.Host;
+            msg.Port = uri.IsDefaultPort ? 5672 : uri.Port;
+            var userInfo = uri.UserInfo.Split(':', 2);
+            msg.Username = Uri.UnescapeDataString(userInfo[0]);
+            msg.Password = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : string.Empty;
+        },
+        configureOutbox: o => o.UsePostgres(),
+        // Scan both the Application assembly (mediator/event consumers) and the Web assembly
+        // (UI-side event consumers like CategoryEventsConsumer).
+        typeof(ApplicationServiceExtensions),
+        typeof(CategoryEventsConsumer));
 
 // Shared UI Notifier
 builder.Services.Scan(scan => scan
@@ -37,7 +58,6 @@ builder.Services.Scan(scan => scan
 
 // Application (IDomainEventMapper + validators)
 builder.Services.AddApplication();
-
 
 // Fluent UI Blazor
 builder.Services.AddFluentUIComponents();

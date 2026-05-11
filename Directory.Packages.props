@@ -9,6 +9,7 @@
     <PackageVersion Include="Aspire.Hosting.RabbitMQ" Version="13.2.3" />
     <PackageVersion Include="Aspire.Hosting.Redis" Version="13.2.3" />
     <PackageVersion Include="Aspire.StackExchange.Redis" Version="13.2.3" />
+    <PackageVersion Include="Aspire.Npgsql" Version="13.2.3" />
     <!-- Microsoft -->
     <PackageVersion Include="DistributedLock.Core" Version="1.0.9" />
     <PackageVersion Include="DistributedLock.Redis" Version="1.1.1" />
