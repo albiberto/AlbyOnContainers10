@@ -46,10 +46,10 @@ public static class MessagingKernelExtensions
         }
 
         public IKernelBuilder WithMessaging<TDbContext, TMarker>(Action<IEntityFrameworkOutboxConfigurator> configureOutbox, string? section = null) where TDbContext : DbContext =>
-            builder.WithMessaging<TDbContext>(configureOutbox, section, typeof(TMarker));
+            builder.WithMessaging<TDbContext>(configureOutbox, section, new[] { typeof(TMarker) });
 
         public IKernelBuilder WithMessaging<TDbContext, TMarker>(Action<MessagingOptions> configureOptions, Action<IEntityFrameworkOutboxConfigurator> configureOutbox) where TDbContext : DbContext =>
-            builder.WithMessaging<TDbContext>(configureOptions, configureOutbox, typeof(TMarker));
+            builder.WithMessaging<TDbContext>(configureOptions, configureOutbox, new[] { typeof(TMarker) });
 
         // ==============================================================================
         // INTERNAL OPTIONS HELPERS

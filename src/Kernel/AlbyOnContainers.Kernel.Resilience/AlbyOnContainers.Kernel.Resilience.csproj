@@ -8,7 +8,6 @@
 
     <ItemGroup>
         <ProjectReference Include="..\AlbyOnContainers.Kernel\AlbyOnContainers.Kernel.csproj" />
-        <ProjectReference Include="..\src\Kernel\AlbyOnContainers.Kernel\AlbyOnContainers.Kernel.csproj"/>
     </ItemGroup>
 
     <ItemGroup>

@@ -45,8 +45,7 @@ builder.AddKernel()
         configureOutbox: o => o.UsePostgres(),
         // Scan both the Application assembly (mediator/event consumers) and the Web assembly
         // (UI-side event consumers like CategoryEventsConsumer).
-        typeof(ApplicationServiceExtensions),
-        typeof(CategoryEventsConsumer));
+        assemblyMarkers: new[] { typeof(ApplicationServiceExtensions), typeof(CategoryEventsConsumer) });
 
 // Shared UI Notifier
 builder.Services.Scan(scan => scan
