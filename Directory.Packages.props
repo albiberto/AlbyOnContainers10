@@ -48,6 +48,9 @@
     <PackageVersion Include="Testcontainers.PostgreSql" Version="4.1.0" />
     <PackageVersion Include="Testcontainers.Redis" Version="4.1.0" />
     <PackageVersion Include="StackExchange.Redis" Version="2.10.1" />
+    <!-- Transitive vulnerability overrides (pinned via explicit PackageReference in vulnerable projects) -->
+    <PackageVersion Include="Azure.Identity" Version="1.13.1" />
+    <PackageVersion Include="System.Drawing.Common" Version="9.0.0" />
     <PackageVersion Include="Respawn" Version="6.2.1" />
     <PackageVersion Include="NSubstitute" Version="5.3.0" />
     <PackageVersion Include="FluentAssertions" Version="7.0.0" />

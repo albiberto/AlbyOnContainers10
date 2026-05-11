@@ -17,6 +17,9 @@
     <PackageReference Include="Respawn" />
     <PackageReference Include="NSubstitute" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <!-- Pin transitive packages to patched versions (NU1903/NU1902/NU1904) -->
+    <PackageReference Include="Azure.Identity" />
+    <PackageReference Include="System.Drawing.Common" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
