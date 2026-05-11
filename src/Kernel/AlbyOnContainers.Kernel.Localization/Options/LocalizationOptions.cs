@@ -3,7 +3,7 @@ using AlbyOnContainers.Kernel.Options;
 
 namespace AlbyOnContainers.Kernel.Localization.Options;
 
-public sealed class LocalizationOptions : KernelOptions<LocalizationOptions>
+public sealed record LocalizationOptions : KernelOptions<LocalizationOptions>
 {
     [Required(AllowEmptyStrings = false)]
     public string DefaultCulture { get; set; } = "en";

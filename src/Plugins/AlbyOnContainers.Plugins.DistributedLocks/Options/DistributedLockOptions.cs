@@ -4,7 +4,7 @@ namespace AlbyOnContainers.Plugins.DistributedLocks.Options;
 
 using Kernel.Options;
 
-public class DistributedLockOptions : KernelOptions<DistributedLockOptions>
+public sealed record DistributedLockOptions : KernelOptions<DistributedLockOptions>
 {
     public string ConnectionStringName { get; set; } = "cache";
 

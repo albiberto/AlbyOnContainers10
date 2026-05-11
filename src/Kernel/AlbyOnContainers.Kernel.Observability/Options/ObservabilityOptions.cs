@@ -3,7 +3,7 @@ using AlbyOnContainers.Kernel.Options;
 
 namespace AlbyOnContainers.Kernel.Observability.Options;
 
-public sealed class ObservabilityOptions : KernelOptions<ObservabilityOptions>
+public sealed record ObservabilityOptions : KernelOptions<ObservabilityOptions>
 {
     [Required(AllowEmptyStrings = false)]
     public string ServiceName { get; set; } = "AlbyOnContainers.UnknownService";
