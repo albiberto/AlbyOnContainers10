@@ -1,6 +1,9 @@
 namespace AlbyOnContainers.Kernel.Resilience.Options;
 
+using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
 using Kernel.Options;
 
 public sealed record ResilienceOptions : KernelOptions<ResilienceOptions>, IValidatableObject
@@ -18,16 +21,20 @@ public sealed record ResilienceOptions : KernelOptions<ResilienceOptions>, IVali
 
     public CircuitBreakerOptions CircuitBreaker { get; set; } = new();
 
+    // The only custom validation needed is to trigger .NET validation 
+    // for DataAnnotations inside the nested CircuitBreakerOptions object.
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
         var nestedContext = new ValidationContext(CircuitBreaker);
         var nestedResults = new List<ValidationResult>();
 
         if (Validator.TryValidateObject(CircuitBreaker, nestedContext, nestedResults, validateAllProperties: true)) yield break;
-
+        
         foreach (var result in nestedResults)
+        {
             yield return new ValidationResult(
                 result.ErrorMessage,
                 result.MemberNames.Select(member => $"{nameof(CircuitBreaker)}.{member}"));
+        }
     }
 }

@@ -1,8 +1,9 @@
 // ReSharper disable once CheckNamespace
-
 namespace Microsoft.Extensions.DependencyInjection;
 
+using System;
 using AlbyOnContainers.Kernel;
+using AlbyOnContainers.Kernel.Domain.Exceptions;
 using AlbyOnContainers.Kernel.Resilience.Options;
 using Options;
 using Polly;
@@ -18,10 +19,16 @@ public static class ResilienceExtensions
         public IKernelBuilder WithResilience(string key, string? configurationSection = null)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(key);
+            
+            builder.Services.AddKeyedOptions<ResilienceOptions>(key, configurationSection);
 
             var section = configurationSection ?? $"{ResilienceOptions.Section}:{key}";
 
-            builder.Services.BindOptions(key, section);
+            builder.Services.AddOptions<ResilienceOptions>(key)
+                .BindConfiguration(section)
+                .ValidateDataAnnotations()
+                .ValidateOnStart();
+            
             builder.Services.AddResiliencePipelineInternal(key);
             builder.Services.AddKeyedBridge(key);
 
@@ -33,7 +40,11 @@ public static class ResilienceExtensions
             ArgumentException.ThrowIfNullOrWhiteSpace(key);
             ArgumentNullException.ThrowIfNull(configureOptions);
 
-            builder.Services.ConfigureOptions(key, configureOptions);
+            builder.Services.AddOptions<ResilienceOptions>(key)
+                .Configure(configureOptions)
+                .ValidateDataAnnotations()
+                .ValidateOnStart();
+            
             builder.Services.AddResiliencePipelineInternal(key);
             builder.Services.AddKeyedBridge(key);
 
@@ -45,18 +56,6 @@ public static class ResilienceExtensions
 
     extension(IServiceCollection services)
     {
-        private void BindOptions(string key, string section) =>
-            services.AddOptions<ResilienceOptions>(key)
-                .BindConfiguration(section)
-                .ValidateDataAnnotations()
-                .ValidateOnStart();
-
-        private void ConfigureOptions(string key, Action<ResilienceOptions> configureOptions) =>
-            services.AddOptions<ResilienceOptions>(key)
-                .Configure(configureOptions)
-                .ValidateDataAnnotations()
-                .ValidateOnStart();
-
         private void AddKeyedBridge(string key) =>
             services.AddKeyedSingleton<ResiliencePipeline>(key, (provider, injectionKey) =>
                 provider
@@ -64,37 +63,30 @@ public static class ResilienceExtensions
                     .GetPipeline((string)injectionKey!));
 
         private void AddResiliencePipelineInternal(string key) =>
-            services.AddResiliencePipeline(key, (builder, context) =>
+            services.AddResiliencePipeline(key, (pipelineBuilder, context) =>
             {
+                context.EnableReloads<ResilienceOptions>(key);
+
                 var optionsMonitor = context.ServiceProvider.GetRequiredService<IOptionsMonitor<ResilienceOptions>>();
                 var options = optionsMonitor.Get(key);
 
-                // Polly v8 execution order is outer-to-inner (top-to-bottom):
-                // Timeout (outer) -> Retry -> Circuit Breaker (inner, always active).
-                builder.AddTimeout(options.OverallTimeout);
+                pipelineBuilder.AddTimeout(options.OverallTimeout);
 
-                builder.AddRetry(new()
+                pipelineBuilder.AddRetry(new()
                 {
                     MaxRetryAttempts = options.MaxRetryAttempts,
                     Delay = options.Delay,
                     BackoffType = options.UseExponentialBackoff ? DelayBackoffType.Exponential : DelayBackoffType.Constant,
-                    // Skip retry on cancellation (cooperative cancellation must propagate).
-                    // Skip retry on a broken circuit: the breaker decides when traffic resumes.
-                    ShouldHandle = new PredicateBuilder()
-                        .Handle<Exception>(ex => ex is not (OperationCanceledException or BrokenCircuitException or IsolatedCircuitException))
+                    ShouldHandle = new PredicateBuilder().Handle<Exception>(ex => ex is not (OperationCanceledException or BrokenCircuitException or IsolatedCircuitException or DomainException))
                 });
 
-                // Circuit breaker is always active (forced best practice). Defaults are conservative
-                // enough to avoid false positives; consumers can override values per-pipeline via options.
-                builder.AddCircuitBreaker(new()
+                pipelineBuilder.AddCircuitBreaker(new()
                 {
                     FailureRatio = options.CircuitBreaker.FailureRatio,
                     MinimumThroughput = options.CircuitBreaker.MinimumThroughput,
                     BreakDuration = options.CircuitBreaker.BreakDuration,
                     SamplingDuration = options.CircuitBreaker.SamplingDuration,
-                    // The breaker should not count cancellations against the failure ratio.
-                    ShouldHandle = new PredicateBuilder()
-                        .Handle<Exception>(ex => ex is not OperationCanceledException)
+                    ShouldHandle = new PredicateBuilder().Handle<Exception>(ex => ex is not OperationCanceledException)
                 });
             });
     }

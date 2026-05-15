@@ -7,6 +7,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\..\..\AlbyOnContainers.Kernel.Options\AlbyOnContainers.Kernel.Options.csproj" />
         <ProjectReference Include="..\AlbyOnContainers.Kernel\AlbyOnContainers.Kernel.csproj" />
     </ItemGroup>
 

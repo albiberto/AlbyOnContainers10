@@ -67,6 +67,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AlbyOnContainers.Kernel.Mes
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AlbyOnContainers.Kernel.Observability.UnitTests", "src\Kernel\AlbyOnContainers.Kernel.Observability.UnitTests\AlbyOnContainers.Kernel.Observability.UnitTests.csproj", "{D6490FBB-445C-41D0-894B-859E83815D6A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AlbyOnContainers.Kernel.Options", "AlbyOnContainers.Kernel.Options\AlbyOnContainers.Kernel.Options.csproj", "{CAC8F343-F414-490D-8F34-08B28ABB0BF2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -377,6 +379,18 @@ Global
 		{D6490FBB-445C-41D0-894B-859E83815D6A}.Release|x64.Build.0 = Release|Any CPU
 		{D6490FBB-445C-41D0-894B-859E83815D6A}.Release|x86.ActiveCfg = Release|Any CPU
 		{D6490FBB-445C-41D0-894B-859E83815D6A}.Release|x86.Build.0 = Release|Any CPU
+		{CAC8F343-F414-490D-8F34-08B28ABB0BF2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CAC8F343-F414-490D-8F34-08B28ABB0BF2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CAC8F343-F414-490D-8F34-08B28ABB0BF2}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{CAC8F343-F414-490D-8F34-08B28ABB0BF2}.Debug|x64.Build.0 = Debug|Any CPU
+		{CAC8F343-F414-490D-8F34-08B28ABB0BF2}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{CAC8F343-F414-490D-8F34-08B28ABB0BF2}.Debug|x86.Build.0 = Debug|Any CPU
+		{CAC8F343-F414-490D-8F34-08B28ABB0BF2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CAC8F343-F414-490D-8F34-08B28ABB0BF2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CAC8F343-F414-490D-8F34-08B28ABB0BF2}.Release|x64.ActiveCfg = Release|Any CPU
+		{CAC8F343-F414-490D-8F34-08B28ABB0BF2}.Release|x64.Build.0 = Release|Any CPU
+		{CAC8F343-F414-490D-8F34-08B28ABB0BF2}.Release|x86.ActiveCfg = Release|Any CPU
+		{CAC8F343-F414-490D-8F34-08B28ABB0BF2}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -410,5 +424,6 @@ Global
 		{E3B462FA-8C10-4699-B8C0-362007A2A946} = {2E3142C6-3A8D-11B8-5A6A-7C905B1E94C2}
 		{64C42995-A8E8-45D7-BC6F-2273888A86A8} = {2E3142C6-3A8D-11B8-5A6A-7C905B1E94C2}
 		{D6490FBB-445C-41D0-894B-859E83815D6A} = {2E3142C6-3A8D-11B8-5A6A-7C905B1E94C2}
+		{CAC8F343-F414-490D-8F34-08B28ABB0BF2} = {72AD5FF9-9596-4B21-9AF1-06284CBFC4C9}
 	EndGlobalSection
 EndGlobal
